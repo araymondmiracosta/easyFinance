@@ -211,8 +211,8 @@ class Views {
             for (account in Values.accounts) {
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     Box() {
-                        Text(text = account.getName(), style = TextStyle(fontSize = 18.sp))
-                        Text(text = account.getBalance().toString(), style = TextStyle(fontSize = 16.sp))
+                        Text(text = account.name, style = TextStyle(fontSize = 18.sp))
+                        Text(text = account.balance.toString(), style = TextStyle(fontSize = 16.sp))
                     }
                 }
             }
@@ -221,7 +221,7 @@ class Views {
         @Composable
         fun generateTransactionScrollView() {
             for (account in Values.accounts) {
-                for (i in account.getTransactions().size - 1 downTo -1 step -1) {   // i = account.getTransactions().size - 1; i >= -1; i--
+                for (i in account.transactions.size - 1 downTo -1 step -1) {   // i = account.getTransactions().size - 1; i >= -1; i--
 
                 }
             }
