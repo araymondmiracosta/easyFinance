@@ -2,14 +2,9 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -33,6 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -48,8 +44,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 
 /* TODO
@@ -72,7 +68,7 @@ class Views {
                             actions = {
                                 IconButton(
                                     onClick = {
-                                        navHostController.navigate("New Account Activity")
+                                        navHostController.navigate("New Transaction Activity")
                                     }
                                 ) {
                                     Icon(Icons.Filled.Settings, null)
@@ -105,8 +101,8 @@ class Views {
             ApplicationTheme {
                 var accountName by remember { mutableStateOf("")}
                 var accountBalance by remember { mutableStateOf("")}
-                var accountNameLabel by remember { mutableStateOf("Account Name (name must not be empty)")}
-                var accountBalanceLabel by remember { mutableStateOf("Account Balance (balance must be a number)")}
+                var accountNameLabel by remember { mutableStateOf("Account Name (must not be empty)")}
+                var accountBalanceLabel by remember { mutableStateOf("Account Balance (must be a number)")}
                 var accountNameIsEmpty = true
                 var accountBalanceIsNotNumber = true
                 val scope = rememberCoroutineScope()
@@ -144,7 +140,7 @@ class Views {
                                         accountName = it
                                         if (it.isEmpty()) {
                                             accountNameIsEmpty = true
-                                            accountNameLabel = "Account Name (name must not be empty)"
+                                            accountNameLabel = "Account Name (must not be empty)"
                                         }
                                         else {
                                             accountNameIsEmpty = false
@@ -169,7 +165,7 @@ class Views {
                                         }
                                         else {
                                             accountBalanceIsNotNumber = true
-                                            accountBalanceLabel = "Account Balance (balance must be a number)"
+                                            accountBalanceLabel = "Account Balance (must be a number)"
                                         }
                                     },
                                     label = {
@@ -215,13 +211,79 @@ class Views {
             }
         }
 
+        @OptIn(ExperimentalMaterial3Api::class)
         @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
         @Composable
         fun generateNewTransactionView(navHostController: NavHostController) {
             ApplicationTheme {
-                Scaffold {
-
-                }
+                var isPositiveTransaction by remember { mutableStateOf(false)}
+                var transactionAmount by remember { mutableStateOf("") }
+                var transactionAmountIsNotNumber = true
+                var transactionAmountLabel by remember { mutableStateOf("Transaction Amount (must be a number)")}
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text("New Transaction")
+                            },
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    }
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        )
+                    },
+                    content = {
+                        Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                Row {
+                                    Switch(
+                                        checked = isPositiveTransaction,
+                                        onCheckedChange = {
+                                            isPositiveTransaction = it
+                                        }
+                                    )
+                                    Spacer(modifier = Modifier.padding(horizontal = 20.dp))
+                                    OutlinedTextField(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        value = transactionAmount,
+                                        prefix = {
+                                            if (!isPositiveTransaction) {
+                                                Text("-", color = Color.Red)
+                                            }
+                                            else {
+                                                Text("+", color = Color.Green)
+                                            }
+                                        },
+                                        suffix = {
+                                            Text(Values.currency)
+                                        },
+                                        singleLine = true,
+                                        isError = transactionAmountIsNotNumber,
+                                        onValueChange = {
+                                            transactionAmount = it
+                                            if (it.toDoubleOrNull() != null && it.isNotEmpty()) {
+                                                transactionAmountIsNotNumber = false
+                                                transactionAmountLabel = "Transaction Amount"
+                                            }
+                                            else {
+                                                transactionAmountIsNotNumber = true
+                                                transactionAmountLabel = "Transaction Amount (must be a number)"
+                                            }
+                                        },
+                                        label = {
+                                            Text(transactionAmountLabel)
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                )
             }
         }
 
@@ -236,11 +298,17 @@ class Views {
                 Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(10.dp)).clip(shape = RoundedCornerShape(10.dp))
-                            .fillMaxWidth().clickable(true, null, null, onClick = {
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .fillMaxWidth()
+                            .clickable(true, null, null, onClick = {
                                 // Account specific screen
-                            }).padding(15.dp),
+                            })
+                            .padding(15.dp),
                     ) {
                         Text(text = account.name, style = TextStyle(fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
                         Spacer(modifier = Modifier.padding(5.dp))

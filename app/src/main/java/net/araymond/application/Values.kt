@@ -10,6 +10,7 @@ object Values {
     var country = "us"
     var dateFormat = "MM-dd-yyyy"
     var timeFormat = "HH:mm"
+    var currency = "$"
     @JvmField
     var accounts = ArrayList<Account>()
     @JvmField
