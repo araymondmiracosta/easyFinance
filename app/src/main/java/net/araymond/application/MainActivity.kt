@@ -1,5 +1,6 @@
 package net.araymond.application
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -13,21 +14,24 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-//            ApplicationTheme {
-                applicationNavHost()
-//            }
+            initialize()
+            applicationNavHost(this)
         }
     }
 
+    private fun initialize() {
+        Utility.readSaveData(this)
+    }
+
     @Composable
-    fun applicationNavHost() {
+    fun applicationNavHost(context: Context) {
         val navHostController = rememberNavController()
         NavHost(navController = navHostController, startDestination = "Main Activity") {
             composable("Main Activity") {
                 Views.mainDraw(navHostController)
             }
             composable("New Account Activity") {
-                Views.generateAccountCreationView(navHostController)
+                Views.generateAccountCreationView(navHostController, context)
             }
             composable("New Transaction Activity") {
                 Views.generateNewTransactionView(navHostController)
