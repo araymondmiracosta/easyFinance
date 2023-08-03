@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import net.araymond.application.ui.theme.ApplicationTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,6 +20,8 @@ class MainActivity : ComponentActivity() {
 
     private fun initialize() {
         Utility.readSaveData(this)
+        Utility.readAccounts()
+        Utility.readCategories()
     }
 
     @Composable
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
                 Views.generateAccountCreationView(navHostController, context)
             }
             composable("New Transaction Activity") {
-                Views.generateNewTransactionView(navHostController)
+                Views.generateNewTransactionView(navHostController, context)
             }
             composable("Settings Activity") {
                 Views.generateSettingsView(navHostController)
