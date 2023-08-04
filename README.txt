@@ -1,4 +1,5 @@
-# Easy Finance
+ynva
+
 Mobile application to track assets, cash and liabilities with modern android design standards.
 
 TODO
