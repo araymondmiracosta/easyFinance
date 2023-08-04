@@ -37,8 +37,10 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,8 +60,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
 
 class Views {
     companion object {
@@ -223,24 +223,15 @@ class Views {
                 var categoryListIsExpanded by remember { mutableStateOf(false) }
                 var category by remember { mutableStateOf("") }
                 var description by remember { mutableStateOf("") }
-                val year: Int
-                val month: Int
-                val day: Int
-                val calendar = Calendar.getInstance()
-
-                year = calendar.get(Calendar.YEAR)
-                month = calendar.get(Calendar.MONTH)
-                day = calendar.get(Calendar.DAY_OF_MONTH)
-                calendar.time = Date()
 
                 var stringDate by remember { mutableStateOf("") }
-
-                var datePickerState = rememberDatePickerState()
-                val confirmEnabled by derivedStateOf { datePickerState.selectedDateMillis != null }
-
                 var openDatePickerDialog by remember { mutableStateOf(false) }
-
                 val simpleDateFormat = SimpleDateFormat(Values.dateFormat)
+
+                var openTimePickerDialog by remember { mutableStateOf(false) }
+                var hour : Int
+                var minute : Int
+                var stringTime = ""
 
                 Scaffold(
                     topBar = {
@@ -256,7 +247,7 @@ class Views {
                                 ) {
                                     Icon(Icons.Filled.ArrowBack, "")
                                 }
-                            }
+                            },
                         )
                     },
                     content = {
@@ -475,8 +466,75 @@ class Views {
                                         DatePicker(state = datePickerState)
                                     }
                                 }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                // Time
+                                OutlinedTextField(
+                                    value = stringTime,
+                                    readOnly = true,
+                                    onValueChange = {
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onFocusChanged() {
+                                            if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                                openTimePickerDialog = true
+                                            }
+                                        },
+                                    label = {
+                                        Text("Transaction time")
+                                    },
+                                    isError = stringTime.isEmpty(),
+                                )
+                                if (openTimePickerDialog) {
+                                    val timePickerState = rememberTimePickerState()
+                                    Utility.TimePickerDialog(
+                                        onDismissRequest = {
+                                                           openTimePickerDialog = false
+                                        },
+                                        onConfirm = {
+                                            openTimePickerDialog = false
+                                            hour = timePickerState.hour
+                                            minute = timePickerState.minute
+                                            stringTime = "$hour:$minute"
+                                        },
+                                    ) {
+                                        TimePicker(state = timePickerState)
+                                    }
+                                }
                             }
                         }
+                    },
+                    floatingActionButton = {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "Apply") },
+                            icon = { Icon(Icons.Default.Check, "") },
+                            onClick = {
+//                                if ((!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
+//                                    for (account in Values.accounts) {
+//                                        if (account.name == accountName) {
+//                                            scope.launch {
+//                                                nameCheck = false
+//                                                snackbarHostState.showSnackbar("An account with that name already exists.")
+//                                            }
+//                                        }
+//                                    }
+//                                    if (nameCheck) {
+//                                        Values.accounts.add(
+//                                            Account(
+//                                                accountName,
+//                                                accountBalance.toDouble()
+//                                            )
+//                                        )
+//                                        if (Utility.writeSaveData(context)) {
+//                                            navHostController.navigateUp()
+//                                            scope.launch {
+//                                                snackbarHostState.showSnackbar("New account saved")
+//                                            }
+//                                        }
+//                                    }
+//                                }
+                            }
+                        )
                     }
                 )
             }
