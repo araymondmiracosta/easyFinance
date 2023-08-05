@@ -131,6 +131,7 @@ object Utility {
             val outputStream = context.openFileOutput("ledger", Context.MODE_PRIVATE)
             val objectOutputStream = ObjectOutputStream(outputStream)
             objectOutputStream.writeObject(Values.accounts)
+            readAccounts()
             outputStream.flush()
             outputStream.close()
             objectOutputStream.close()

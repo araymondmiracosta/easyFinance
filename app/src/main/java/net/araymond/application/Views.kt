@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -60,6 +61,12 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 class Views {
     companion object {
@@ -213,6 +220,11 @@ class Views {
         @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
         @Composable
         fun generateNewTransactionView(navHostController: NavHostController, context: Context) {
+            /**
+             * TODO:
+             * Have current date and time appear initially on new transaction screen
+             * Add time between snackbar and navigate up (for account screen as well)
+             */
             ApplicationTheme {
                 var isPositiveTransaction by remember { mutableStateOf(false) }
                 var transactionAmount by remember { mutableStateOf("") }
@@ -224,16 +236,26 @@ class Views {
                 var category by remember { mutableStateOf("") }
                 var description by remember { mutableStateOf("") }
 
+                val scope = rememberCoroutineScope()
+                val snackbarHostState = remember { SnackbarHostState() }
+
+                var localDate = LocalDate.now() // Must initialize
+                var localTime = LocalTime.now() // Must initialize
+
                 var stringDate by remember { mutableStateOf("") }
                 var openDatePickerDialog by remember { mutableStateOf(false) }
-                val simpleDateFormat = SimpleDateFormat(Values.dateFormat)
+                var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
 
+                var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
                 var openTimePickerDialog by remember { mutableStateOf(false) }
                 var hour : Int
                 var minute : Int
                 var stringTime = ""
 
                 Scaffold(
+                    snackbarHost = {
+                        SnackbarHost(hostState = snackbarHostState)
+                    },
                     topBar = {
                         TopAppBar(
                             title = {
@@ -441,11 +463,9 @@ class Views {
                                             TextButton(
                                                 onClick = {
                                                     openDatePickerDialog = false
-                                                    var milliseconds = datePickerState.selectedDateMillis
-                                                    if (milliseconds != null) {
-                                                        milliseconds += 86400000            // DatePicker uses day -1 by default
-                                                    }
-                                                    stringDate = simpleDateFormat.format(milliseconds)
+                                                    var milliseconds = datePickerState.selectedDateMillis as Long
+                                                    localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
+                                                    stringDate = localDate.format(dateFormatter)
                                                 },
                                                 content = {
                                                           Text("OK")
@@ -486,7 +506,7 @@ class Views {
                                     isError = stringTime.isEmpty(),
                                 )
                                 if (openTimePickerDialog) {
-                                    val timePickerState = rememberTimePickerState()
+                                    val timePickerState = rememberTimePickerState()     // Need to set initial params here for hour of day in locale non-specific form
                                     Utility.TimePickerDialog(
                                         onDismissRequest = {
                                                            openTimePickerDialog = false
@@ -495,7 +515,8 @@ class Views {
                                             openTimePickerDialog = false
                                             hour = timePickerState.hour
                                             minute = timePickerState.minute
-                                            stringTime = "$hour:$minute"
+                                            localTime = LocalTime.of(hour, minute)
+                                            stringTime = localTime.format(timeFormatter)
                                         },
                                     ) {
                                         TimePicker(state = timePickerState)
@@ -509,30 +530,16 @@ class Views {
                             text = { Text(text = "Apply") },
                             icon = { Icon(Icons.Default.Check, "") },
                             onClick = {
-//                                if ((!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
-//                                    for (account in Values.accounts) {
-//                                        if (account.name == accountName) {
-//                                            scope.launch {
-//                                                nameCheck = false
-//                                                snackbarHostState.showSnackbar("An account with that name already exists.")
-//                                            }
-//                                        }
-//                                    }
-//                                    if (nameCheck) {
-//                                        Values.accounts.add(
-//                                            Account(
-//                                                accountName,
-//                                                accountBalance.toDouble()
-//                                            )
-//                                        )
-//                                        if (Utility.writeSaveData(context)) {
-//                                            navHostController.navigateUp()
-//                                            scope.launch {
-//                                                snackbarHostState.showSnackbar("New account saved")
-//                                            }
-//                                        }
-//                                    }
-//                                }
+                                // Check that input fields are valid
+                                if ( (!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty()) ) {
+                                    Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
+                                    if (Utility.writeSaveData(context)) {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Long)
+                                        }
+                                        navHostController.navigateUp()
+                                    }
+                                }
                             }
                         )
                     }
