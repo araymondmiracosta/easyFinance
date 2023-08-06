@@ -4,8 +4,8 @@ Mobile application to track assets, cash and liabilities with modern android des
 
 TODO
 - [ ] Theme options, unify existing theme
-- [ ] Add Transactions per account
-- [ ] Add and display Banking accounts
+- [x] Add Transactions per account
+- [x] Add and display Banking accounts
 - [ ] Assets
 - [ ] Graph showing changes
 - [ ] Remove and edit banking accounts
