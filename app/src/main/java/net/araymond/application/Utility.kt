@@ -95,8 +95,8 @@ object Utility {
     }
 
     fun readAccounts() {
+        Values.accountsNames = ArrayList()
         for (account in Values.accounts) {
-            Values.accountsNames = ArrayList()
             Values.accountsNames.add(account.name)
         }
     }

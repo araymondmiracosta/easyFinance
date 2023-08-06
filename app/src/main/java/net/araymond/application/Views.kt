@@ -2,6 +2,7 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -202,9 +203,9 @@ class Views {
                                             )
                                         )
                                         if (Utility.writeSaveData(context)) {
-                                            navHostController.navigateUp()
                                             scope.launch {
-                                                snackbarHostState.showSnackbar("New account saved")
+                                                snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
+                                                navHostController.navigateUp()
                                             }
                                         }
                                     }
@@ -346,7 +347,7 @@ class Views {
                                             accountNameListIsExpanded = false
                                         }
                                     ) {
-                                        Values.accountsNames.forEach { selectedOption ->
+                                        Values.accountsNames.forEach { selectedOption ->    // Issue: only most recent account name shown
                                             DropdownMenuItem(onClick = {
                                                 accountName = selectedOption
                                                 accountNameListIsExpanded = false
@@ -535,9 +536,9 @@ class Views {
                                     Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
                                     if (Utility.writeSaveData(context)) {
                                         scope.launch {
-                                            snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Long)
+                                            snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Short)
+                                            navHostController.navigateUp()
                                         }
-                                        navHostController.navigateUp()
                                     }
                                 }
                             }
