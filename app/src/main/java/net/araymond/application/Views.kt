@@ -216,11 +216,6 @@ class Views {
         @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
         @Composable
         fun generateNewTransactionView(navHostController: NavHostController, context: Context) {
-            /**
-             * TODO:
-             * Have current date and time appear initially on new transaction screen
-             * Add time between snackbar and navigate up (for account screen as well)
-             */
             ApplicationTheme {
                 var isPositiveTransaction by remember { mutableStateOf(false) }
                 var transactionAmount by remember { mutableStateOf("") }
@@ -238,15 +233,15 @@ class Views {
                 var localDate = LocalDate.now() // Must initialize
                 var localTime = LocalTime.now() // Must initialize
 
-                var stringDate by remember { mutableStateOf("") }
-                var openDatePickerDialog by remember { mutableStateOf(false) }
                 var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+                var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
+                var openDatePickerDialog by remember { mutableStateOf(false) }
 
                 var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
                 var openTimePickerDialog by remember { mutableStateOf(false) }
                 var hour : Int
                 var minute : Int
-                var stringTime = ""
+                var stringTime = localTime.format(timeFormatter)
 
                 Scaffold(
                     snackbarHost = {
@@ -502,7 +497,7 @@ class Views {
                                     isError = stringTime.isEmpty(),
                                 )
                                 if (openTimePickerDialog) {
-                                    val timePickerState = rememberTimePickerState()     // Need to set initial params here for hour of day in locale non-specific form
+                                    val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
                                     Utility.TimePickerDialog(
                                         onDismissRequest = {
                                                            openTimePickerDialog = false
