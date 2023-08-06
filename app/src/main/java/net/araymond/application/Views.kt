@@ -2,7 +2,6 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -61,13 +60,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Calendar
 
 class Views {
     companion object {
@@ -95,9 +92,7 @@ class Views {
                     },
                     content = {
                         Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                generateAccountScrollView()
-                            }
+                            generateAccountScrollView()
                         }
                     },
                     floatingActionButton = {
@@ -555,26 +550,38 @@ class Views {
 
         @Composable
         fun generateAccountScrollView() {
-            for (account in Values.accounts) {
-                Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                for (account in Values.accounts) {
+                    Row {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clip(shape = RoundedCornerShape(10.dp))
+                                .fillMaxWidth()
+                                .clickable(true, null, null, onClick = {
+                                    // Account specific screen
+                                })
+                                .padding(15.dp),
+                        ) {
+                            Text(
+                                text = account.name,
+                                style = TextStyle(
+                                    fontSize = 22.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .fillMaxWidth()
-                            .clickable(true, null, null, onClick = {
-                                // Account specific screen
-                            })
-                            .padding(15.dp),
-                    ) {
-                        Text(text = account.name, style = TextStyle(fontSize = 22.sp, color = MaterialTheme.colorScheme.onSurfaceVariant))
-                        Spacer(modifier = Modifier.padding(5.dp))
-                        Text(text = account.balance.toString(), style = TextStyle(fontSize = 19.sp))
+                            Spacer(modifier = Modifier.padding(5.dp))
+                            Text(
+                                text = Values.balanceFormat.format(account.balance),
+                                style = TextStyle(fontSize = 19.sp)
+                            )
+                        }
                     }
+                    Spacer(modifier = Modifier.padding(10.dp))
                 }
             }
         }
