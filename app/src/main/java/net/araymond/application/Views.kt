@@ -528,6 +528,9 @@ class Views {
                             onClick = {
                                 // Check that input fields are valid
                                 if ( (!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty()) ) {
+                                    if (!isPositiveTransaction) {
+                                        transactionAmount = "-$transactionAmount"
+                                    }
                                     Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
                                     if (Utility.writeSaveData(context)) {
                                         scope.launch {
@@ -561,7 +564,6 @@ class Views {
                                     shape = RoundedCornerShape(10.dp)
                                 )
                                 .clip(shape = RoundedCornerShape(10.dp))
-                                .fillMaxWidth()
                                 .clickable(true, null, null, onClick = {
                                     // Account specific screen
                                 })
