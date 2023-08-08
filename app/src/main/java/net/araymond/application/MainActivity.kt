@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun applicationNavHost(context: Context) {
         val navHostController = rememberNavController()
-        NavHost(navController = navHostController, startDestination = "Main Activity") {
+        NavHost(navController = navHostController, startDestination = "Settings Activity") {
             composable("Main Activity") {
                 Views.mainDraw(navHostController)
             }

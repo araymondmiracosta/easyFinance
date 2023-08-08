@@ -1,6 +1,7 @@
 package net.araymond.application
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -9,18 +10,139 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 object ViewUtils {
+
+    @Composable
+    fun settingsDivider() {
+        Divider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 1.dp)
+    }
+
+    @Composable
+    fun settingsLabel(label: String, firstLabel: Boolean) {
+        if (!firstLabel) {
+            Spacer(modifier = Modifier.padding(vertical = 10.dp))
+        }
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            Text(
+                text = label,
+                style = TextStyle(
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontSize = 15.sp
+                ),
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.padding(5.dp))
+    }
+
+    @Composable
+    fun settingsButton(text: String, onClick: () -> Unit) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = true, onClick = onClick)
+                .padding(bottom = 15.dp)
+                .padding(top = 15.dp)
+                .padding(horizontal = 16.dp)
+        ) {
+            Text(
+                text = text,
+                style = TextStyle(
+                    fontSize = 17.sp
+                )
+            )
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun settingsDropdown(value: String, label: String, list: ArrayList<String>) {
+        var dialogIsOpen by remember { mutableStateOf(false) }
+        Column(
+            modifier = Modifier
+                .clickable(enabled = true,
+                    onClick = {
+                        dialogIsOpen = true
+                    }
+                )
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            Text(
+                text = label,
+                style = TextStyle(
+                    fontSize = 17.sp,
+                ),
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.padding(vertical = 2.dp))
+            Text(
+                text = value,
+                style = TextStyle(
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            )
+        }
+        if (dialogIsOpen) {
+            Dialog(
+                onDismissRequest = {
+                    dialogIsOpen = false
+                }
+            ) {
+                Surface(
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    list.forEach{ selectedOption ->
+                        Row {
+//                            RadioButton(
+
+//                            )
+                        }
+                    }
+                    Row {
+                        TextButton(
+                            onClick = {
+                                dialogIsOpen = false
+                            }
+                        ) {
+                            Text("Cancel")
+                        }
+                        TextButton(
+                            onClick = {
+                                dialogIsOpen = false
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * TimePickerDialog is not officially implemented.
