@@ -587,7 +587,7 @@ class Views {
                                 )
                                 ViewUtils.settingsDivider()
                                 ViewUtils.settingsLabel("Preferences", false)
-                                ViewUtils.settingsDropdown("test", "test")
+                                Values.currency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
                             }
                         }
                     }

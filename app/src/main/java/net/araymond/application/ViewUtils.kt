@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 
 object ViewUtils {
 
@@ -77,10 +78,12 @@ object ViewUtils {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun settingsDropdown(value: String, label: String, list: ArrayList<String>) {
+    fun settingsDropdown(value: String, label: String, options: Array<String>): String {
         var dialogIsOpen by remember { mutableStateOf(false) }
+        var tempValue by remember { mutableStateOf(value) }
+        var optionValue by remember { mutableStateOf(value) }
+        var valueObtained = false
         Column(
             modifier = Modifier
                 .clickable(enabled = true,
@@ -100,7 +103,7 @@ object ViewUtils {
             )
             Spacer(modifier = Modifier.padding(vertical = 2.dp))
             Text(
-                text = value,
+                text = optionValue,
                 style = TextStyle(
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.outline
@@ -111,36 +114,72 @@ object ViewUtils {
             Dialog(
                 onDismissRequest = {
                     dialogIsOpen = false
-                }
+                },
             ) {
                 Surface(
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                    modifier = Modifier
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    list.forEach{ selectedOption ->
+                    Column {
+                        Text(
+                            text = label,
+                            modifier = Modifier
+                                .padding(horizontal = 14.dp)
+                                .padding(top = 10.dp),
+                            style = TextStyle(
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                        options.forEach { selectedOption ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable(
+                                        onClick = {
+                                            tempValue = selectedOption
+                                        }
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = (tempValue == selectedOption),
+                                    onClick = {
+                                              tempValue = selectedOption
+                                    },
+                                )
+                                Text(selectedOption)
+                            }
+                        }
                         Row {
-//                            RadioButton(
-
-//                            )
-                        }
-                    }
-                    Row {
-                        TextButton(
-                            onClick = {
-                                dialogIsOpen = false
+                            Spacer(Modifier.weight(1f))
+                            TextButton(
+                                onClick = {
+                                    dialogIsOpen = false
+                                }
+                            ) {
+                                Text("Cancel")
                             }
-                        ) {
-                            Text("Cancel")
-                        }
-                        TextButton(
-                            onClick = {
-                                dialogIsOpen = false
+                            TextButton(
+                                onClick = {
+                                    optionValue = tempValue
+                                    valueObtained = true
+                                    dialogIsOpen = false
+                                }
+                            ) {
+                                Text("OK")
                             }
-                        ) {
-                            Text("OK")
                         }
                     }
                 }
             }
+        }
+        if (valueObtained) {
+            optionValue = tempValue
+            return tempValue
+        }
+        else {
+            return ""
         }
     }
 
