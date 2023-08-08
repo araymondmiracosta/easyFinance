@@ -92,7 +92,11 @@ class Views {
                     },
                     content = {
                         Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
-                            generateAccountScrollView()
+                            Column {
+                                generateAccountScrollView()
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                generateTransactionScrollView()
+                            }
                         }
                     },
                     floatingActionButton = {
@@ -234,10 +238,11 @@ class Views {
                 var localTime = LocalTime.now() // Must initialize
 
                 var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+                var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+
                 var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
                 var openDatePickerDialog by remember { mutableStateOf(false) }
 
-                var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
                 var openTimePickerDialog by remember { mutableStateOf(false) }
                 var hour : Int
                 var minute : Int
@@ -545,7 +550,7 @@ class Views {
 
         @Composable
         fun generateAccountScrollView() {
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            Row(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 for (account in Values.accounts) {
                     Row {
                         Column(
@@ -581,11 +586,49 @@ class Views {
             }
         }
 
+        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
         @Composable
         fun generateTransactionScrollView() {
-            for (account in Values.accounts) {
-                for (i in account.transactions.size - 1 downTo -1 step -1) {   // i = account.getTransactions().size - 1; i >= -1; i--
-
+            Scaffold {
+                var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+                var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+                Column(
+                    modifier = Modifier.verticalScroll(rememberScrollState()).fillMaxWidth()
+                ) {
+                    for (account in Values.accounts) {
+                        for (transaction in account.transactions.reversed()) {   // i = account.getTransactions().size - 1; i >= -1; i--
+                            Row(
+                                modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp))
+                                    .clickable(enabled = true, onClick = {
+                                        // transaction specific screen
+                                    })
+                                    .padding(10.dp)
+                                    .fillMaxWidth()
+                            ) {
+                                Column {
+                                    Text("Category: " + transaction.category)  // Category
+                                    Spacer(modifier = Modifier.padding(2.dp))
+                                    Text("Account: " + account.name)     // account
+                                    Spacer(modifier = Modifier.padding(2.dp))
+                                    Text("Date: " + transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter))
+                                }
+                                Spacer(Modifier.weight(1f).fillMaxWidth())
+                                Column(
+                                    horizontalAlignment = Alignment.End
+                                ) {
+                                    if (transaction.amount < 0) {
+                                        Text("(" + Values.currency + Values.balanceFormat.format(transaction.amount) + ")")
+                                    }
+                                    else {
+                                        Text(Values.currency + Values.balanceFormat.format(transaction.amount))
+                                    }
+                                    Spacer(modifier = Modifier.padding(15.dp))
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(10.dp))
+                        }
+                    }
                 }
             }
         }

@@ -19,5 +19,5 @@ object Values {
     @JvmField
     var accountsNames = ArrayList<String>()
     var locale = Locale(language, country)
-    var balanceFormat = DecimalFormat("##.##")
+    var balanceFormat = DecimalFormat("##.00")
 }
