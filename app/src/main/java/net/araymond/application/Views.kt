@@ -555,7 +555,7 @@ class Views {
 
         @Composable
         fun generateAccountScrollView() {
-            Row(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                 for (account in Values.accounts) {
                     Row {
                         Column(
