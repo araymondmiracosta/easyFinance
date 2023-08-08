@@ -59,12 +59,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.absoluteValue
 
 class Views {
     companion object {
@@ -609,21 +611,53 @@ class Views {
                                     .fillMaxWidth()
                             ) {
                                 Column {
-                                    Text("Category: " + transaction.category)  // Category
+                                    Text(
+                                        text = transaction.category,  // category
+                                        style = TextStyle(
+                                            fontSize = 18.sp,
+                                            color = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    )
                                     Spacer(modifier = Modifier.padding(2.dp))
-                                    Text("Account: " + account.name)     // account
+                                    Text(
+                                        text = account.name,     // account
+                                        style = TextStyle(
+                                            fontSize = 16.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
                                     Spacer(modifier = Modifier.padding(2.dp))
-                                    Text("Date: " + transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter))
+                                    Text(
+                                        text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
+                                        style = TextStyle(
+                                            fontSize = 16.sp,
+                                            color = MaterialTheme.colorScheme.surfaceTint
+                                        )
+                                    )
                                 }
                                 Spacer(Modifier.weight(1f).fillMaxWidth())
                                 Column(
                                     horizontalAlignment = Alignment.End
                                 ) {
-                                    if (transaction.amount < 0) {
-                                        Text("(" + Values.currency + Values.balanceFormat.format(transaction.amount) + ")")
+                                    if (transaction.amount < 0) {   // If amount is negative
+                                        Text(
+                                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                                            style = TextStyle(
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = net.araymond.application.ui.theme.Red
+                                            )
+                                        )
                                     }
                                     else {
-                                        Text(Values.currency + Values.balanceFormat.format(transaction.amount))
+                                        Text(
+                                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
+                                            style = TextStyle(
+                                                fontSize = 16.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = net.araymond.application.ui.theme.Green
+                                            )
+                                        )
                                     }
                                     Spacer(modifier = Modifier.padding(15.dp))
                                 }
