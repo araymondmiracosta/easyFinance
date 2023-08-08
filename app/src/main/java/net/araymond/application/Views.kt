@@ -505,7 +505,7 @@ class Views {
                                 )
                                 if (openTimePickerDialog) {
                                     val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
-                                    Utility.TimePickerDialog(
+                                    ViewUtils.TimePickerDialog(
                                         onDismissRequest = {
                                                            openTimePickerDialog = false
                                         },
