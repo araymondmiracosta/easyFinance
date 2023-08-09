@@ -622,7 +622,7 @@ class Views {
                             )
                             Spacer(modifier = Modifier.padding(5.dp))
                             Text(
-                                text = Values.currency + " " + Values.balanceFormat.format(account.balance),
+                                text = Values.currency + Values.balanceFormat.format(account.balance),
                                 style = TextStyle(fontSize = 19.sp)
                             )
                         }

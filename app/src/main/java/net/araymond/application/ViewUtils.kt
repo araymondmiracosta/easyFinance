@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -83,7 +85,6 @@ object ViewUtils {
         var dialogIsOpen by remember { mutableStateOf(false) }
         var tempValue by remember { mutableStateOf(value) }
         var optionValue by remember { mutableStateOf(value) }
-        var valueObtained = false
         Column(
             modifier = Modifier
                 .clickable(enabled = true,
@@ -93,6 +94,7 @@ object ViewUtils {
                 )
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
+                .padding(top = 15.dp)
         ) {
             Text(
                 text = label,
@@ -116,16 +118,18 @@ object ViewUtils {
                     dialogIsOpen = false
                 },
             ) {
-                Surface(
-                    modifier = Modifier
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column {
+                Surface {
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp))
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .padding(horizontal = 16.dp)
+                    ) {
                         Text(
                             text = label,
                             modifier = Modifier
-                                .padding(horizontal = 14.dp)
-                                .padding(top = 10.dp),
+                                .padding(top = 24.dp)
+                                .padding(horizontal = 16.dp),
                             style = TextStyle(
                                 fontSize = 20.sp,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -139,7 +143,7 @@ object ViewUtils {
                                         onClick = {
                                             tempValue = selectedOption
                                         }
-                                    ),
+                                ),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
@@ -163,7 +167,6 @@ object ViewUtils {
                             TextButton(
                                 onClick = {
                                     optionValue = tempValue
-                                    valueObtained = true
                                     dialogIsOpen = false
                                 }
                             ) {
