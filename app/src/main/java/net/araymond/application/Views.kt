@@ -102,11 +102,13 @@ class Views {
                         }
                     },
                     floatingActionButton = {
-                        ExtendedFloatingActionButton(
-                            text = { Text(text = "New Transaction") },
-                            icon = { Icon(Icons.Default.Add, "") },
-                            onClick = { navHostController.navigate("New Transaction Activity") }
-                        )
+                        if (Values.accounts.isNotEmpty()) {
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = "New Transaction") },
+                                icon = { Icon(Icons.Default.Add, "") },
+                                onClick = { navHostController.navigate("New Transaction Activity") }
+                            )
+                        }
                     }
                 )
             }
