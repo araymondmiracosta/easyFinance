@@ -174,13 +174,7 @@ object ViewUtils {
                 }
             }
         }
-        if (valueObtained) {
-            optionValue = tempValue
-            return tempValue
-        }
-        else {
-            return ""
-        }
+        return optionValue
     }
 
     /**

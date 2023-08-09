@@ -2,14 +2,12 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -21,11 +19,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.materialIcon
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -207,7 +203,7 @@ class Views {
                                                 accountBalance.toDouble()
                                             )
                                         )
-                                        if (Utility.writeSaveData(context)) {
+                                        if (Utility.writeLedgerData(context)) {
                                             scope.launch {
                                                 snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
                                                 navHostController.navigateUp()
@@ -538,7 +534,7 @@ class Views {
                                         transactionAmount = "-$transactionAmount"
                                     }
                                     Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
-                                    if (Utility.writeSaveData(context)) {
+                                    if (Utility.writeLedgerData(context)) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Short)
                                             navHostController.navigateUp()
@@ -555,7 +551,7 @@ class Views {
         @OptIn(ExperimentalMaterial3Api::class)
         @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
         @Composable
-        fun generateSettingsView(navHostController: NavHostController) {
+        fun generateSettingsView(navHostController: NavHostController, context: Context) {
             ApplicationTheme {
                 Scaffold(
                     topBar = {
@@ -587,7 +583,11 @@ class Views {
                                 )
                                 ViewUtils.settingsDivider()
                                 ViewUtils.settingsLabel("Preferences", false)
-                                Values.currency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
+                                val newCurrency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
+                                if (newCurrency != Values.currency && newCurrency != "-1") {
+                                    Values.currency = newCurrency
+                                    Utility.writeCurrencyData(context)
+                                }
                             }
                         }
                     }
@@ -622,7 +622,7 @@ class Views {
                             )
                             Spacer(modifier = Modifier.padding(5.dp))
                             Text(
-                                text = Values.balanceFormat.format(account.balance),
+                                text = Values.currency + " " + Values.balanceFormat.format(account.balance),
                                 style = TextStyle(fontSize = 19.sp)
                             )
                         }

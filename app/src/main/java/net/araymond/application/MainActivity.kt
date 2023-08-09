@@ -2,6 +2,7 @@ package net.araymond.application
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
@@ -19,7 +20,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun initialize() {
-        Utility.readSaveData(this)
+        if (Utility.readLedgerSaveData(this)) {
+            Log.d("INFO", "Ledger data read successfully")
+        }
+        if (Utility.readCurrencySaveData(this)) {
+            Log.d("INFO", "Currency preference read successfully")
+        }
         Utility.readAccounts()
         Utility.readCategories()
     }
@@ -27,7 +33,7 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun applicationNavHost(context: Context) {
         val navHostController = rememberNavController()
-        NavHost(navController = navHostController, startDestination = "Settings Activity") {
+        NavHost(navController = navHostController, startDestination = "Main Activity") {
             composable("Main Activity") {
                 Views.mainDraw(navHostController)
             }
@@ -38,7 +44,7 @@ class MainActivity : ComponentActivity() {
                 Views.generateNewTransactionView(navHostController, context)
             }
             composable("Settings Activity") {
-                Views.generateSettingsView(navHostController)
+                Views.generateSettingsView(navHostController, context)
             }
         }
     }
