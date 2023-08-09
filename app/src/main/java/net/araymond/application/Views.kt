@@ -84,7 +84,7 @@ class Views {
                             actions = {
                                 IconButton(
                                     onClick = {
-                                        navHostController.navigate("New Account Activity")
+                                        navHostController.navigate("Settings Activity")
                                     }
                                 ) {
                                     Icon(Icons.Filled.Settings, null)
@@ -203,7 +203,7 @@ class Views {
                                                 accountBalance.toDouble()
                                             )
                                         )
-                                        if (Utility.writeSaveData(context)) {
+                                        if (Utility.writeLedgerData(context)) {
                                             scope.launch {
                                                 snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
                                                 navHostController.navigateUp()
@@ -534,7 +534,7 @@ class Views {
                                         transactionAmount = "-$transactionAmount"
                                     }
                                     Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
-                                    if (Utility.writeSaveData(context)) {
+                                    if (Utility.writeLedgerData(context)) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Short)
                                             navHostController.navigateUp()
@@ -548,9 +548,51 @@ class Views {
             }
         }
 
+        @OptIn(ExperimentalMaterial3Api::class)
+        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
         @Composable
-        fun generateSettingsView(navHostController: NavHostController) {
-
+        fun generateSettingsView(navHostController: NavHostController, context: Context) {
+            ApplicationTheme {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(text = "Settings")
+                            },
+                            navigationIcon = {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    }
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        )
+                    },
+                    content = {
+                        Surface(modifier = Modifier.padding(vertical = 75.dp)) {
+                            Column(
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                ViewUtils.settingsLabel("Accounts", true)
+                                ViewUtils.settingsButton("Add new account",
+                                    onClick = {
+                                        navHostController.navigate("New Account Activity")
+                                    }
+                                )
+                                ViewUtils.settingsDivider()
+                                ViewUtils.settingsLabel("Preferences", false)
+                                val newCurrency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
+                                if (newCurrency != Values.currency && newCurrency != "-1") {
+                                    Values.currency = newCurrency
+                                    Utility.writeCurrencyData(context)
+                                }
+                            }
+                        }
+                    }
+                )
+            }
         }
 
         @Composable
@@ -580,7 +622,7 @@ class Views {
                             )
                             Spacer(modifier = Modifier.padding(5.dp))
                             Text(
-                                text = Values.balanceFormat.format(account.balance),
+                                text = Values.currency + Values.balanceFormat.format(account.balance),
                                 style = TextStyle(fontSize = 19.sp)
                             )
                         }
@@ -597,13 +639,19 @@ class Views {
                 var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
                 var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()).fillMaxWidth()
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .fillMaxWidth()
                 ) {
                     for (account in Values.accounts) {
                         for (transaction in account.transactions.reversed()) {   // i = account.getTransactions().size - 1; i >= -1; i--
                             Row(
-                                modifier = Modifier.clip(shape = RoundedCornerShape(10.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp))
+                                modifier = Modifier
+                                    .clip(shape = RoundedCornerShape(10.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
                                     .clickable(enabled = true, onClick = {
                                         // transaction specific screen
                                     })
@@ -614,7 +662,7 @@ class Views {
                                     Text(
                                         text = transaction.category,  // category
                                         style = TextStyle(
-                                            fontSize = 18.sp,
+                                            fontSize = 20.sp,
                                             color = MaterialTheme.colorScheme.tertiary
                                         )
                                     )
@@ -622,7 +670,7 @@ class Views {
                                     Text(
                                         text = account.name,     // account
                                         style = TextStyle(
-                                            fontSize = 16.sp,
+                                            fontSize = 18.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     )
@@ -635,7 +683,10 @@ class Views {
                                         )
                                     )
                                 }
-                                Spacer(Modifier.weight(1f).fillMaxWidth())
+                                Spacer(
+                                    Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth())
                                 Column(
                                     horizontalAlignment = Alignment.End
                                 ) {
@@ -643,7 +694,7 @@ class Views {
                                         Text(
                                             text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
                                             style = TextStyle(
-                                                fontSize = 16.sp,
+                                                fontSize = 18.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = net.araymond.application.ui.theme.Red
                                             )
@@ -653,7 +704,7 @@ class Views {
                                         Text(
                                             text = Values.currency + Values.balanceFormat.format(transaction.amount),
                                             style = TextStyle(
-                                                fontSize = 16.sp,
+                                                fontSize = 18.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = net.araymond.application.ui.theme.Green
                                             )

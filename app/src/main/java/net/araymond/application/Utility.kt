@@ -34,31 +34,54 @@ object Utility {
         Values.categories = ArrayList(duplicatesRemoved)
     }
 
-    fun readSaveData(context: Context): Boolean {
+    fun readLedgerSaveData(context: Context): Boolean {
         return try {
-            val inputStream = context.openFileInput("ledger")
-            val objectInputStream = ObjectInputStream(inputStream)
-            Values.accounts = objectInputStream.readObject() as ArrayList<Account>
-            objectInputStream.close()
-            inputStream.close()
+            val inputLedgerStream = context.openFileInput("ledger")
+            val objectInputLedgerStream = ObjectInputStream(inputLedgerStream)
+            Values.accounts = objectInputLedgerStream.readObject() as ArrayList<Account>
+            objectInputLedgerStream.close()
+            inputLedgerStream.close()
+
             true
         } catch (exception: Exception) {
             false
         }
     }
 
-    fun writeSaveData(context: Context): Boolean {
+    fun readCurrencySaveData(context: Context): Boolean {
         return try {
-            val outputStream = context.openFileOutput("ledger", Context.MODE_PRIVATE)
-            val objectOutputStream = ObjectOutputStream(outputStream)
-            objectOutputStream.writeObject(Values.accounts)
-            readAccounts()
-            outputStream.flush()
-            outputStream.close()
-            objectOutputStream.close()
+            val inputCurrencyStream = context.openFileInput("currency")
+            val objectInputCurrencyStream = ObjectInputStream(inputCurrencyStream)
+            Values.currency = objectInputCurrencyStream.readObject() as String
+            objectInputCurrencyStream.close()
+            inputCurrencyStream.close()
+
             true
         } catch (exception: Exception) {
             false
         }
+    }
+
+    fun writeSaveData(data: Any, file: String, context: Context): Boolean {
+        return try {
+            val outputStream = context.openFileOutput(file, Context.MODE_PRIVATE)
+            val objectOutputStream = ObjectOutputStream(outputStream)
+            objectOutputStream.writeObject(data)
+            outputStream.flush()
+            outputStream.close()
+            objectOutputStream.close()
+
+            true
+        } catch (exception: Exception) {
+            false
+        }
+    }
+
+    fun writeLedgerData(context: Context): Boolean {
+        return (writeSaveData(Values.accounts, "ledger", context))
+    }
+
+    fun writeCurrencyData(context: Context): Boolean {
+        return (writeSaveData(Values.currency, "currency", context))
     }
 }
