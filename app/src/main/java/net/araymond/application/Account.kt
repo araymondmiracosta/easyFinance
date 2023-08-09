@@ -14,7 +14,7 @@ class Account(var name: String, var balance: Double) : Serializable {
         date: LocalDate?,
         time: LocalTime?
     ) {
-        transactions.add(Transaction(category!!, description!!, amount, date!!, time!!))
+        transactions.add(Transaction(category!!, description!!, amount, date!!, time!!, this.name))
         balance += amount
     }
 

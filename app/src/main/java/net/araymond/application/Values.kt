@@ -12,11 +12,9 @@ object Values {
     var timeFormat = "HH:mm"
     var currency = "$"
     var currencies = arrayOf("$", "€", "¥", "£")
-    @JvmField
     var accounts = ArrayList<Account>()
-    @JvmField
+    var transactions = ArrayList<Transaction>()
     var categories = ArrayList<String>()
-    @JvmField
     var accountsNames = ArrayList<String>()
     var locale = Locale(language, country)
     var balanceFormat = DecimalFormat("##.00")

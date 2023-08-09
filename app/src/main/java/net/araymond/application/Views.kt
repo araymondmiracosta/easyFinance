@@ -97,7 +97,7 @@ class Views {
                             Column {
                                 generateAccountScrollView()
                                 Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                generateTransactionScrollView()
+                                generateTransactionScrollView(Values.transactions)
                             }
                         }
                     },
@@ -203,6 +203,7 @@ class Views {
                                                 accountBalance.toDouble()
                                             )
                                         )
+                                        Utility.readAccounts()
                                         if (Utility.writeLedgerData(context)) {
                                             scope.launch {
                                                 snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
@@ -534,6 +535,8 @@ class Views {
                                         transactionAmount = "-$transactionAmount"
                                     }
                                     Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
+                                    Utility.readTransactions()
+                                    Utility.readCategories()
                                     if (Utility.writeLedgerData(context)) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Short)
@@ -634,7 +637,7 @@ class Views {
 
         @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
         @Composable
-        fun generateTransactionScrollView() {
+        fun generateTransactionScrollView(transactions: ArrayList<Transaction>) {
             Scaffold {
                 var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
                 var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
@@ -643,78 +646,76 @@ class Views {
                         .verticalScroll(rememberScrollState())
                         .fillMaxWidth()
                 ) {
-                    for (account in Values.accounts) {
-                        for (transaction in account.transactions.reversed()) {   // i = account.getTransactions().size - 1; i >= -1; i--
-                            Row(
-                                modifier = Modifier
-                                    .clip(shape = RoundedCornerShape(10.dp))
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(10.dp)
+                    transactions.forEach {transaction ->
+                        Row(
+                            modifier = Modifier
+                                .clip(shape = RoundedCornerShape(10.dp))
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable(enabled = true, onClick = {
+                                    // transaction specific screen
+                                })
+                                .padding(10.dp)
+                                .fillMaxWidth()
+                        ) {
+                            Column {
+                                Text(
+                                    text = transaction.category,  // category
+                                    style = TextStyle(
+                                        fontSize = 20.sp,
+                                        color = MaterialTheme.colorScheme.tertiary
                                     )
-                                    .clickable(enabled = true, onClick = {
-                                        // transaction specific screen
-                                    })
-                                    .padding(10.dp)
-                                    .fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.padding(2.dp))
+                                Text(
+                                    text = transaction.account,     // account
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                                Spacer(modifier = Modifier.padding(2.dp))
+                                Text(
+                                    text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
+                                    style = TextStyle(
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.surfaceTint
+                                    )
+                                )
+                            }
+                            Spacer(
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth())
+                            Column(
+                                horizontalAlignment = Alignment.End
                             ) {
-                                Column {
+                                if (transaction.amount < 0) {   // If amount is negative
                                     Text(
-                                        text = transaction.category,  // category
-                                        style = TextStyle(
-                                            fontSize = 20.sp,
-                                            color = MaterialTheme.colorScheme.tertiary
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.padding(2.dp))
-                                    Text(
-                                        text = account.name,     // account
+                                        text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
                                         style = TextStyle(
                                             fontSize = 18.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            fontWeight = FontWeight.Bold,
+                                            color = net.araymond.application.ui.theme.Red
                                         )
                                     )
-                                    Spacer(modifier = Modifier.padding(2.dp))
+                                }
+                                else {
                                     Text(
-                                        text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
+                                        text = Values.currency + Values.balanceFormat.format(transaction.amount),
                                         style = TextStyle(
-                                            fontSize = 16.sp,
-                                            color = MaterialTheme.colorScheme.surfaceTint
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = net.araymond.application.ui.theme.Green
                                         )
                                     )
                                 }
-                                Spacer(
-                                    Modifier
-                                        .weight(1f)
-                                        .fillMaxWidth())
-                                Column(
-                                    horizontalAlignment = Alignment.End
-                                ) {
-                                    if (transaction.amount < 0) {   // If amount is negative
-                                        Text(
-                                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
-                                            style = TextStyle(
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = net.araymond.application.ui.theme.Red
-                                            )
-                                        )
-                                    }
-                                    else {
-                                        Text(
-                                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
-                                            style = TextStyle(
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = net.araymond.application.ui.theme.Green
-                                            )
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.padding(15.dp))
-                                }
+                                Spacer(modifier = Modifier.padding(15.dp))
                             }
-                            Spacer(modifier = Modifier.padding(10.dp))
                         }
+                        Spacer(modifier = Modifier.padding(10.dp))
                     }
                 }
             }

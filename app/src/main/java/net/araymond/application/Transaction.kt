@@ -2,6 +2,7 @@ package net.araymond.application
 
 import java.io.Serializable
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 
 class Transaction(
@@ -9,5 +10,8 @@ class Transaction(
     var description: String,
     var amount: Double,
     var date: LocalDate,
-    var time: LocalTime
-) : Serializable
+    var time: LocalTime,
+    var account: String
+) : Serializable {
+    var localDateTime = LocalDateTime.of(date, time)
+}

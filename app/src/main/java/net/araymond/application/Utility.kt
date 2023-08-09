@@ -22,14 +22,29 @@ object Utility {
         }
     }
 
-    fun readCategories() {
-        var transactions: ArrayList<Transaction>
-        for (account in Values.accounts) {
-            transactions = account.transactions
-            for (transaction in transactions) {
-                Values.categories.add(transaction.category)
+    fun readTransactions() {
+        Values.transactions.clear()
+        Values.accounts.forEach{ account ->
+            account.transactions.forEach{ transaction ->
+                Values.transactions.add(transaction)
             }
         }
+        Values.transactions = sortTransactionListByDate(Values.transactions)
+    }
+
+    fun readCategories() {
+        Values.categories.clear()
+        Values.transactions.forEach{ transaction ->
+            Values.categories.add(transaction.category)
+        }
+
+//        var transactions: ArrayList<Transaction>
+//        for (account in Values.accounts) {
+//            transactions = account.transactions
+//            for (transaction in transactions) {
+//                Values.categories.add(transaction.category)
+//            }
+//        }
         val duplicatesRemoved: HashSet<String> = HashSet(Values.categories)
         Values.categories = ArrayList(duplicatesRemoved)
     }
@@ -62,7 +77,7 @@ object Utility {
         }
     }
 
-    fun writeSaveData(data: Any, file: String, context: Context): Boolean {
+    private fun writeSaveData(data: Any, file: String, context: Context): Boolean {
         return try {
             val outputStream = context.openFileOutput(file, Context.MODE_PRIVATE)
             val objectOutputStream = ObjectOutputStream(outputStream)
@@ -83,5 +98,9 @@ object Utility {
 
     fun writeCurrencyData(context: Context): Boolean {
         return (writeSaveData(Values.currency, "currency", context))
+    }
+
+    private fun sortTransactionListByDate(list: ArrayList<Transaction>): ArrayList<Transaction> {
+        return (list.sortedByDescending { it.localDateTime }.toCollection(ArrayList()))
     }
 }

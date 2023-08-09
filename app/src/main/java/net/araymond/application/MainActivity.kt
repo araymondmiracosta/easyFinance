@@ -28,6 +28,7 @@ class MainActivity : ComponentActivity() {
         }
         Utility.readAccounts()
         Utility.readCategories()
+        Utility.readTransactions()
     }
 
     @Composable
