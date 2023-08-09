@@ -200,9 +200,10 @@ class Views {
                                         Values.accounts.add(
                                             Account(
                                                 accountName,
-                                                accountBalance.toDouble()
+                                                0.0
                                             )
                                         )
+                                        Values.accounts[Utility.indexFromName(accountName)].newTransaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now())
                                         Utility.readAccounts()
                                         if (Utility.writeLedgerData(context)) {
                                             scope.launch {
@@ -713,6 +714,12 @@ class Views {
                                     )
                                 }
                                 Spacer(modifier = Modifier.padding(15.dp))
+                                Text(
+                                    text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction)),
+                                    style = TextStyle(
+                                        fontSize = 18.sp
+                                    )
+                                )
                             }
                         }
                         Spacer(modifier = Modifier.padding(10.dp))

@@ -38,13 +38,6 @@ object Utility {
             Values.categories.add(transaction.category)
         }
 
-//        var transactions: ArrayList<Transaction>
-//        for (account in Values.accounts) {
-//            transactions = account.transactions
-//            for (transaction in transactions) {
-//                Values.categories.add(transaction.category)
-//            }
-//        }
         val duplicatesRemoved: HashSet<String> = HashSet(Values.categories)
         Values.categories = ArrayList(duplicatesRemoved)
     }
@@ -102,5 +95,20 @@ object Utility {
 
     private fun sortTransactionListByDate(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedByDescending { it.localDateTime }.toCollection(ArrayList()))
+    }
+
+    fun calculateTransactionRunningBalance(transaction: Transaction): Double {
+        val transactionAccount = Values.accounts[indexFromName(transaction.account)]
+        val accountTransactions = sortTransactionListByDate(transactionAccount.transactions).reversed()
+        var currentRunningBalance = 0.0
+
+        accountTransactions.forEach {
+            currentRunningBalance += it.amount
+            if (it == transaction) {
+                return currentRunningBalance
+            }
+        }
+
+        return -1.0
     }
 }
