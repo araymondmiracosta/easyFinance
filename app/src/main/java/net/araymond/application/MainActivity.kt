@@ -27,8 +27,8 @@ class MainActivity : ComponentActivity() {
             Log.d("INFO", "Currency preference read successfully")
         }
         Utility.readAccounts()
-        Utility.readCategories()
         Utility.readTransactions()
+        Utility.readCategories()
     }
 
     @Composable

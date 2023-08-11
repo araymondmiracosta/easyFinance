@@ -33,7 +33,6 @@ object Utility {
     }
 
     fun readCategories() {
-        Values.categories.clear()
         Values.transactions.forEach{ transaction ->
             Values.categories.add(transaction.category)
         }
