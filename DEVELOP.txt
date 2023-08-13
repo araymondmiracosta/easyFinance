@@ -1,0 +1,22 @@
+This document shall provide a technical overview of the application. For function descriptions see FUNCTIONS.txt.
+
+Class overview:
+	Initialized classes:
+		Account: Holds the balance, title and transaction list specific to that account.
+		Transaction: Holds the amount, date, time, category, description and name of account which it belongs to.
+		MainActivity: Holds the onCreate function to initialize the application and the applicationNavHost to create different screens.
+
+	Object classes:
+		Utility: Holds non-composable helper functions which are used by other functions.
+		Values: Holds global variables used by other functions.
+		Views: Holds functions which draw main UI elements of the application.
+		ViewUtils: Holds composable helper functions which are used to draw minor UI elements of the interface.
+
+Design notes:
+	- The application uses an ArrayList holding Account objects to store information (written to disk) and a temporary ArrayList holding transactions gathered from Account objects that is only used during runtime [0].
+	- All screens and their root functions can be found in applicationNavHost() located in MainActivity.kt.
+	- Themeing is currently based off of Material 3 Dynamic Colors, although any static themeing options in the future will be found in ui/theme/Theme.kt and ui/theme/Color.kt.
+	- Transaction objects hold LocalDateTime objects (which are calculated after creation) within them for sorting functions.
+
+Footnotes:
+	[0]: By collecting transactions from all account objects into one main transaction list, sorting as well as grouping can be done more easily and effectively.
