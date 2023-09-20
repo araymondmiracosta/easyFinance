@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -66,13 +68,14 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 import kotlin.math.absoluteValue
 
 object Views {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun mainDraw(navHostController: NavHostController) {
+    fun mainDraw(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
             Scaffold(
                 topBar = {
@@ -96,7 +99,7 @@ object Views {
                         Column {
                             generateAccountScrollView()
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            generateTransactionScrollView(Values.transactions)
+                            generateTransactionScrollView(Values.transactions, navHostController)
                         }
                     }
                 },
@@ -225,7 +228,7 @@ object Views {
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
     @Composable
-    fun generateNewTransactionView(navHostController: NavHostController, context: Context) {
+    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
         ApplicationTheme {
             var isPositiveTransaction by remember { mutableStateOf(false) }
             var transactionAmount by remember { mutableStateOf("") }
@@ -236,12 +239,37 @@ object Views {
             var categoryListIsExpanded by remember { mutableStateOf(false) }
             var category by remember { mutableStateOf("") }
             var description by remember { mutableStateOf("") }
+            var title by remember { mutableStateOf("New Transaction") }
 
             val scope = rememberCoroutineScope()
             val snackbarHostState = remember { SnackbarHostState() }
 
             var localDate = LocalDate.now() // Must initialize
             var localTime = LocalTime.now() // Must initialize
+
+            var fieldEnabled by remember { mutableStateOf(false) }
+
+            if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
+                if (transaction.amount < 0) {
+                    isPositiveTransaction = false
+                }
+                transactionAmount = "" + abs(transaction.amount)
+                transactionAmountIsNotNumber = false
+                accountName = transaction.account
+                category = transaction.category
+                description = transaction.description
+                localDate = transaction.date
+                localTime = transaction.time
+                if (fieldEnabled) {
+                    title = "Edit Transaction"
+                }
+                else {
+                    title = "View Transaction"
+                }
+            }
+            else {
+                fieldEnabled = true
+            }
 
             var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
             var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
@@ -261,7 +289,7 @@ object Views {
                 topBar = {
                     TopAppBar(
                         title = {
-                            Text("New Transaction")
+                                Text(title)
                         },
                         navigationIcon = {
                             IconButton(
@@ -272,6 +300,22 @@ object Views {
                                 Icon(Icons.Filled.ArrowBack, "")
                             }
                         },
+                        actions = {
+                            if (transaction != null) {
+                                IconButton(
+                                    onClick = {
+                                        fieldEnabled = !fieldEnabled
+                                    }
+                                ) {
+                                    if (fieldEnabled) {
+                                        Icon(Icons.Filled.Info, "")
+                                    }
+                                    else {
+                                        Icon(Icons.Filled.Create, "")
+                                    }
+                                }
+                            }
+                        }
                     )
                 },
                 content = {
@@ -289,10 +333,12 @@ object Views {
                                     onCheckedChange = {
                                         isPositiveTransaction = it
                                     },
+                                    enabled = fieldEnabled
                                 )
                                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                                 // amount
                                 OutlinedTextField(
+                                    readOnly = !fieldEnabled,
                                     modifier = Modifier.fillMaxWidth(),
                                     value = transactionAmount,
                                     prefix = {
@@ -314,55 +360,71 @@ object Views {
                                     },
                                     label = {
                                         Text(transactionAmountLabel)
-                                    }
+                                    },
                                 )
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             // Account name
-                            ExposedDropdownMenuBox(
-                                expanded = accountNameListIsExpanded,
-                                onExpandedChange = {
-                                    accountNameListIsExpanded = !accountNameListIsExpanded
-                                }
-                            ) {
-                                OutlinedTextField(
-                                    value = accountName,
-                                    readOnly = true,
-                                    onValueChange = {
-                                          accountName = it
-                                    },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth(),
-                                    label = {
-                                        Text("Transaction account")
-                                    },
-                                    trailingIcon = {
-                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameListIsExpanded)
-                                    },
-                                    isError = accountName.isEmpty()
-                                )
-                                ExposedDropdownMenu(
+                            if (fieldEnabled) {
+                                ExposedDropdownMenuBox(
                                     expanded = accountNameListIsExpanded,
-                                    onDismissRequest = {
-                                        accountNameListIsExpanded = false
+                                    onExpandedChange = {
+                                        accountNameListIsExpanded = !accountNameListIsExpanded
                                     }
                                 ) {
-                                    Values.accountsNames.forEach { selectedOption ->    // Issue: only most recent account name shown
-                                        DropdownMenuItem(onClick = {
-                                            accountName = selectedOption
-                                            accountNameListIsExpanded = false
+                                    OutlinedTextField(
+                                        value = accountName,
+                                        readOnly = !(fieldEnabled),
+                                        onValueChange = {
+                                            accountName = it
                                         },
-                                            text = {
-                                                Text(selectedOption)
-                                            }
-                                        )
+                                        modifier = Modifier
+                                            .menuAnchor()
+                                            .fillMaxWidth(),
+                                        label = {
+                                            Text("Transaction account")
+                                        },
+                                        trailingIcon = {
+                                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameListIsExpanded)
+                                        },
+                                        isError = accountName.isEmpty(),
+                                    )
+                                    ExposedDropdownMenu(
+                                        expanded = accountNameListIsExpanded,
+                                        onDismissRequest = {
+                                            accountNameListIsExpanded = false
+                                        }
+                                    ) {
+                                        Values.accountsNames.forEach { selectedOption ->    // Issue: only most recent account name shown
+                                            DropdownMenuItem(onClick = {
+                                                accountName = selectedOption
+                                                accountNameListIsExpanded = false
+                                            },
+                                                text = {
+                                                    Text(selectedOption)
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
+                            else {
+                                OutlinedTextField(
+                                    readOnly = (!fieldEnabled),
+                                    value = accountName,
+                                    onValueChange = {
+                                        accountName = it
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = {
+                                        Text("Transaction account")
+                                    },
+                                    isError = accountName.isEmpty()
+                                )
+                            }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             // Category
-                            if (Values.categories.isNotEmpty()) {
+                            if (Values.categories.isNotEmpty() && fieldEnabled) {
                                 ExposedDropdownMenuBox(
                                     expanded = categoryListIsExpanded,
                                     onExpandedChange = {
@@ -370,8 +432,8 @@ object Views {
                                     }
                                 ) {
                                     OutlinedTextField(
+                                        readOnly = (!fieldEnabled),
                                         value = category,
-                                        readOnly = false,
                                         onValueChange = {
                                             category = it
                                         },
@@ -411,8 +473,8 @@ object Views {
                             }
                             else {
                                 OutlinedTextField(
+                                    readOnly = (!fieldEnabled),
                                     value = category,
-                                    readOnly = false,
                                     onValueChange = {
                                         category = it
                                     },
@@ -426,6 +488,7 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             // Description
                             OutlinedTextField(
+                                readOnly = (!fieldEnabled),
                                 modifier = Modifier.fillMaxWidth(),
                                 value = description,
                                 label = {
@@ -438,14 +501,14 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             // Date
                             OutlinedTextField(
-                                value = stringDate,
                                 readOnly = true,
+                                value = stringDate,
                                 onValueChange = {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .onFocusChanged() {
-                                        if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
                                             openDatePickerDialog = true
                                         }
                                     },
@@ -491,14 +554,14 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             // Time
                             OutlinedTextField(
-                                value = stringTime,
                                 readOnly = true,
+                                value = stringTime,
                                 onValueChange = {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .onFocusChanged() {
-                                        if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
                                             openTimePickerDialog = true
                                         }
                                     },
@@ -528,27 +591,44 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    ExtendedFloatingActionButton(
-                        text = { Text(text = "Apply") },
-                        icon = { Icon(Icons.Default.Check, "") },
-                        onClick = {
-                            // Check that input fields are valid
-                            if ( (!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty()) ) {
-                                if (!isPositiveTransaction) {
-                                    transactionAmount = "-$transactionAmount"
-                                }
-                                Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
-                                Utility.readTransactions()
-                                Utility.readCategories()
-                                if (Utility.writeLedgerData(context)) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Short)
-                                        navHostController.navigateUp()
+                    if (fieldEnabled) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "Apply") },
+                            icon = { Icon(Icons.Default.Check, "") },
+                            onClick = {
+                                // Check that input fields are valid
+                                if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
+                                    if (!isPositiveTransaction) {
+                                        transactionAmount = "-$transactionAmount"
+                                    }
+                                    if (transaction != null) {
+                                        transaction.editTransaction(category, description,
+                                            transactionAmount.toDouble(), localDate, localTime, accountName)
+                                    }
+                                    else {  // New transaction
+                                        Values.accounts[Utility.indexFromName(accountName)].newTransaction(
+                                            category,
+                                            description,
+                                            transactionAmount.toDouble(),
+                                            localDate,
+                                            localTime
+                                        )
+                                    }
+                                    Utility.readTransactions()
+                                    Utility.readCategories()
+                                    if (Utility.writeLedgerData(context)) {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar(
+                                                "New transaction added!",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                            navHostController.navigateUp()
+                                        }
                                     }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             )
         }
@@ -640,7 +720,7 @@ object Views {
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateTransactionScrollView(transactions: ArrayList<Transaction>) {
+    fun generateTransactionScrollView(transactions: ArrayList<Transaction>, navHostController: NavHostController) {
         Scaffold {
             var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
             var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
@@ -658,7 +738,8 @@ object Views {
                                 shape = RoundedCornerShape(10.dp)
                             )
                             .clickable(enabled = true, onClick = {
-                                // transaction specific screen
+                                Values.currentTransaction = transaction
+                                navHostController.navigate("View Transaction Activity")
                             })
                             .padding(10.dp)
                             .fillMaxWidth()

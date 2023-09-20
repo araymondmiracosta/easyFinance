@@ -1,6 +1,5 @@
 package net.araymond.application
 
-import com.google.android.material.timepicker.TimeFormat
 import java.text.DecimalFormat
 import java.util.Locale
 
@@ -18,4 +17,5 @@ object Values {
     var accountsNames = ArrayList<String>()
     var locale = Locale(language, country)
     var balanceFormat = DecimalFormat("##.00")
+    lateinit var currentTransaction: Transaction
 }

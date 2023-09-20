@@ -18,6 +18,17 @@ class Account(var name: String, var balance: Double) : Serializable {
         balance += amount
     }
 
+    fun editTransaction(
+        category: String,
+        description: String,
+        amount: Double,
+        date: LocalDate,
+        time: LocalTime,
+        index: Int
+    ) {
+        transactions[index].editTransaction(category, description, amount, date, time, this.name)
+    }
+
     fun removeTransaction(index: Int) {
         transactions.removeAt(index)
     }
