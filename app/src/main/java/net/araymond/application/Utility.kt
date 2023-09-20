@@ -7,10 +7,12 @@ import java.io.ObjectOutputStream
 object Utility {
 
     fun indexFromName(accountName: String): Int {
-        for (i in Values.accounts.indices) {
-            if (accountName.compareTo(Values.accounts[i].name) == 0) {
+        var i = 0
+        Values.accounts.forEach {
+            if (accountName.compareTo(it.name) == 0) {
                 return i
             }
+            i++
         }
         return -1
     }
@@ -24,9 +26,11 @@ object Utility {
 
     fun readTransactions() {
         Values.transactions.clear()
-        Values.accounts.forEach{ account ->
-            account.transactions.forEach{ transaction ->
-                Values.transactions.add(transaction)
+        Values.accounts.forEach{ account ->     // Iterate through accounts
+            account.balance = 0.0
+            account.transactions.forEach{ transaction ->    // Iterate through transactions on this account
+                account.balance += transaction.amount
+                Values.transactions.add(transaction)    // Add this transaction to master transactions list
             }
         }
         Values.transactions = sortTransactionListByDate(Values.transactions)
@@ -97,7 +101,7 @@ object Utility {
     }
 
     fun calculateTransactionRunningBalance(transaction: Transaction): Double {
-        val transactionAccount = Values.accounts[indexFromName(transaction.account)]
+        val transactionAccount = Values.accounts[indexFromName(transaction.account.name)]
         val accountTransactions = sortTransactionListByDate(transactionAccount.transactions).reversed()
         var currentRunningBalance = 0.0
 

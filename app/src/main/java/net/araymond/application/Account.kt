@@ -14,7 +14,7 @@ class Account(var name: String, var balance: Double) : Serializable {
         date: LocalDate?,
         time: LocalTime?
     ) {
-        transactions.add(Transaction(category!!, description!!, amount, date!!, time!!, this.name))
+        transactions.add(Transaction(category!!, description!!, amount, date!!, time!!, this))
         balance += amount
     }
 
@@ -26,7 +26,7 @@ class Account(var name: String, var balance: Double) : Serializable {
         time: LocalTime,
         index: Int
     ) {
-        transactions[index].editTransaction(category, description, amount, date, time, this.name)
+        transactions[index].editTransaction(category, description, amount, date, time, this)
     }
 
     fun removeTransaction(index: Int) {

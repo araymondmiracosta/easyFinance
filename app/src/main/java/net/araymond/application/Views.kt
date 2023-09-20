@@ -250,12 +250,12 @@ object Views {
             var fieldEnabled by remember { mutableStateOf(false) }
 
             if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
-                if (transaction.amount < 0) {
-                    isPositiveTransaction = false
+                if (transaction.amount > 0) {
+                    isPositiveTransaction = true
                 }
                 transactionAmount = "" + abs(transaction.amount)
                 transactionAmountIsNotNumber = false
-                accountName = transaction.account
+                accountName = transaction.account.name
                 category = transaction.category
                 description = transaction.description
                 localDate = transaction.date
@@ -603,7 +603,7 @@ object Views {
                                     }
                                     if (transaction != null) {
                                         transaction.editTransaction(category, description,
-                                            transactionAmount.toDouble(), localDate, localTime, accountName)
+                                            transactionAmount.toDouble(), localDate, localTime, Values.accounts[Utility.indexFromName(accountName)])
                                     }
                                     else {  // New transaction
                                         Values.accounts[Utility.indexFromName(accountName)].newTransaction(
@@ -754,7 +754,7 @@ object Views {
                             )
                             Spacer(modifier = Modifier.padding(2.dp))
                             Text(
-                                text = transaction.account,     // account
+                                text = transaction.account.name,     // account
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
