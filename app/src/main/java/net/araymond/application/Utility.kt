@@ -6,34 +6,37 @@ import java.io.ObjectOutputStream
 
 object Utility {
 
-    fun indexFromName(accountName: String): Int {
-        var i = 0
-        Values.accounts.forEach {
-            if (accountName.compareTo(it.name) == 0) {
-                return i
+    fun readAccounts() {
+        Values.accountNames = ArrayList()
+        var duplicate = false
+        Values.transactions.forEach{ transaction ->
+            Values.accountNames.forEach { accountName ->
+                if (accountName == transaction.accountName) {
+                    duplicate = true
+                }
             }
-            i++
+            if (duplicate) {
+                duplicate = false
+            }
+            else {
+                Values.accountNames.add(transaction.accountName)
+            }
         }
-        return -1
     }
 
-    fun readAccounts() {
-        Values.accountsNames = ArrayList()
-        for (account in Values.accounts) {
-            Values.accountsNames.add(account.name)
+    fun readAccountTotal(accountName: String): Double {
+        var accountTotal = 0.0
+        Values.transactions.forEach{ transaction ->
+            if (transaction.accountName == accountName) {
+                accountTotal += transaction.amount
+            }
         }
+
+        return accountTotal
     }
 
     fun readTransactions() {
-        Values.transactions.clear()
-        Values.accounts.forEach{ account ->     // Iterate through accounts
-            account.balance = 0.0
-            account.transactions.forEach{ transaction ->    // Iterate through transactions on this account
-                account.balance += transaction.amount
-                Values.transactions.add(transaction)    // Add this transaction to master transactions list
-            }
-        }
-        Values.transactions = sortTransactionListByDate(Values.transactions)
+        Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
     }
 
     fun readCategories() {
@@ -49,7 +52,7 @@ object Utility {
         return try {
             val inputLedgerStream = context.openFileInput("ledger")
             val objectInputLedgerStream = ObjectInputStream(inputLedgerStream)
-            Values.accounts = objectInputLedgerStream.readObject() as ArrayList<Account>
+            Values.transactions = objectInputLedgerStream.readObject() as ArrayList<Transaction>
             objectInputLedgerStream.close()
             inputLedgerStream.close()
 
@@ -89,29 +92,42 @@ object Utility {
     }
 
     fun writeLedgerData(context: Context): Boolean {
-        return (writeSaveData(Values.accounts, "ledger", context))
+        return (writeSaveData(Values.transactions, "ledger", context))
     }
 
     fun writeCurrencyData(context: Context): Boolean {
         return (writeSaveData(Values.currency, "currency", context))
     }
 
-    private fun sortTransactionListByDate(list: ArrayList<Transaction>): ArrayList<Transaction> {
+    private fun sortTransactionListByRecentDateFirst(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedByDescending { it.localDateTime }.toCollection(ArrayList()))
     }
 
-    fun calculateTransactionRunningBalance(transaction: Transaction): Double {
-        val transactionAccount = Values.accounts[indexFromName(transaction.account.name)]
-        val accountTransactions = sortTransactionListByDate(transactionAccount.transactions).reversed()
+    private fun sortTransactionListByRecentDateLast(list: ArrayList<Transaction>): ArrayList<Transaction> {
+        return (list.sortedBy { it.localDateTime }.toCollection(ArrayList()))
+    }
+
+    fun calculateTransactionRunningBalance(transaction: Transaction, transactionList: ArrayList<Transaction>): Double {
         var currentRunningBalance = 0.0
 
-        accountTransactions.forEach {
-            currentRunningBalance += it.amount
-            if (it == transaction) {
-                return currentRunningBalance
+        sortTransactionListByRecentDateLast(transactionList).forEach {  // Have the oldest one first, so we can count from there
+            if (transaction.accountName == it.accountName) {
+                currentRunningBalance += it.amount
+                if (it == transaction) {
+                    return currentRunningBalance
+                }
             }
         }
 
         return -1.0
+    }
+
+    fun newTransaction(transaction: Transaction) {
+        Values.transactions.add(transaction)
+        Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
+    }
+
+    fun removeTransaction(transaction: Transaction) {
+        Values.transactions.remove(transaction)
     }
 }

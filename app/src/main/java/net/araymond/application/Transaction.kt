@@ -11,17 +11,18 @@ class Transaction(
     var amount: Double,
     var date: LocalDate,
     var time: LocalTime,
-    var account: Account
+    var accountName: String
 ) : Serializable {
     var localDateTime = LocalDateTime.of(date, time)
 
     fun editTransaction(category: String, description: String, amount: Double, date: LocalDate,
-                        time: LocalTime, account: Account) {
+                        time: LocalTime, account: String) {
         this.category = category
         this.description = description
         this.amount = amount
         this.date = date
         this.time = time
-        this.account = account
+        this.accountName = account
+        this.localDateTime = LocalDateTime.of(date, time)
     }
 }

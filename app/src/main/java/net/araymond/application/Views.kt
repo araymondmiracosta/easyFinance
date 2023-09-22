@@ -104,7 +104,7 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    if (Values.accounts.isNotEmpty()) {
+                    if (Values.accountNames.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
                             icon = { Icon(Icons.Default.Add, "") },
@@ -192,8 +192,8 @@ object Views {
                         icon = { Icon(Icons.Default.Check, "") },
                         onClick = {
                             if ((!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
-                                for (account in Values.accounts) {
-                                    if (account.name == accountName) {
+                                Values.accountNames.forEach{
+                                    if (it == accountName) {
                                         scope.launch {
                                             nameCheck = false
                                             snackbarHostState.showSnackbar("An account with that name already exists.")
@@ -201,13 +201,7 @@ object Views {
                                     }
                                 }
                                 if (nameCheck) {
-                                    Values.accounts.add(
-                                        Account(
-                                            accountName,
-                                            0.0
-                                        )
-                                    )
-                                    Values.accounts[Utility.indexFromName(accountName)].newTransaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now())
+                                    Utility.newTransaction(Transaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now(), accountName))
                                     Utility.readAccounts()
                                     Utility.readTransactions()
                                     if (Utility.writeLedgerData(context)) {
@@ -255,7 +249,7 @@ object Views {
                 }
                 transactionAmount = "" + abs(transaction.amount)
                 transactionAmountIsNotNumber = false
-                accountName = transaction.account.name
+                accountName = transaction.accountName
                 category = transaction.category
                 description = transaction.description
                 localDate = transaction.date
@@ -395,7 +389,7 @@ object Views {
                                             accountNameListIsExpanded = false
                                         }
                                     ) {
-                                        Values.accountsNames.forEach { selectedOption ->    // Issue: only most recent account name shown
+                                        Values.accountNames.forEach { selectedOption ->    // Issue: only most recent account name shown
                                             DropdownMenuItem(onClick = {
                                                 accountName = selectedOption
                                                 accountNameListIsExpanded = false
@@ -603,16 +597,10 @@ object Views {
                                     }
                                     if (transaction != null) {
                                         transaction.editTransaction(category, description,
-                                            transactionAmount.toDouble(), localDate, localTime, Values.accounts[Utility.indexFromName(accountName)])
+                                            transactionAmount.toDouble(), localDate, localTime, accountName)
                                     }
                                     else {  // New transaction
-                                        Values.accounts[Utility.indexFromName(accountName)].newTransaction(
-                                            category,
-                                            description,
-                                            transactionAmount.toDouble(),
-                                            localDate,
-                                            localTime
-                                        )
+                                        Utility.newTransaction(Transaction(category, description, transactionAmount.toDouble(), localDate, localTime, accountName))
                                     }
                                     Utility.readTransactions()
                                     Utility.readCategories()
@@ -684,7 +672,8 @@ object Views {
     @Composable
     fun generateAccountScrollView() {
         Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            for (account in Values.accounts) {
+            Values.accountNames.forEach{ accountName ->
+                var accountTotal = Utility.readAccountTotal(accountName)
                 Row {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -700,7 +689,7 @@ object Views {
                             .padding(15.dp),
                     ) {
                         Text(
-                            text = account.name,
+                            text = accountName,
                             style = TextStyle(
                                 fontSize = 22.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -708,7 +697,7 @@ object Views {
                         )
                         Spacer(modifier = Modifier.padding(5.dp))
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(account.balance),
+                            text = Values.currency + Values.balanceFormat.format(accountTotal),
                             style = TextStyle(fontSize = 19.sp)
                         )
                     }
@@ -754,7 +743,7 @@ object Views {
                             )
                             Spacer(modifier = Modifier.padding(2.dp))
                             Text(
-                                text = transaction.account.name,     // account
+                                text = transaction.accountName,     // account
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -798,7 +787,7 @@ object Views {
                             }
                             Spacer(modifier = Modifier.padding(15.dp))
                             Text(
-                                text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction)),
+                                text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
                                 style = TextStyle(
                                     fontSize = 18.sp
                                 )

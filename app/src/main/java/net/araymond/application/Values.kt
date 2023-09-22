@@ -11,10 +11,9 @@ object Values {
     var timeFormat = "HH:mm"
     var currency = "$"
     var currencies = arrayOf("$", "€", "¥", "£")
-    var accounts = ArrayList<Account>()
     var transactions = ArrayList<Transaction>()
     var categories = ArrayList<String>()
-    var accountsNames = ArrayList<String>()
+    var accountNames = ArrayList<String>()
     var locale = Locale(language, country)
     var balanceFormat = DecimalFormat("##.00")
     lateinit var currentTransaction: Transaction
