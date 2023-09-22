@@ -27,6 +27,7 @@ class MainActivity : ComponentActivity() {
             Log.d("INFO", "Currency preference read successfully")
         }
         Utility.readAccounts()
+        Utility.readTransactions()
         Utility.readCategories()
     }
 
@@ -35,13 +36,16 @@ class MainActivity : ComponentActivity() {
         val navHostController = rememberNavController()
         NavHost(navController = navHostController, startDestination = "Main Activity") {
             composable("Main Activity") {
-                Views.mainDraw(navHostController)
+                Views.mainDraw(navHostController, context)
             }
             composable("New Account Activity") {
                 Views.generateAccountCreationView(navHostController, context)
             }
             composable("New Transaction Activity") {
-                Views.generateNewTransactionView(navHostController, context)
+                Views.generateNewTransactionView(navHostController, context, null)
+            }
+            composable("View Transaction Activity") {
+                Views.generateNewTransactionView(navHostController, context, Values.currentTransaction)
             }
             composable("Settings Activity") {
                 Views.generateSettingsView(navHostController, context)

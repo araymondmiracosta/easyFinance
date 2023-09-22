@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
@@ -32,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import org.intellij.lang.annotations.JdkConstants.HorizontalAlignment
 
 object ViewUtils {
 
@@ -78,6 +76,58 @@ object ViewUtils {
                 )
             )
         }
+    }
+
+    @Composable
+    fun confirmDialog(label: String): Boolean {
+        var dialogIsOpen by remember { mutableStateOf(true) }
+        var optionValue by remember { mutableStateOf(false) }
+        if (dialogIsOpen) {
+            Dialog(
+                onDismissRequest = {
+                    dialogIsOpen = false
+                },
+            ) {
+                Surface {
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp))
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
+                            text = label,
+                            modifier = Modifier
+                                .padding(top = 24.dp)
+                                .padding(horizontal = 16.dp),
+                            style = TextStyle(
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                        Row {
+                            Spacer(Modifier.weight(1f))
+                            TextButton(
+                                onClick = {
+                                   dialogIsOpen = false
+                                }
+                            ) {
+                                Text("Cancel")
+                            }
+                            TextButton(
+                                onClick = {
+                                    optionValue = true
+                                    dialogIsOpen = false
+                                }
+                            ) {
+                                Text("OK")
+                            }
+                        }
+                    }
+                }
+           }
+        }
+        return optionValue
     }
 
     @Composable
@@ -209,7 +259,6 @@ object ViewUtils {
                         color = MaterialTheme.colorScheme.surface
                     ),
             ) {
-                toggle()
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally

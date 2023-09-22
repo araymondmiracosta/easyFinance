@@ -2,6 +2,7 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -18,6 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -66,255 +70,323 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 import kotlin.math.absoluteValue
 
-class Views {
-    companion object {
-        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
-        @OptIn(ExperimentalMaterial3Api::class)
-        @Composable
-        fun mainDraw(navHostController: NavHostController) {
-            ApplicationTheme {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(text = "Finance")
-                            },
-                            actions = {
-                                IconButton(
-                                    onClick = {
-                                        navHostController.navigate("Settings Activity")
-                                    }
-                                ) {
-                                    Icon(Icons.Filled.Settings, null)
+object Views {
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun mainDraw(navHostController: NavHostController, context: Context) {
+        ApplicationTheme {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "Finance")
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigate("Settings Activity")
                                 }
-                            }
-                        )
-                    },
-                    content = {
-                        Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
-                            Column {
-                                generateAccountScrollView()
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                generateTransactionScrollView()
+                            ) {
+                                Icon(Icons.Filled.Settings, "Settings")
                             }
                         }
-                    },
-                    floatingActionButton = {
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
+                        Column {
+                            generateAccountScrollView()
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            generateTransactionScrollView(Values.transactions, navHostController)
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    if (Values.accountNames.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
                             icon = { Icon(Icons.Default.Add, "") },
                             onClick = { navHostController.navigate("New Transaction Activity") }
                         )
                     }
-                )
-            }
+                }
+            )
         }
+    }
 
-        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-        @OptIn(ExperimentalMaterial3Api::class)
-        @Composable
-        fun generateAccountCreationView(navHostController: NavHostController, context: Context) {
-            ApplicationTheme {
-                var accountName by remember { mutableStateOf("")}
-                var accountBalance by remember { mutableStateOf("")}
-                var accountNameLabel by remember { mutableStateOf("Account name")}
-                var accountBalanceLabel by remember { mutableStateOf("Account balance")}
-                var accountNameIsEmpty = true
-                var accountBalanceIsNotNumber = true
-                val scope = rememberCoroutineScope()
-                val snackbarHostState = remember { SnackbarHostState() }
-                var nameCheck = true
-                Scaffold(
-                    snackbarHost = {
-                                   SnackbarHost(hostState = snackbarHostState)
-                    },
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(text = "New Account")
-                            },
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                        navHostController.navigateUp()
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAccountCreationView(navHostController: NavHostController, context: Context) {
+        ApplicationTheme {
+            var accountName by remember { mutableStateOf("")}
+            var accountBalance by remember { mutableStateOf("")}
+            var accountNameLabel by remember { mutableStateOf("Account name")}
+            var accountBalanceLabel by remember { mutableStateOf("Account balance")}
+            var accountNameIsEmpty = true
+            var accountBalanceIsNotNumber = true
+            val scope = rememberCoroutineScope()
+            val snackbarHostState = remember { SnackbarHostState() }
+            var nameCheck = true
+            Scaffold(
+                snackbarHost = {
+                               SnackbarHost(hostState = snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "New Account")
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigateUp()
+                                }
+                            ) {
+                                Icon(Icons.Filled.ArrowBack, "")
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 70.dp, horizontal = 16.dp)) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = accountName,
+                                singleLine = true,
+                                isError = accountNameIsEmpty,
+                                onValueChange = {
+                                    accountName = it
+                                    accountNameIsEmpty = it.isEmpty()
+                                },
+                                label = {
+                                    Text(accountNameLabel)
+                                }
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            OutlinedTextField(
+                                modifier = Modifier.fillMaxWidth(),
+                                value = accountBalance,
+                                singleLine = true,
+                                isError = accountBalanceIsNotNumber,
+                                onValueChange = {
+                                    accountBalance = it
+                                    accountBalanceIsNotNumber =
+                                        !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                },
+                                label = {
+                                    Text(accountBalanceLabel)
+                                }
+                            )
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    ExtendedFloatingActionButton(
+                        text = { Text(text = "Apply") },
+                        icon = { Icon(Icons.Default.Check, "") },
+                        onClick = {
+                            if ((!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
+                                Values.accountNames.forEach{
+                                    if (it == accountName) {
+                                        scope.launch {
+                                            nameCheck = false
+                                            snackbarHostState.showSnackbar("An account with that name already exists.")
+                                        }
                                     }
-                                ) {
-                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                                if (nameCheck) {
+                                    var writeSuccess = Utility.newTransaction(Transaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now(), accountName), context)
+                                    Utility.readAccounts()
+                                    Utility.readTransactions()
+                                    if (writeSuccess) {
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
+                                            navHostController.navigateUp()
+                                        }
+                                    }
                                 }
                             }
-                        )
-                    },
-                    content = {
-                        Surface(modifier = Modifier
-                            .verticalScroll(rememberScrollState())
-                            .padding(vertical = 70.dp, horizontal = 16.dp)) {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                OutlinedTextField(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    value = accountName,
-                                    singleLine = true,
-                                    isError = accountNameIsEmpty,
-                                    onValueChange = {
-                                        accountName = it
-                                        accountNameIsEmpty = it.isEmpty()
-                                    },
-                                    label = {
-                                        Text(accountNameLabel)
-                                    }
+                        }
+                    )
+                }
+            )
+        }
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
+        "CoroutineCreationDuringComposition"
+    )
+    @Composable
+    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
+        ApplicationTheme {
+            var isPositiveTransaction by remember { mutableStateOf(false) }
+            var transactionAmount by remember { mutableStateOf("") }
+            var transactionAmountIsNotNumber = true
+            var transactionAmountLabel by remember { mutableStateOf("Transaction amount") }
+            var accountNameListIsExpanded by remember { mutableStateOf(false) }
+            var accountName by remember { mutableStateOf("") }
+            var categoryListIsExpanded by remember { mutableStateOf(false) }
+            var category by remember { mutableStateOf("") }
+            var description by remember { mutableStateOf("") }
+            var title by remember { mutableStateOf("New Transaction") }
+
+            val scope = rememberCoroutineScope()
+            val snackbarHostState = remember { SnackbarHostState() }
+
+            var localDate = LocalDate.now() // Must initialize
+            var localTime = LocalTime.now() // Must initialize
+
+            var fieldEnabled by remember { mutableStateOf(false) }
+            var deleteDialog by remember { mutableStateOf(false) }
+
+            if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
+                if (transaction.amount > 0) {
+                    isPositiveTransaction = true
+                }
+                transactionAmount = "" + abs(transaction.amount)
+                transactionAmountIsNotNumber = false
+                accountName = transaction.accountName
+                category = transaction.category
+                description = transaction.description
+                localDate = transaction.date
+                localTime = transaction.time
+                if (fieldEnabled) {
+                    title = "Edit Transaction"
+                }
+                else {
+                    title = "View Transaction"
+                }
+                if (deleteDialog) {     // If the user pressed the delete button, confirm
+                    if(ViewUtils.confirmDialog("Are you sure you want to delete this transaction?")) {
+                        if (Utility.removeTransaction(transaction, context)) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "Transaction removed",
+                                    duration = SnackbarDuration.Short
                                 )
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                navHostController.navigateUp()
+                            }
+                        }
+                    }
+                }
+            }
+            else {
+                fieldEnabled = true
+            }
+
+            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+
+            var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
+            var openDatePickerDialog by remember { mutableStateOf(false) }
+
+            var openTimePickerDialog by remember { mutableStateOf(false) }
+            var hour : Int
+            var minute : Int
+            var stringTime = localTime.format(timeFormatter)
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                                Text(title)
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigateUp()
+                                }
+                            ) {
+                                Icon(Icons.Filled.ArrowBack, "")
+                            }
+                        },
+                        actions = {
+                            if (transaction != null) {
+                                if (fieldEnabled) {
+                                    IconButton(
+                                        onClick = {
+                                            deleteDialog = !deleteDialog    // Known bug, after first attempt, user has to press button twice
+                                        }
+                                    ) {
+                                        Icon(Icons.Filled.Delete, "Remove transaction")
+                                    }
+                                }
+                                IconButton(
+                                    onClick = {
+                                        fieldEnabled = !fieldEnabled
+                                    }
+                                ) {
+                                    if (fieldEnabled) {
+                                        Icon(Icons.Filled.Info, "View transaction")
+                                    }
+                                    else {
+                                        Icon(Icons.Filled.Create, "Edit transaction")
+                                    }
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(vertical = 70.dp, horizontal = 16.dp)) {
+                        Column(modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(
+                                rememberScrollState()
+                            )) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Deposit or withdrawal
+                                Text("Deposit")
+                                Checkbox(
+                                    checked = isPositiveTransaction,
+                                    onCheckedChange = {
+                                        isPositiveTransaction = it
+                                    },
+                                    enabled = fieldEnabled
+                                )
+                               Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                // amount
                                 OutlinedTextField(
+                                    readOnly = !fieldEnabled,
                                     modifier = Modifier.fillMaxWidth(),
-                                    value = accountBalance,
+                                    value = transactionAmount,
+                                    prefix = {
+                                        if (!isPositiveTransaction) {
+                                            Text("-", color = Color.Red)
+                                        } else {
+                                            Text("+", color = Color.Green)
+                                        }
+                                    },
+                                    suffix = {
+                                        Text(Values.currency)
+                                    },
                                     singleLine = true,
-                                    isError = accountBalanceIsNotNumber,
+                                    isError = transactionAmountIsNotNumber,
                                     onValueChange = {
-                                        accountBalance = it
-                                        accountBalanceIsNotNumber =
+                                        transactionAmount = it
+                                        transactionAmountIsNotNumber =
                                             !(it.toDoubleOrNull() != null && it.isNotEmpty())
                                     },
                                     label = {
-                                        Text(accountBalanceLabel)
-                                    }
+                                        Text(transactionAmountLabel)
+                                    },
                                 )
                             }
-                        }
-                    },
-                    floatingActionButton = {
-                        ExtendedFloatingActionButton(
-                            text = { Text(text = "Apply") },
-                            icon = { Icon(Icons.Default.Check, "") },
-                            onClick = {
-                                if ((!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
-                                    for (account in Values.accounts) {
-                                        if (account.name == accountName) {
-                                            scope.launch {
-                                                nameCheck = false
-                                                snackbarHostState.showSnackbar("An account with that name already exists.")
-                                            }
-                                        }
-                                    }
-                                    if (nameCheck) {
-                                        Values.accounts.add(
-                                            Account(
-                                                accountName,
-                                                accountBalance.toDouble()
-                                            )
-                                        )
-                                        if (Utility.writeLedgerData(context)) {
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
-                                                navHostController.navigateUp()
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        )
-                    }
-                )
-            }
-        }
-
-        @OptIn(ExperimentalMaterial3Api::class)
-        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
-        @Composable
-        fun generateNewTransactionView(navHostController: NavHostController, context: Context) {
-            ApplicationTheme {
-                var isPositiveTransaction by remember { mutableStateOf(false) }
-                var transactionAmount by remember { mutableStateOf("") }
-                var transactionAmountIsNotNumber = true
-                var transactionAmountLabel by remember { mutableStateOf("Transaction amount") }
-                var accountNameListIsExpanded by remember { mutableStateOf(false) }
-                var accountName by remember { mutableStateOf("") }
-                var categoryListIsExpanded by remember { mutableStateOf(false) }
-                var category by remember { mutableStateOf("") }
-                var description by remember { mutableStateOf("") }
-
-                val scope = rememberCoroutineScope()
-                val snackbarHostState = remember { SnackbarHostState() }
-
-                var localDate = LocalDate.now() // Must initialize
-                var localTime = LocalTime.now() // Must initialize
-
-                var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-                var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-
-                var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
-                var openDatePickerDialog by remember { mutableStateOf(false) }
-
-                var openTimePickerDialog by remember { mutableStateOf(false) }
-                var hour : Int
-                var minute : Int
-                var stringTime = localTime.format(timeFormatter)
-
-                Scaffold(
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState)
-                    },
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text("New Transaction")
-                            },
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                        navHostController.navigateUp()
-                                    }
-                                ) {
-                                    Icon(Icons.Filled.ArrowBack, "")
-                                }
-                            },
-                        )
-                    },
-                    content = {
-                        Surface(modifier = Modifier.padding(vertical = 70.dp, horizontal = 16.dp)) {
-                            Column(modifier = Modifier
-                                .fillMaxSize()
-                                .verticalScroll(
-                                    rememberScrollState()
-                                )) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Deposit or withdrawal
-                                    Text("Deposit")
-                                    Checkbox(
-                                        checked = isPositiveTransaction,
-                                        onCheckedChange = {
-                                            isPositiveTransaction = it
-                                        },
-                                    )
-                                   Spacer(modifier = Modifier.padding(horizontal = 5.dp))
-                                    // amount
-                                    OutlinedTextField(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        value = transactionAmount,
-                                        prefix = {
-                                            if (!isPositiveTransaction) {
-                                                Text("-", color = Color.Red)
-                                            } else {
-                                                Text("+", color = Color.Green)
-                                            }
-                                        },
-                                        suffix = {
-                                            Text(Values.currency)
-                                        },
-                                        singleLine = true,
-                                        isError = transactionAmountIsNotNumber,
-                                        onValueChange = {
-                                            transactionAmount = it
-                                            transactionAmountIsNotNumber =
-                                                !(it.toDoubleOrNull() != null && it.isNotEmpty())
-                                        },
-                                        label = {
-                                            Text(transactionAmountLabel)
-                                        }
-                                    )
-                                }
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                // Account name
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Account name
+                            if (fieldEnabled) {
                                 ExposedDropdownMenuBox(
                                     expanded = accountNameListIsExpanded,
                                     onExpandedChange = {
@@ -323,9 +395,9 @@ class Views {
                                 ) {
                                     OutlinedTextField(
                                         value = accountName,
-                                        readOnly = true,
+                                        readOnly = !(fieldEnabled),
                                         onValueChange = {
-//                                            accountName = it
+                                            accountName = it
                                         },
                                         modifier = Modifier
                                             .menuAnchor()
@@ -336,7 +408,7 @@ class Views {
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameListIsExpanded)
                                         },
-                                        isError = accountName.isEmpty()
+                                        isError = accountName.isEmpty(),
                                     )
                                     ExposedDropdownMenu(
                                         expanded = accountNameListIsExpanded,
@@ -344,7 +416,7 @@ class Views {
                                             accountNameListIsExpanded = false
                                         }
                                     ) {
-                                        Values.accountsNames.forEach { selectedOption ->    // Issue: only most recent account name shown
+                                        Values.accountNames.forEach { selectedOption ->    // Issue: only most recent account name shown
                                             DropdownMenuItem(onClick = {
                                                 accountName = selectedOption
                                                 accountNameListIsExpanded = false
@@ -356,187 +428,216 @@ class Views {
                                         }
                                     }
                                 }
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                // Category
-                                if (Values.categories.isNotEmpty()) {
-                                    ExposedDropdownMenuBox(
-                                        expanded = categoryListIsExpanded,
-                                        onExpandedChange = {
-                                            categoryListIsExpanded = !categoryListIsExpanded
-                                        }
-                                    ) {
-                                        OutlinedTextField(
-                                            value = category,
-                                            readOnly = false,
-                                            onValueChange = {
-                                                category = it
-                                            },
-                                            modifier = Modifier
-                                                .menuAnchor()
-                                                .fillMaxWidth(),
-                                            label = {
-                                                Text("Transaction category")
-                                            },
-                                            trailingIcon = {
-                                                if (Values.categories.isNotEmpty()) {
-                                                    ExposedDropdownMenuDefaults.TrailingIcon(
-                                                        expanded = categoryListIsExpanded
-                                                    )
-                                                }
-                                            },
-                                            isError = category.isEmpty()
-                                        )
-                                        ExposedDropdownMenu(
-                                            expanded = categoryListIsExpanded,
-                                            onDismissRequest = {
-                                                categoryListIsExpanded = false
-                                            }
-                                        ) {
-                                            Values.categories.forEach { selectedOption ->
-                                                DropdownMenuItem(onClick = {
-                                                    category = selectedOption
-                                                    categoryListIsExpanded = false
-                                                },
-                                                    text = {
-                                                        Text(selectedOption)
-                                                    }
-                                                )
-                                            }
-                                        }
+                            }
+                            else {
+                                OutlinedTextField(
+                                    readOnly = (!fieldEnabled),
+                                    value = accountName,
+                                    onValueChange = {
+                                        accountName = it
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = {
+                                        Text("Transaction account")
+                                    },
+                                    isError = accountName.isEmpty()
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Category
+                            if (Values.categories.isNotEmpty() && fieldEnabled) {
+                                ExposedDropdownMenuBox(
+                                    expanded = categoryListIsExpanded,
+                                    onExpandedChange = {
+                                        categoryListIsExpanded = !categoryListIsExpanded
                                     }
-                                }
-                                else {
+                                ) {
                                     OutlinedTextField(
+                                        readOnly = (!fieldEnabled),
                                         value = category,
-                                        readOnly = false,
                                         onValueChange = {
                                             category = it
                                         },
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .menuAnchor()
+                                            .fillMaxWidth(),
                                         label = {
                                             Text("Transaction category")
                                         },
+                                        trailingIcon = {
+                                            if (Values.categories.isNotEmpty()) {
+                                                ExposedDropdownMenuDefaults.TrailingIcon(
+                                                    expanded = categoryListIsExpanded
+                                                )
+                                            }
+                                        },
                                         isError = category.isEmpty()
                                     )
-                                }
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                // Description
-                                OutlinedTextField(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    value = description,
-                                    label = {
-                                        Text("Transaction description")
-                                    },
-                                    onValueChange = {
-                                        description = it
-                                    }
-                                )
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                // Date
-                                OutlinedTextField(
-                                    value = stringDate,
-                                    readOnly = true,
-                                    onValueChange = {
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .onFocusChanged() {
-                                            if (it.isFocused) {             // onClick does not work, jerryrigged solution
-                                                openDatePickerDialog = true
-                                            }
-                                        },
-                                    label = {
-                                        Text("Transaction date")
-                                    },
-                                    isError = stringDate.isEmpty(),
-                                )
-                                if (openDatePickerDialog) {
-                                    val datePickerState = rememberDatePickerState()
-                                    val confirmEnabled = derivedStateOf { datePickerState.selectedDateMillis != null }
-                                    DatePickerDialog(
+                                    ExposedDropdownMenu(
+                                        expanded = categoryListIsExpanded,
                                         onDismissRequest = {
-                                                           openDatePickerDialog = false
-                                        },
-                                        confirmButton = {
-                                            TextButton(
-                                                onClick = {
-                                                    openDatePickerDialog = false
-                                                    var milliseconds = datePickerState.selectedDateMillis as Long
-                                                    localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
-                                                    stringDate = localDate.format(dateFormatter)
-                                                },
-                                                content = {
-                                                          Text("OK")
-                                                },
-                                                enabled = confirmEnabled.value
-                                            )
-                                        },
-                                        dismissButton = {
-                                            TextButton(
-                                                onClick = {
-                                                    openDatePickerDialog = false
-                                                }
-                                            ) {
-                                                Text("Cancel")
-                                            }
+                                            categoryListIsExpanded = false
                                         }
                                     ) {
-                                        DatePicker(state = datePickerState)
-                                    }
-                                }
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                // Time
-                                OutlinedTextField(
-                                    value = stringTime,
-                                    readOnly = true,
-                                    onValueChange = {
-                                    },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .onFocusChanged() {
-                                            if (it.isFocused) {             // onClick does not work, jerryrigged solution
-                                                openTimePickerDialog = true
-                                            }
-                                        },
-                                    label = {
-                                        Text("Transaction time")
-                                    },
-                                    isError = stringTime.isEmpty(),
-                                )
-                                if (openTimePickerDialog) {
-                                    val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
-                                    ViewUtils.TimePickerDialog(
-                                        onDismissRequest = {
-                                                           openTimePickerDialog = false
-                                        },
-                                        onConfirm = {
-                                            openTimePickerDialog = false
-                                            hour = timePickerState.hour
-                                            minute = timePickerState.minute
-                                            localTime = LocalTime.of(hour, minute)
-                                            stringTime = localTime.format(timeFormatter)
-                                        },
-                                    ) {
-                                        TimePicker(state = timePickerState)
+                                        Values.categories.forEach { selectedOption ->
+                                            DropdownMenuItem(onClick = {
+                                                category = selectedOption
+                                                categoryListIsExpanded = false
+                                            },
+                                                text = {
+                                                    Text(selectedOption)
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
+                            else {
+                                OutlinedTextField(
+                                    readOnly = (!fieldEnabled),
+                                    value = category,
+                                    onValueChange = {
+                                        category = it
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = {
+                                        Text("Transaction category")
+                                    },
+                                    isError = category.isEmpty()
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Description
+                            OutlinedTextField(
+                                readOnly = (!fieldEnabled),
+                                modifier = Modifier.fillMaxWidth(),
+                                value = description,
+                                label = {
+                                    Text("Transaction description")
+                                },
+                                onValueChange = {
+                                    description = it
+                                }
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Date
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = stringDate,
+                                onValueChange = {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged() {
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
+                                            openDatePickerDialog = true
+                                        }
+                                    },
+                                label = {
+                                    Text("Transaction date")
+                                },
+                                isError = stringDate.isEmpty(),
+                            )
+                            if (openDatePickerDialog) {
+                                val datePickerState = rememberDatePickerState()
+                                val confirmEnabled = derivedStateOf { datePickerState.selectedDateMillis != null }
+                                DatePickerDialog(
+                                    onDismissRequest = {
+                                                       openDatePickerDialog = false
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                openDatePickerDialog = false
+                                                var milliseconds = datePickerState.selectedDateMillis as Long
+                                                localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
+                                                stringDate = localDate.format(dateFormatter)
+                                            },
+                                            content = {
+                                                      Text("OK")
+                                            },
+                                            enabled = confirmEnabled.value
+                                        )
+                                    },
+                                    dismissButton = {
+                                        TextButton(
+                                            onClick = {
+                                                openDatePickerDialog = false
+                                            }
+                                        ) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                ) {
+                                    DatePicker(state = datePickerState)
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Time
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = stringTime,
+                                onValueChange = {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged() {
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
+                                            openTimePickerDialog = true
+                                        }
+                                    },
+                                label = {
+                                    Text("Transaction time")
+                                },
+                                isError = stringTime.isEmpty(),
+                            )
+                            if (openTimePickerDialog) {
+                                val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
+                                ViewUtils.TimePickerDialog(
+                                    onDismissRequest = {
+                                                       openTimePickerDialog = false
+                                    },
+                                    onConfirm = {
+                                        openTimePickerDialog = false
+                                        hour = timePickerState.hour
+                                        minute = timePickerState.minute
+                                        localTime = LocalTime.of(hour, minute)
+                                        stringTime = localTime.format(timeFormatter)
+                                    },
+                                ) {
+                                    TimePicker(state = timePickerState)
+                                }
+                            }
                         }
-                    },
-                    floatingActionButton = {
+                    }
+                },
+                floatingActionButton = {
+                    if (fieldEnabled) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "Apply") },
                             icon = { Icon(Icons.Default.Check, "") },
                             onClick = {
                                 // Check that input fields are valid
-                                if ( (!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty()) ) {
+                                if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
+                                    var writeSuccess = false
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
-                                    Values.accounts[Utility.indexFromName(accountName)].newTransaction(category, description, transactionAmount.toDouble(), localDate, localTime)
-                                    if (Utility.writeLedgerData(context)) {
+                                    if (transaction != null) {
+                                        writeSuccess = Utility.editTransaction(transaction, context, category, description,
+                                            transactionAmount.toDouble(), localDate, localTime, accountName)
+                                    }
+                                    else {  // New transaction
+                                        writeSuccess = Utility.newTransaction(Transaction(category, description, transactionAmount.toDouble(), localDate, localTime, accountName), context)
+                                    }
+                                    Utility.readTransactions()
+                                    Utility.readCategories()
+                                    if (writeSuccess) {
                                         scope.launch {
-                                            snackbarHostState.showSnackbar("New transaction added!", duration = SnackbarDuration.Short)
+                                            snackbarHostState.showSnackbar(
+                                                "New transaction added!",
+                                                duration = SnackbarDuration.Short
+                                            )
                                             navHostController.navigateUp()
                                         }
                                     }
@@ -544,178 +645,184 @@ class Views {
                             }
                         )
                     }
-                )
-            }
+                }
+            )
         }
+    }
 
-        @OptIn(ExperimentalMaterial3Api::class)
-        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-        @Composable
-        fun generateSettingsView(navHostController: NavHostController, context: Context) {
-            ApplicationTheme {
-                Scaffold(
-                    topBar = {
-                        TopAppBar(
-                            title = {
-                                Text(text = "Settings")
-                            },
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                        navHostController.navigateUp()
-                                    }
-                                ) {
-                                    Icon(Icons.Filled.ArrowBack, "")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @Composable
+    fun generateSettingsView(navHostController: NavHostController, context: Context) {
+        ApplicationTheme {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "Settings")
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigateUp()
                                 }
-                            }
-                        )
-                    },
-                    content = {
-                        Surface(modifier = Modifier.padding(vertical = 75.dp)) {
-                            Column(
-                                modifier = Modifier.fillMaxSize()
                             ) {
-                                ViewUtils.settingsLabel("Accounts", true)
-                                ViewUtils.settingsButton("Add new account",
-                                    onClick = {
-                                        navHostController.navigate("New Account Activity")
-                                    }
-                                )
-                                ViewUtils.settingsDivider()
-                                ViewUtils.settingsLabel("Preferences", false)
-                                val newCurrency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
-                                if (newCurrency != Values.currency && newCurrency != "-1") {
-                                    Values.currency = newCurrency
-                                    Utility.writeCurrencyData(context)
+                                Icon(Icons.Filled.ArrowBack, "")
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(vertical = 75.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            ViewUtils.settingsLabel("Accounts", true)
+                            ViewUtils.settingsButton("Add new account",
+                                onClick = {
+                                    navHostController.navigate("New Account Activity")
                                 }
+                            )
+                            ViewUtils.settingsDivider()
+                            ViewUtils.settingsLabel("Preferences", false)
+                            val newCurrency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
+                            if (newCurrency != Values.currency && newCurrency != "-1") {
+                                Values.currency = newCurrency
+                                Utility.writeCurrencyData(context)
                             }
                         }
                     }
-                )
+                }
+            )
+        }
+    }
+
+    @Composable
+    fun generateAccountScrollView() {
+        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+            Values.accountNames.forEach{ accountName ->
+                var accountTotal = Utility.readAccountTotal(accountName)
+                Row {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .clickable(true, null, null, onClick = {
+                                // Account specific screen
+                            })
+                            .padding(15.dp),
+                    ) {
+                        Text(
+                            text = accountName,
+                            style = TextStyle(
+                                fontSize = 22.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                        Spacer(modifier = Modifier.padding(5.dp))
+                        Text(
+                            text = Values.currency + Values.balanceFormat.format(accountTotal),
+                            style = TextStyle(fontSize = 19.sp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.padding(10.dp))
             }
         }
+    }
 
-        @Composable
-        fun generateAccountScrollView() {
-            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-                for (account in Values.accounts) {
-                    Row {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
-                                )
-                                .clip(shape = RoundedCornerShape(10.dp))
-                                .clickable(true, null, null, onClick = {
-                                    // Account specific screen
-                                })
-                                .padding(15.dp),
-                        ) {
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @Composable
+    fun generateTransactionScrollView(transactions: ArrayList<Transaction>, navHostController: NavHostController) {
+        Scaffold {
+            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+            ) {
+                transactions.forEach {transaction ->
+                    Row(
+                        modifier = Modifier
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clickable(enabled = true, onClick = {
+                                Values.currentTransaction = transaction
+                                navHostController.navigate("View Transaction Activity")
+                            })
+                            .padding(10.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Column {
                             Text(
-                                text = account.name,
+                                text = transaction.category,  // category
                                 style = TextStyle(
-                                    fontSize = 22.sp,
+                                    fontSize = 20.sp,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                            Spacer(modifier = Modifier.padding(2.dp))
+                            Text(
+                                text = transaction.accountName,     // account
+                                style = TextStyle(
+                                    fontSize = 18.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             )
-                            Spacer(modifier = Modifier.padding(5.dp))
+                            Spacer(modifier = Modifier.padding(2.dp))
                             Text(
-                                text = Values.currency + Values.balanceFormat.format(account.balance),
-                                style = TextStyle(fontSize = 19.sp)
+                                text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
+                                style = TextStyle(
+                                    fontSize = 16.sp,
+                                    color = MaterialTheme.colorScheme.surfaceTint
+                                )
+                            )
+                        }
+                        Spacer(
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth())
+                        Column(
+                            horizontalAlignment = Alignment.End
+                        ) {
+                            if (transaction.amount < 0) {   // If amount is negative
+                                Text(
+                                    text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = net.araymond.application.ui.theme.Red
+                                    )
+                                )
+                            }
+                            else {
+                                Text(
+                                    text = Values.currency + Values.balanceFormat.format(transaction.amount),
+                                    style = TextStyle(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = net.araymond.application.ui.theme.Green
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(15.dp))
+                            Text(
+                                text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
+                                style = TextStyle(
+                                    fontSize = 18.sp
+                                )
                             )
                         }
                     }
                     Spacer(modifier = Modifier.padding(10.dp))
-                }
-            }
-        }
-
-        @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-        @Composable
-        fun generateTransactionScrollView() {
-            Scaffold {
-                var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-                var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState())
-                        .fillMaxWidth()
-                ) {
-                    for (account in Values.accounts) {
-                        for (transaction in account.transactions.reversed()) {   // i = account.getTransactions().size - 1; i >= -1; i--
-                            Row(
-                                modifier = Modifier
-                                    .clip(shape = RoundedCornerShape(10.dp))
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(10.dp)
-                                    )
-                                    .clickable(enabled = true, onClick = {
-                                        // transaction specific screen
-                                    })
-                                    .padding(10.dp)
-                                    .fillMaxWidth()
-                            ) {
-                                Column {
-                                    Text(
-                                        text = transaction.category,  // category
-                                        style = TextStyle(
-                                            fontSize = 20.sp,
-                                            color = MaterialTheme.colorScheme.tertiary
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.padding(2.dp))
-                                    Text(
-                                        text = account.name,     // account
-                                        style = TextStyle(
-                                            fontSize = 18.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.padding(2.dp))
-                                    Text(
-                                        text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
-                                        style = TextStyle(
-                                            fontSize = 16.sp,
-                                            color = MaterialTheme.colorScheme.surfaceTint
-                                        )
-                                    )
-                                }
-                                Spacer(
-                                    Modifier
-                                        .weight(1f)
-                                        .fillMaxWidth())
-                                Column(
-                                    horizontalAlignment = Alignment.End
-                                ) {
-                                    if (transaction.amount < 0) {   // If amount is negative
-                                        Text(
-                                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
-                                            style = TextStyle(
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = net.araymond.application.ui.theme.Red
-                                            )
-                                        )
-                                    }
-                                    else {
-                                        Text(
-                                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
-                                            style = TextStyle(
-                                                fontSize = 18.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = net.araymond.application.ui.theme.Green
-                                            )
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.padding(15.dp))
-                                }
-                            }
-                            Spacer(modifier = Modifier.padding(10.dp))
-                        }
-                    }
                 }
             }
         }
