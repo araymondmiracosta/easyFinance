@@ -2,6 +2,7 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
@@ -89,7 +91,7 @@ object Views {
                                     navHostController.navigate("Settings Activity")
                                 }
                             ) {
-                                Icon(Icons.Filled.Settings, null)
+                                Icon(Icons.Filled.Settings, "Settings")
                             }
                         }
                     )
@@ -201,10 +203,10 @@ object Views {
                                     }
                                 }
                                 if (nameCheck) {
-                                    Utility.newTransaction(Transaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now(), accountName))
+                                    var writeSuccess = Utility.newTransaction(Transaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now(), accountName), context)
                                     Utility.readAccounts()
                                     Utility.readTransactions()
-                                    if (Utility.writeLedgerData(context)) {
+                                    if (writeSuccess) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
                                             navHostController.navigateUp()
@@ -220,7 +222,9 @@ object Views {
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState")
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
+        "CoroutineCreationDuringComposition"
+    )
     @Composable
     fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
         ApplicationTheme {
@@ -242,6 +246,7 @@ object Views {
             var localTime = LocalTime.now() // Must initialize
 
             var fieldEnabled by remember { mutableStateOf(false) }
+            var deleteDialog by remember { mutableStateOf(false) }
 
             if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
                 if (transaction.amount > 0) {
@@ -259,6 +264,19 @@ object Views {
                 }
                 else {
                     title = "View Transaction"
+                }
+                if (deleteDialog) {     // If the user pressed the delete button, confirm
+                    if(ViewUtils.confirmDialog("Are you sure you want to delete this transaction?")) {
+                        if (Utility.removeTransaction(transaction, context)) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar(
+                                    "Transaction removed",
+                                    duration = SnackbarDuration.Short
+                                )
+                                navHostController.navigateUp()
+                            }
+                        }
+                    }
                 }
             }
             else {
@@ -296,16 +314,25 @@ object Views {
                         },
                         actions = {
                             if (transaction != null) {
+                                if (fieldEnabled) {
+                                    IconButton(
+                                        onClick = {
+                                            deleteDialog = !deleteDialog    // Known bug, after first attempt, user has to press button twice
+                                        }
+                                    ) {
+                                        Icon(Icons.Filled.Delete, "Remove transaction")
+                                    }
+                                }
                                 IconButton(
                                     onClick = {
                                         fieldEnabled = !fieldEnabled
                                     }
                                 ) {
                                     if (fieldEnabled) {
-                                        Icon(Icons.Filled.Info, "")
+                                        Icon(Icons.Filled.Info, "View transaction")
                                     }
                                     else {
-                                        Icon(Icons.Filled.Create, "")
+                                        Icon(Icons.Filled.Create, "Edit transaction")
                                     }
                                 }
                             }
@@ -592,19 +619,20 @@ object Views {
                             onClick = {
                                 // Check that input fields are valid
                                 if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
+                                    var writeSuccess = false
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
                                     if (transaction != null) {
-                                        transaction.editTransaction(category, description,
+                                        writeSuccess = Utility.editTransaction(transaction, context, category, description,
                                             transactionAmount.toDouble(), localDate, localTime, accountName)
                                     }
                                     else {  // New transaction
-                                        Utility.newTransaction(Transaction(category, description, transactionAmount.toDouble(), localDate, localTime, accountName))
+                                        writeSuccess = Utility.newTransaction(Transaction(category, description, transactionAmount.toDouble(), localDate, localTime, accountName), context)
                                     }
                                     Utility.readTransactions()
                                     Utility.readCategories()
-                                    if (Utility.writeLedgerData(context)) {
+                                    if (writeSuccess) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar(
                                                 "New transaction added!",

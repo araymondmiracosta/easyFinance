@@ -79,6 +79,58 @@ object ViewUtils {
     }
 
     @Composable
+    fun confirmDialog(label: String): Boolean {
+        var dialogIsOpen by remember { mutableStateOf(true) }
+        var optionValue by remember { mutableStateOf(false) }
+        if (dialogIsOpen) {
+            Dialog(
+                onDismissRequest = {
+                    dialogIsOpen = false
+                },
+            ) {
+                Surface {
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(10.dp))
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
+                            text = label,
+                            modifier = Modifier
+                                .padding(top = 24.dp)
+                                .padding(horizontal = 16.dp),
+                            style = TextStyle(
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        )
+                        Row {
+                            Spacer(Modifier.weight(1f))
+                            TextButton(
+                                onClick = {
+                                   dialogIsOpen = false
+                                }
+                            ) {
+                                Text("Cancel")
+                            }
+                            TextButton(
+                                onClick = {
+                                    optionValue = true
+                                    dialogIsOpen = false
+                                }
+                            ) {
+                                Text("OK")
+                            }
+                        }
+                    }
+                }
+           }
+        }
+        return optionValue
+    }
+
+    @Composable
     fun settingsDropdown(value: String, label: String, options: Array<String>): String {
         var dialogIsOpen by remember { mutableStateOf(false) }
         var tempValue by remember { mutableStateOf(value) }

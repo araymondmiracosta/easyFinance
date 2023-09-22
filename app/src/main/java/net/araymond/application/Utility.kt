@@ -3,6 +3,8 @@ package net.araymond.application
 import android.content.Context
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.time.LocalDate
+import java.time.LocalTime
 
 object Utility {
 
@@ -122,12 +124,21 @@ object Utility {
         return -1.0
     }
 
-    fun newTransaction(transaction: Transaction) {
+    fun newTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.add(transaction)
         Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
+        return (writeLedgerData(context))
     }
 
-    fun removeTransaction(transaction: Transaction) {
+    fun removeTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.remove(transaction)
+        return (writeLedgerData(context))
+    }
+
+    fun editTransaction(transaction: Transaction, context: Context, category: String,
+                        description: String, amount: Double, date: LocalDate,
+                        time: LocalTime, accountName: String): Boolean {
+        transaction.editTransaction(category, description, amount, date, time, accountName)
+        return (writeLedgerData(context))
     }
 }

@@ -15,6 +15,6 @@ object Values {
     var categories = ArrayList<String>()
     var accountNames = ArrayList<String>()
     var locale = Locale(language, country)
-    var balanceFormat = DecimalFormat("##.00")
+    var balanceFormat = DecimalFormat("0.00")
     lateinit var currentTransaction: Transaction
 }
