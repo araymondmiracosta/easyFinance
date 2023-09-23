@@ -87,8 +87,10 @@ object Views {
                     )
                 },
                 content = {
-                    Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
-                        Column {
+                    Surface(modifier = Modifier.fillMaxSize().padding(vertical = 75.dp, horizontal = 16.dp)) {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                        ) {
                             Viewlets.generateAccountScroller()
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(Values.transactions, navHostController)

@@ -14,11 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -301,7 +299,9 @@ object Viewlets {
 
     @Composable
     fun generateAccountScroller() {
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
             Values.accountNames.forEach{ accountName ->
                 var accountTotal = Utility.readAccountTotal(accountName)
                 Row {
@@ -340,14 +340,14 @@ object Viewlets {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun generateTransactionScroller(transactions: ArrayList<Transaction>, navHostController: NavHostController) {
-        Scaffold {
+//        Scaffold {
             var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
             var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxWidth()
-            ) {
+//            Column(
+//                modifier = Modifier
+//                    .verticalScroll(rememberScrollState())
+//                    .fillMaxWidth()
+//            ) {
                 transactions.forEach {transaction ->
                     var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
                     var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
@@ -428,7 +428,7 @@ object Viewlets {
                     }
                     Spacer(modifier = Modifier.padding(10.dp))
                 }
-            }
-        }
-    }
+ //           }
+//        }
+   }
 }
