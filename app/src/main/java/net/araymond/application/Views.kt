@@ -259,8 +259,9 @@ object Views {
                     title = "View Transaction"
                 }
                 if (deleteDialog) {     // If the user pressed the delete button, confirm
-                    if(Viewlets.confirmDialog("Are you sure you want to delete this transaction?")) {
+                    if(Viewlets.confirmDialog("Delete transaction", "Are you sure you want to delete this transaction?")) {
                         if (Utility.removeTransaction(transaction, context)) {
+                            fieldEnabled = false
                             scope.launch {
                                 snackbarHostState.showSnackbar(
                                     "Transaction removed",

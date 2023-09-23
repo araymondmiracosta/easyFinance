@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -87,7 +89,7 @@ object Viewlets {
     }
 
     @Composable
-    fun confirmDialog(label: String): Boolean {
+    fun confirmDialog(title: String, label: String): Boolean {
         var dialogIsOpen by remember { mutableStateOf(true) }
         var optionValue by remember { mutableStateOf(false) }
         if (dialogIsOpen) {
@@ -103,17 +105,28 @@ object Viewlets {
                             .clip(shape = RoundedCornerShape(10.dp))
                             .padding(horizontal = 16.dp)
                     ) {
-                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
-                            text = label,
+                        Text(
+                            text = title,
                             modifier = Modifier
-                                .padding(top = 24.dp)
-                                .padding(horizontal = 16.dp),
+                                .padding(top = 20.dp)
+                                .padding(horizontal = 10.dp),
                             style = TextStyle(
-                                fontSize = 20.sp,
+                                fontSize = 22.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         )
-                        Row {
+                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
+                            text = label,
+                            modifier = Modifier
+                                .padding(top = 20.dp)
+                                .padding(horizontal = 10.dp),
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                            )
+                        )
+                        Row(
+                            modifier = Modifier.padding(vertical = 5.dp)
+                        ) {
                             Spacer(Modifier.weight(1f))
                             TextButton(
                                 onClick = {
@@ -213,7 +226,9 @@ object Viewlets {
                                 Text(selectedOption)
                             }
                         }
-                        Row {
+                        Row(
+                            modifier = Modifier.padding(vertical = 5.dp)
+                        ) {
                             Spacer(Modifier.weight(1f))
                             TextButton(
                                 onClick = {
