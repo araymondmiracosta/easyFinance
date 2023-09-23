@@ -2,7 +2,6 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -69,6 +68,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import kotlin.math.absoluteValue
@@ -203,7 +203,8 @@ object Views {
                                     }
                                 }
                                 if (nameCheck) {
-                                    var writeSuccess = Utility.newTransaction(Transaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now(), accountName), context)
+                                    var openingTransaction = Transaction("Opening deposit", "", accountBalance.toDouble(), ZonedDateTime.now(Values.UTCTimeZone), accountName)
+                                    var writeSuccess = Utility.newTransaction(openingTransaction, context)
                                     Utility.readAccounts()
                                     Utility.readTransactions()
                                     if (writeSuccess) {
@@ -257,8 +258,8 @@ object Views {
                 accountName = transaction.accountName
                 category = transaction.category
                 description = transaction.description
-                localDate = transaction.date
-                localTime = transaction.time
+                localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+                localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
                 if (fieldEnabled) {
                     title = "Edit Transaction"
                 }
@@ -619,16 +620,20 @@ object Views {
                             onClick = {
                                 // Check that input fields are valid
                                 if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
-                                    var writeSuccess = false
+                                    var writeSuccess: Boolean
+                                    var localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
+                                        ZonedDateTime.of(localDate, localTime, Values.localTimeZone))
+
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
                                     if (transaction != null) {
                                         writeSuccess = Utility.editTransaction(transaction, context, category, description,
-                                            transactionAmount.toDouble(), localDate, localTime, accountName)
+                                            transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                     }
                                     else {  // New transaction
-                                        writeSuccess = Utility.newTransaction(Transaction(category, description, transactionAmount.toDouble(), localDate, localTime, accountName), context)
+                                        var newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
+                                        writeSuccess = Utility.newTransaction(newTransaction, context)
                                     }
                                     Utility.readTransactions()
                                     Utility.readCategories()
@@ -747,6 +752,8 @@ object Views {
                     .fillMaxWidth()
             ) {
                 transactions.forEach {transaction ->
+                    var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+                    var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
                     Row(
                         modifier = Modifier
                             .clip(shape = RoundedCornerShape(10.dp))
@@ -779,7 +786,7 @@ object Views {
                             )
                             Spacer(modifier = Modifier.padding(2.dp))
                             Text(
-                                text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
+                                text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
                                 style = TextStyle(
                                     fontSize = 16.sp,
                                     color = MaterialTheme.colorScheme.surfaceTint

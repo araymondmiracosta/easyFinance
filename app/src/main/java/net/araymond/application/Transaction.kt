@@ -1,28 +1,21 @@
 package net.araymond.application
 
 import java.io.Serializable
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
+import java.time.ZonedDateTime
 
 class Transaction(
     var category: String,
     var description: String,
     var amount: Double,
-    var date: LocalDate,
-    var time: LocalTime,
+    var utcDateTime: ZonedDateTime,
     var accountName: String
 ) : Serializable {
-    var localDateTime = LocalDateTime.of(date, time)
-
-    fun editTransaction(category: String, description: String, amount: Double, date: LocalDate,
-                        time: LocalTime, account: String) {
+    fun editTransaction(category: String, description: String, amount: Double,
+                        utcDateTime: ZonedDateTime, account: String) {
         this.category = category
         this.description = description
         this.amount = amount
-        this.date = date
-        this.time = time
         this.accountName = account
-        this.localDateTime = LocalDateTime.of(date, time)
+        this.utcDateTime = utcDateTime
     }
 }

@@ -3,8 +3,7 @@ package net.araymond.application
 import android.content.Context
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import java.time.LocalDate
-import java.time.LocalTime
+import java.time.ZonedDateTime
 
 object Utility {
 
@@ -102,11 +101,11 @@ object Utility {
     }
 
     private fun sortTransactionListByRecentDateFirst(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedByDescending { it.localDateTime }.toCollection(ArrayList()))
+        return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     private fun sortTransactionListByRecentDateLast(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedBy { it.localDateTime }.toCollection(ArrayList()))
+        return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     fun calculateTransactionRunningBalance(transaction: Transaction, transactionList: ArrayList<Transaction>): Double {
@@ -136,9 +135,17 @@ object Utility {
     }
 
     fun editTransaction(transaction: Transaction, context: Context, category: String,
-                        description: String, amount: Double, date: LocalDate,
-                        time: LocalTime, accountName: String): Boolean {
-        transaction.editTransaction(category, description, amount, date, time, accountName)
+                        description: String, amount: Double, utcDateTime: ZonedDateTime,
+                        accountName: String): Boolean {
+        transaction.editTransaction(category, description, amount, utcDateTime, accountName)
         return (writeLedgerData(context))
+    }
+
+    fun convertUtcTimeToLocalDateTime(utcDateTime: ZonedDateTime): ZonedDateTime {
+        return (utcDateTime.withZoneSameInstant(Values.localTimeZone))
+    }
+
+    fun convertLocalDateTimeToUTC(localDateTime: ZonedDateTime): ZonedDateTime {
+        return (localDateTime.withZoneSameInstant(Values.UTCTimeZone))
     }
 }
