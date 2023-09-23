@@ -2,9 +2,6 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -32,7 +28,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -50,19 +45,15 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import net.araymond.application.ui.theme.ApplicationTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -71,7 +62,6 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
-import kotlin.math.absoluteValue
 
 object Views {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
@@ -99,9 +89,9 @@ object Views {
                 content = {
                     Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
                         Column {
-                            generateAccountScrollView()
+                            Viewlets.generateAccountScroller()
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            generateTransactionScrollView(Values.transactions, navHostController)
+                            Viewlets.generateTransactionScroller(Values.transactions, navHostController)
                         }
                     }
                 },
@@ -205,8 +195,8 @@ object Views {
                                 if (nameCheck) {
                                     var openingTransaction = Transaction("Opening deposit", "", accountBalance.toDouble(), ZonedDateTime.now(Values.UTCTimeZone), accountName)
                                     var writeSuccess = Utility.newTransaction(openingTransaction, context)
-                                    Utility.readAccounts()
-                                    Utility.readTransactions()
+//                                    Utility.readAccounts()
+//                                    Utility.readTransactions()
                                     if (writeSuccess) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
@@ -267,7 +257,7 @@ object Views {
                     title = "View Transaction"
                 }
                 if (deleteDialog) {     // If the user pressed the delete button, confirm
-                    if(ViewUtils.confirmDialog("Are you sure you want to delete this transaction?")) {
+                    if(Viewlets.confirmDialog("Are you sure you want to delete this transaction?")) {
                         if (Utility.removeTransaction(transaction, context)) {
                             scope.launch {
                                 snackbarHostState.showSnackbar(
@@ -594,7 +584,7 @@ object Views {
                             )
                             if (openTimePickerDialog) {
                                 val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
-                                ViewUtils.TimePickerDialog(
+                                Viewlets.TimePickerDialog(
                                     onDismissRequest = {
                                                        openTimePickerDialog = false
                                     },
@@ -635,8 +625,8 @@ object Views {
                                         var newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                         writeSuccess = Utility.newTransaction(newTransaction, context)
                                     }
-                                    Utility.readTransactions()
-                                    Utility.readCategories()
+//                                    Utility.readTransactions()
+//                                    Utility.readCategories()
                                     if (writeSuccess) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar(
@@ -682,15 +672,15 @@ object Views {
                         Column(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            ViewUtils.settingsLabel("Accounts", true)
-                            ViewUtils.settingsButton("Add new account",
+                            Viewlets.settingsLabel("Accounts", true)
+                            Viewlets.settingsButton("Add new account",
                                 onClick = {
                                     navHostController.navigate("New Account Activity")
                                 }
                             )
-                            ViewUtils.settingsDivider()
-                            ViewUtils.settingsLabel("Preferences", false)
-                            val newCurrency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
+                            Viewlets.settingsDivider()
+                            Viewlets.settingsLabel("Preferences", false)
+                            val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
                             if (newCurrency != Values.currency && newCurrency != "-1") {
                                 Values.currency = newCurrency
                                 Utility.writeCurrencyData(context)
@@ -699,139 +689,6 @@ object Views {
                     }
                 }
             )
-        }
-    }
-
-    @Composable
-    fun generateAccountScrollView() {
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            Values.accountNames.forEach{ accountName ->
-                var accountTotal = Utility.readAccountTotal(accountName)
-                Row {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .clickable(true, null, null, onClick = {
-                                // Account specific screen
-                            })
-                            .padding(15.dp),
-                    ) {
-                        Text(
-                            text = accountName,
-                            style = TextStyle(
-                                fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                        Spacer(modifier = Modifier.padding(5.dp))
-                        Text(
-                            text = Values.currency + Values.balanceFormat.format(accountTotal),
-                            style = TextStyle(fontSize = 19.sp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.padding(10.dp))
-            }
-        }
-    }
-
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-    @Composable
-    fun generateTransactionScrollView(transactions: ArrayList<Transaction>, navHostController: NavHostController) {
-        Scaffold {
-            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxWidth()
-            ) {
-                transactions.forEach {transaction ->
-                    var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-                    var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
-                    Row(
-                        modifier = Modifier
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clickable(enabled = true, onClick = {
-                                Values.currentTransaction = transaction
-                                navHostController.navigate("View Transaction Activity")
-                            })
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Column {
-                            Text(
-                                text = transaction.category,  // category
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            )
-                            Spacer(modifier = Modifier.padding(2.dp))
-                            Text(
-                                text = transaction.accountName,     // account
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            )
-                            Spacer(modifier = Modifier.padding(2.dp))
-                            Text(
-                                text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.surfaceTint
-                                )
-                            )
-                        }
-                        Spacer(
-                            Modifier
-                                .weight(1f)
-                                .fillMaxWidth())
-                        Column(
-                            horizontalAlignment = Alignment.End
-                        ) {
-                            if (transaction.amount < 0) {   // If amount is negative
-                                Text(
-                                    text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = net.araymond.application.ui.theme.Red
-                                    )
-                                )
-                            }
-                            else {
-                                Text(
-                                    text = Values.currency + Values.balanceFormat.format(transaction.amount),
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = net.araymond.application.ui.theme.Green
-                                    )
-                                )
-                            }
-                            Spacer(modifier = Modifier.padding(15.dp))
-                            Text(
-                                text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
-                                style = TextStyle(
-                                    fontSize = 18.sp
-                                )
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.padding(10.dp))
-                }
-            }
         }
     }
 }

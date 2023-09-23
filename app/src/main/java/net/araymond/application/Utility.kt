@@ -123,14 +123,22 @@ object Utility {
         return -1.0
     }
 
+    fun readAll() {
+        readTransactions()
+        readCategories()
+        readAccounts()
+    }
+
     fun newTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.add(transaction)
         Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
+        readAll()
         return (writeLedgerData(context))
     }
 
     fun removeTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.remove(transaction)
+        readAll()
         return (writeLedgerData(context))
     }
 
@@ -138,6 +146,7 @@ object Utility {
                         description: String, amount: Double, utcDateTime: ZonedDateTime,
                         accountName: String): Boolean {
         transaction.editTransaction(category, description, amount, utcDateTime, accountName)
+        readAll()
         return (writeLedgerData(context))
     }
 
