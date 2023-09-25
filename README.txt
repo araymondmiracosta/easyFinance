@@ -8,8 +8,8 @@ TODO
 - [x] Add and display Banking accounts
 - [ ] Assets
 - [ ] Graph showing changes
-- [ ] Remove and edit banking accounts
-- [ ] Remove and edit transactions
+- [X] Remove and edit banking accounts
+- [X] Remove and edit transactions
 - [ ] Remove and edit assets
 - [ ] About screen
 - [ ] Search functionality (scope?)

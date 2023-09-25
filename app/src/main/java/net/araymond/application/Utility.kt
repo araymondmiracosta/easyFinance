@@ -3,12 +3,11 @@ package net.araymond.application
 import android.content.Context
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import java.time.LocalDate
-import java.time.LocalTime
+import java.time.ZonedDateTime
 
 object Utility {
 
-    fun readAccounts() {
+    private fun readAccounts() {
         Values.accountNames = ArrayList()
         var duplicate = false
         Values.transactions.forEach{ transaction ->
@@ -26,7 +25,7 @@ object Utility {
         }
     }
 
-    fun readAccountTotal(accountName: String): Double {
+    fun getAccountTotal(accountName: String): Double {
         var accountTotal = 0.0
         Values.transactions.forEach{ transaction ->
             if (transaction.accountName == accountName) {
@@ -37,11 +36,11 @@ object Utility {
         return accountTotal
     }
 
-    fun readTransactions() {
+    private fun readTransactions() {
         Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
     }
 
-    fun readCategories() {
+    private fun readCategories() {
         Values.transactions.forEach{ transaction ->
             Values.categories.add(transaction.category)
         }
@@ -93,7 +92,7 @@ object Utility {
         }
     }
 
-    fun writeLedgerData(context: Context): Boolean {
+    private fun writeLedgerData(context: Context): Boolean {
         return (writeSaveData(Values.transactions, "ledger", context))
     }
 
@@ -102,11 +101,11 @@ object Utility {
     }
 
     private fun sortTransactionListByRecentDateFirst(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedByDescending { it.localDateTime }.toCollection(ArrayList()))
+        return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     private fun sortTransactionListByRecentDateLast(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedBy { it.localDateTime }.toCollection(ArrayList()))
+        return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     fun calculateTransactionRunningBalance(transaction: Transaction, transactionList: ArrayList<Transaction>): Double {
@@ -124,21 +123,69 @@ object Utility {
         return -1.0
     }
 
+    fun readAll() {
+        readTransactions()
+        readCategories()
+        readAccounts()
+    }
+
     fun newTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.add(transaction)
         Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
+        readAll()
         return (writeLedgerData(context))
     }
 
     fun removeTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.remove(transaction)
+        readAll()
         return (writeLedgerData(context))
     }
 
     fun editTransaction(transaction: Transaction, context: Context, category: String,
-                        description: String, amount: Double, date: LocalDate,
-                        time: LocalTime, accountName: String): Boolean {
-        transaction.editTransaction(category, description, amount, date, time, accountName)
+                        description: String, amount: Double, utcDateTime: ZonedDateTime,
+                        accountName: String): Boolean {
+        transaction.editTransaction(category, description, amount, utcDateTime, accountName)
+        readAll()
         return (writeLedgerData(context))
+    }
+
+    fun convertUtcTimeToLocalDateTime(utcDateTime: ZonedDateTime): ZonedDateTime {
+        return (utcDateTime.withZoneSameInstant(Values.localTimeZone))
+    }
+
+    fun convertLocalDateTimeToUTC(localDateTime: ZonedDateTime): ZonedDateTime {
+        return (localDateTime.withZoneSameInstant(Values.UTCTimeZone))
+    }
+
+    fun getAccountTransactions(accountName: String): ArrayList<Transaction> {
+        var accountTransactions = ArrayList<Transaction>()
+        Values.transactions.forEach{ transaction->
+            if (transaction.accountName == accountName) {
+                accountTransactions.add(transaction)
+            }
+        }
+        return accountTransactions
+    }
+
+    fun changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean {
+        var accountTransactions = getAccountTransactions(oldAccountName)
+        accountTransactions.forEach{ transaction ->
+            transaction.editTransaction(transaction.category, transaction.description,
+                transaction.amount, transaction.utcDateTime, newAccountName)
+        }
+        readAll()
+        return (writeLedgerData(context))
+    }
+
+    fun removeAccount(context: Context, accountName: String): Boolean {
+        var writeSucceed = true
+        var accountTransactions = getAccountTransactions(accountName)
+        accountTransactions.forEach{ transaction ->
+            if (!(removeTransaction(transaction, context))) {
+                writeSucceed = false
+            }
+        }
+        return (writeSucceed)
     }
 }

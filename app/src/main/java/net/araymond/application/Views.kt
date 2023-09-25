@@ -4,11 +4,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -51,9 +50,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import net.araymond.application.ui.theme.ApplicationTheme
 import androidx.compose.runtime.getValue
@@ -63,21 +60,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
-import kotlin.math.absoluteValue
 
 object Views {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun mainDraw(navHostController: NavHostController, context: Context) {
+        val scrollState = rememberScrollState()
+
         ApplicationTheme {
             Scaffold(
                 topBar = {
@@ -97,16 +97,23 @@ object Views {
                     )
                 },
                 content = {
-                    Surface(modifier = Modifier.padding(vertical = 75.dp, horizontal = 16.dp)) {
-                        Column {
-                            generateAccountScrollView()
+                    Surface(modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
+                        Column(
+                            modifier = Modifier.verticalScroll(scrollState),
+                        ) {
+                            Viewlets.generateAccountScroller(navHostController)
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            generateTransactionScrollView(Values.transactions, navHostController)
+                            Viewlets.generateTransactionScroller(
+                                navHostController,
+                                Values.transactions
+                            )
                         }
                     }
                 },
                 floatingActionButton = {
-                    if (Values.accountNames.isNotEmpty()) {
+                    if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
                             icon = { Icon(Icons.Default.Add, "") },
@@ -118,20 +125,41 @@ object Views {
         }
     }
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun generateAccountCreationView(navHostController: NavHostController, context: Context) {
+    fun generateAccountCreationView(navHostController: NavHostController, context: Context, accountNameInput: String) {
         ApplicationTheme {
-            var accountName by remember { mutableStateOf("")}
+            var accountName by remember { mutableStateOf(accountNameInput) }
             var accountBalance by remember { mutableStateOf("")}
+            var title = "New Account"
             var accountNameLabel by remember { mutableStateOf("Account name")}
             var accountBalanceLabel by remember { mutableStateOf("Account balance")}
             var accountNameIsEmpty = true
             var accountBalanceIsNotNumber = true
             val scope = rememberCoroutineScope()
             val snackbarHostState = remember { SnackbarHostState() }
-            var nameCheck = true
+            var fieldEnabled = true
+            var deleteDialog by remember { mutableStateOf(false) }
+
+            if (accountNameInput.isNotEmpty()) {
+                accountBalance = Utility.getAccountTotal(accountName).toString()
+                accountNameIsEmpty = false
+                accountBalanceIsNotNumber = false
+                title = "Edit Account"
+            }
+
+            if (deleteDialog) {
+                if (Viewlets.confirmDialog("Delete Account", "Are you sure you want to delete this account? All transactions will be removed.")) {
+                    if (Utility.removeAccount(context, accountNameInput)) {
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Account successfully deleted", duration = SnackbarDuration.Short)
+                            navHostController.navigate("Main Activity")
+                        }
+                    }
+                }
+            }
+
             Scaffold(
                 snackbarHost = {
                                SnackbarHost(hostState = snackbarHostState)
@@ -139,15 +167,31 @@ object Views {
                 topBar = {
                     TopAppBar(
                         title = {
-                            Text(text = "New Account")
+                            Text(title)
                         },
                         navigationIcon = {
                             IconButton(
                                 onClick = {
-                                    navHostController.navigateUp()
+                                    if (!fieldEnabled) {
+                                        navHostController.navigate("Main Activity")
+                                    }
+                                    else {
+                                        navHostController.navigateUp()
+                                    }
                                 }
                             ) {
                                 Icon(Icons.Filled.ArrowBack, "")
+                            }
+                        },
+                        actions = {
+                            if (accountNameInput.isNotEmpty()) {
+                                IconButton(
+                                    onClick = {
+                                        deleteDialog = !deleteDialog
+                                    }
+                                ) {
+                                    Icon(Icons.Filled.Delete, "Delete Account")
+                                }
                             }
                         }
                     )
@@ -158,6 +202,7 @@ object Views {
                         .padding(vertical = 70.dp, horizontal = 16.dp)) {
                         Column(modifier = Modifier.fillMaxSize()) {
                             OutlinedTextField(
+                                readOnly = !fieldEnabled,
                                 modifier = Modifier.fillMaxWidth(),
                                 value = accountName,
                                 singleLine = true,
@@ -170,52 +215,81 @@ object Views {
                                     Text(accountNameLabel)
                                 }
                             )
-                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            OutlinedTextField(
-                                modifier = Modifier.fillMaxWidth(),
-                                value = accountBalance,
-                                singleLine = true,
-                                isError = accountBalanceIsNotNumber,
-                                onValueChange = {
-                                    accountBalance = it
-                                    accountBalanceIsNotNumber =
-                                        !(it.toDoubleOrNull() != null && it.isNotEmpty())
-                                },
-                                label = {
-                                    Text(accountBalanceLabel)
-                                }
-                            )
+                            if (accountNameInput.isEmpty()) {
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                OutlinedTextField(
+                                    readOnly = !fieldEnabled,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    value = accountBalance,
+                                    singleLine = true,
+                                    isError = accountBalanceIsNotNumber,
+                                    onValueChange = {
+                                        accountBalance = it
+                                        accountBalanceIsNotNumber =
+                                            !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                    },
+                                    label = {
+                                        Text(accountBalanceLabel)
+                                    }
+                                )
+                            }
                         }
                     }
                 },
                 floatingActionButton = {
-                    ExtendedFloatingActionButton(
-                        text = { Text(text = "Apply") },
-                        icon = { Icon(Icons.Default.Check, "") },
-                        onClick = {
-                            if ((!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
-                                Values.accountNames.forEach{
-                                    if (it == accountName) {
-                                        scope.launch {
-                                            nameCheck = false
-                                            snackbarHostState.showSnackbar("An account with that name already exists.")
-                                        }
-                                    }
+                    var nameCheck = true
+                    if (accountName.isNotEmpty() && (!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
+                        Values.accountNames.forEach {
+                            if (it.replace(" ", "") == accountName.replace(" ", "")) {
+                                nameCheck = false
+                            }
+                        }
+                    }
+                    if (nameCheck) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "Apply") },
+                            icon = { Icon(Icons.Default.Check, "") },
+                            onClick = {
+                                val writeSuccess: Boolean
+                                val snackbarMessage: String
+
+                                fieldEnabled = false
+
+                                if (accountNameInput.isNotEmpty()) {
+                                    writeSuccess = Utility.changeAccountName(
+                                        context,
+                                        accountNameInput,
+                                        accountName
+                                    )
+                                    snackbarMessage = "Account information saved"
+                                } else {
+                                    val openingTransaction = Transaction(
+                                        "Opening deposit",
+                                        "",
+                                        accountBalance.toDouble(),
+                                        ZonedDateTime.now(Values.UTCTimeZone),
+                                        accountName
+                                    )
+                                    writeSuccess =
+                                        Utility.newTransaction(openingTransaction, context)
+                                    snackbarMessage = "New account saved"
                                 }
-                                if (nameCheck) {
-                                    var writeSuccess = Utility.newTransaction(Transaction("Opening deposit", "", accountBalance.toDouble(), LocalDate.now(), LocalTime.now(), accountName), context)
-                                    Utility.readAccounts()
-                                    Utility.readTransactions()
-                                    if (writeSuccess) {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("New account saved", duration = SnackbarDuration.Short)
+                                if (writeSuccess) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            snackbarMessage,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                        if (accountNameInput.isNotEmpty()) {
+                                            navHostController.navigate("Main Activity")
+                                        } else {
                                             navHostController.navigateUp()
                                         }
                                     }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             )
         }
@@ -257,8 +331,8 @@ object Views {
                 accountName = transaction.accountName
                 category = transaction.category
                 description = transaction.description
-                localDate = transaction.date
-                localTime = transaction.time
+                localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+                localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
                 if (fieldEnabled) {
                     title = "Edit Transaction"
                 }
@@ -266,8 +340,9 @@ object Views {
                     title = "View Transaction"
                 }
                 if (deleteDialog) {     // If the user pressed the delete button, confirm
-                    if(ViewUtils.confirmDialog("Are you sure you want to delete this transaction?")) {
+                    if(Viewlets.confirmDialog("Delete transaction", "Are you sure you want to delete this transaction?")) {
                         if (Utility.removeTransaction(transaction, context)) {
+                            fieldEnabled = false
                             scope.launch {
                                 snackbarHostState.showSnackbar(
                                     "Transaction removed",
@@ -593,7 +668,7 @@ object Views {
                             )
                             if (openTimePickerDialog) {
                                 val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
-                                ViewUtils.TimePickerDialog(
+                                Viewlets.TimePickerDialog(
                                     onDismissRequest = {
                                                        openTimePickerDialog = false
                                     },
@@ -619,19 +694,22 @@ object Views {
                             onClick = {
                                 // Check that input fields are valid
                                 if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
-                                    var writeSuccess = false
+                                    fieldEnabled = false
+                                    var writeSuccess: Boolean
+                                    var localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
+                                        ZonedDateTime.of(localDate, localTime, Values.localTimeZone))
+
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
                                     if (transaction != null) {
                                         writeSuccess = Utility.editTransaction(transaction, context, category, description,
-                                            transactionAmount.toDouble(), localDate, localTime, accountName)
+                                            transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                     }
                                     else {  // New transaction
-                                        writeSuccess = Utility.newTransaction(Transaction(category, description, transactionAmount.toDouble(), localDate, localTime, accountName), context)
+                                        var newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
+                                        writeSuccess = Utility.newTransaction(newTransaction, context)
                                     }
-                                    Utility.readTransactions()
-                                    Utility.readCategories()
                                     if (writeSuccess) {
                                         scope.launch {
                                             snackbarHostState.showSnackbar(
@@ -677,15 +755,15 @@ object Views {
                         Column(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            ViewUtils.settingsLabel("Accounts", true)
-                            ViewUtils.settingsButton("Add new account",
+                            Viewlets.settingsLabel("Accounts", true)
+                            Viewlets.settingsButton("Add new account",
                                 onClick = {
                                     navHostController.navigate("New Account Activity")
                                 }
                             )
-                            ViewUtils.settingsDivider()
-                            ViewUtils.settingsLabel("Preferences", false)
-                            val newCurrency = ViewUtils.settingsDropdown(Values.currency, "Currency", Values.currencies)
+                            Viewlets.settingsDivider()
+                            Viewlets.settingsLabel("Preferences", false)
+                            val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
                             if (newCurrency != Values.currency && newCurrency != "-1") {
                                 Values.currency = newCurrency
                                 Utility.writeCurrencyData(context)
@@ -697,134 +775,81 @@ object Views {
         }
     }
 
-    @Composable
-    fun generateAccountScrollView() {
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            Values.accountNames.forEach{ accountName ->
-                var accountTotal = Utility.readAccountTotal(accountName)
-                Row {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .clickable(true, null, null, onClick = {
-                                // Account specific screen
-                            })
-                            .padding(15.dp),
-                    ) {
-                        Text(
-                            text = accountName,
-                            style = TextStyle(
-                                fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-                        Spacer(modifier = Modifier.padding(5.dp))
-                        Text(
-                            text = Values.currency + Values.balanceFormat.format(accountTotal),
-                            style = TextStyle(fontSize = 19.sp)
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.padding(10.dp))
-            }
-        }
-    }
-
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateTransactionScrollView(transactions: ArrayList<Transaction>, navHostController: NavHostController) {
-        Scaffold {
-            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState())
-                    .fillMaxWidth()
-            ) {
-                transactions.forEach {transaction ->
-                    Row(
-                        modifier = Modifier
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clickable(enabled = true, onClick = {
-                                Values.currentTransaction = transaction
-                                navHostController.navigate("View Transaction Activity")
-                            })
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Column {
-                            Text(
-                                text = transaction.category,  // category
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            )
-                            Spacer(modifier = Modifier.padding(2.dp))
-                            Text(
-                                text = transaction.accountName,     // account
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            )
-                            Spacer(modifier = Modifier.padding(2.dp))
-                            Text(
-                                text = transaction.date.format(dateFormatter) + " @ " + transaction.time.format(timeFormatter),     // date
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.surfaceTint
-                                )
-                            )
+    fun generateAccountSpecificView(navHostController: NavHostController, context: Context, accountName: String) {
+        ApplicationTheme {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "View Account")
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigateUp()
+                                }
+                            ) {
+                                Icon(Icons.Filled.ArrowBack, "")
+                            }
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigate("Edit Account Activity/$accountName")
+                                }
+                            ) {
+                                Icon(Icons.Filled.Create, "Edit Account")
+                            }
                         }
-                        Spacer(
-                            Modifier
-                                .weight(1f)
-                                .fillMaxWidth())
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
+                        .fillMaxHeight()) {
                         Column(
-                            horizontalAlignment = Alignment.End
+                            modifier = Modifier
+                                .verticalScroll(rememberScrollState())
+                                .fillMaxHeight()
                         ) {
-                            if (transaction.amount < 0) {   // If amount is negative
-                                Text(
-                                    text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = net.araymond.application.ui.theme.Red
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        .clip(shape = RoundedCornerShape(10.dp))
+                                        .padding(15.dp)
+                                        .fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        text = accountName,
+                                        style = TextStyle(
+                                            fontSize = 22.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
                                     )
-                                )
-                            }
-                            else {
-                                Text(
-                                    text = Values.currency + Values.balanceFormat.format(transaction.amount),
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = net.araymond.application.ui.theme.Green
+                                    Spacer(modifier = Modifier.padding(5.dp))
+                                    Text(
+                                        text = Values.currency + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
+                                        style = TextStyle(fontSize = 19.sp)
                                     )
-                                )
+                                }
                             }
-                            Spacer(modifier = Modifier.padding(15.dp))
-                            Text(
-                                text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
-                                style = TextStyle(
-                                    fontSize = 18.sp
-                                )
-                            )
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            Viewlets.generateTransactionScroller(navHostController, Utility.getAccountTransactions(accountName))
                         }
                     }
-                    Spacer(modifier = Modifier.padding(10.dp))
                 }
-            }
+            )
         }
     }
 }

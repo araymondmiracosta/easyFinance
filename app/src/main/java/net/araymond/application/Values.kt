@@ -1,6 +1,7 @@
 package net.araymond.application
 
 import java.text.DecimalFormat
+import java.time.ZoneId
 import java.util.Locale
 
 object Values {
@@ -9,6 +10,8 @@ object Values {
     var country = "us"
     var dateFormat = "MM-dd-yyyy"
     var timeFormat = "HH:mm"
+    var UTCTimeZone = ZoneId.of("UTC")
+    var localTimeZone = ZoneId.systemDefault()
     var currency = "$"
     var currencies = arrayOf("$", "€", "¥", "£")
     var transactions = ArrayList<Transaction>()

@@ -1,7 +1,9 @@
 package net.araymond.application
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
@@ -31,8 +34,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.navigation.NavHostController
+import net.araymond.application.ui.theme.Green
+import net.araymond.application.ui.theme.Red
+import java.time.format.DateTimeFormatter
+import kotlin.math.absoluteValue
 
-object ViewUtils {
+object Viewlets {
 
     @Composable
     fun settingsDivider() {
@@ -79,7 +87,7 @@ object ViewUtils {
     }
 
     @Composable
-    fun confirmDialog(label: String): Boolean {
+    fun confirmDialog(title: String, message: String): Boolean {
         var dialogIsOpen by remember { mutableStateOf(true) }
         var optionValue by remember { mutableStateOf(false) }
         if (dialogIsOpen) {
@@ -95,17 +103,28 @@ object ViewUtils {
                             .clip(shape = RoundedCornerShape(10.dp))
                             .padding(horizontal = 16.dp)
                     ) {
-                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
-                            text = label,
+                        Text(
+                            text = title,
                             modifier = Modifier
-                                .padding(top = 24.dp)
-                                .padding(horizontal = 16.dp),
+                                .padding(top = 20.dp)
+                                .padding(horizontal = 10.dp),
                             style = TextStyle(
-                                fontSize = 20.sp,
+                                fontSize = 22.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         )
-                        Row {
+                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
+                            text = message,
+                            modifier = Modifier
+                                .padding(top = 20.dp)
+                                .padding(horizontal = 10.dp),
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                            )
+                        )
+                        Row(
+                            modifier = Modifier.padding(vertical = 5.dp)
+                        ) {
                             Spacer(Modifier.weight(1f))
                             TextButton(
                                 onClick = {
@@ -205,7 +224,9 @@ object ViewUtils {
                                 Text(selectedOption)
                             }
                         }
-                        Row {
+                        Row(
+                            modifier = Modifier.padding(vertical = 5.dp)
+                        ) {
                             Spacer(Modifier.weight(1f))
                             TextButton(
                                 onClick = {
@@ -288,4 +309,132 @@ object ViewUtils {
             }
         }
     }
+
+    @Composable
+    fun generateAccountScroller(navHostController: NavHostController) {
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState())
+        ) {
+            Values.accountNames.forEach{ accountName ->
+                var accountTotal = Utility.getAccountTotal(accountName)
+                Row {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clip(shape = RoundedCornerShape(10.dp))
+                            .clickable(true, null, null, onClick = {
+                               // Account specific screen
+                                navHostController.navigate("Account Specific Activity/$accountName")
+                            })
+                            .padding(15.dp),
+                    ) {
+                        Text(
+                            text = accountName,
+                            style = TextStyle(
+                                fontSize = 22.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                        Spacer(modifier = Modifier.padding(5.dp))
+                        Text(
+                            text = Values.currency + Values.balanceFormat.format(accountTotal),
+                            style = TextStyle(fontSize = 19.sp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.padding(10.dp))
+            }
+        }
+    }
+
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @Composable
+    fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>) {
+        var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+        var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        transactions.forEach {transaction ->
+            var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+            var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+            Row(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(10.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable(enabled = true, onClick = {
+                        Values.currentTransaction = transaction
+                        navHostController.navigate("View Transaction Activity")
+                    })
+                    .padding(10.dp)
+                    .fillMaxWidth()
+            ) {
+                Column {
+                    Text(
+                        text = transaction.category,  // category
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = transaction.accountName,     // account
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.surfaceTint
+                        )
+                    )
+                }
+                Spacer(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth())
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    if (transaction.amount < 0) {   // If amount is negative
+                        Text(
+                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Red
+                            )
+                        )
+                    }
+                    else {
+                        Text(
+                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Green
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.padding(15.dp))
+                    Text(
+                        text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
+                        style = TextStyle(
+                            fontSize = 18.sp
+                        )
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.padding(10.dp))
+        }
+   }
 }
