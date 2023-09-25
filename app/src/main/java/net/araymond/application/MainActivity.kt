@@ -36,8 +36,13 @@ class MainActivity : ComponentActivity() {
             composable("Main Activity") {
                 Views.mainDraw(navHostController, context)
             }
+            composable("Edit Account Activity/{accountName}") {
+                it.arguments?.getString("accountName")?.let { it1 ->
+                    Views.generateAccountCreationView(navHostController, context, it1)
+                }
+            }
             composable("New Account Activity") {
-                Views.generateAccountCreationView(navHostController, context)
+                Views.generateAccountCreationView(navHostController, context, "");
             }
             composable("New Transaction Activity") {
                 Views.generateNewTransactionView(navHostController, context, null)
@@ -47,6 +52,11 @@ class MainActivity : ComponentActivity() {
             }
             composable("Settings Activity") {
                 Views.generateSettingsView(navHostController, context)
+            }
+            composable("Account Specific Activity/{accountName}") {
+                it.arguments?.getString("accountName")?.let { it1 ->
+                    Views.generateAccountSpecificView(navHostController, context, it1)
+                }
             }
         }
     }

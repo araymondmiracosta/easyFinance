@@ -30,8 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -89,7 +87,7 @@ object Viewlets {
     }
 
     @Composable
-    fun confirmDialog(title: String, label: String): Boolean {
+    fun confirmDialog(title: String, message: String): Boolean {
         var dialogIsOpen by remember { mutableStateOf(true) }
         var optionValue by remember { mutableStateOf(false) }
         if (dialogIsOpen) {
@@ -116,7 +114,7 @@ object Viewlets {
                             )
                         )
                         Text(                                                   // TODO: Need to make text look better (smaller font, etc)
-                            text = label,
+                            text = message,
                             modifier = Modifier
                                 .padding(top = 20.dp)
                                 .padding(horizontal = 10.dp),
@@ -313,12 +311,12 @@ object Viewlets {
     }
 
     @Composable
-    fun generateAccountScroller() {
+    fun generateAccountScroller(navHostController: NavHostController) {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
             Values.accountNames.forEach{ accountName ->
-                var accountTotal = Utility.readAccountTotal(accountName)
+                var accountTotal = Utility.getAccountTotal(accountName)
                 Row {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -329,7 +327,8 @@ object Viewlets {
                             )
                             .clip(shape = RoundedCornerShape(10.dp))
                             .clickable(true, null, null, onClick = {
-                                // Account specific screen
+                               // Account specific screen
+                                navHostController.navigate("Account Specific Activity/$accountName")
                             })
                             .padding(15.dp),
                     ) {
@@ -354,96 +353,88 @@ object Viewlets {
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateTransactionScroller(transactions: ArrayList<Transaction>, navHostController: NavHostController) {
-//        Scaffold {
-            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-//            Column(
-//                modifier = Modifier
-//                    .verticalScroll(rememberScrollState())
-//                    .fillMaxWidth()
-//            ) {
-                transactions.forEach {transaction ->
-                    var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-                    var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
-                    Row(
-                        modifier = Modifier
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clickable(enabled = true, onClick = {
-                                Values.currentTransaction = transaction
-                                navHostController.navigate("View Transaction Activity")
-                            })
-                            .padding(10.dp)
-                            .fillMaxWidth()
-                    ) {
-                        Column {
-                            Text(
-                                text = transaction.category,  // category
-                                style = TextStyle(
-                                    fontSize = 20.sp,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            )
-                            Spacer(modifier = Modifier.padding(2.dp))
-                            Text(
-                                text = transaction.accountName,     // account
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            )
-                            Spacer(modifier = Modifier.padding(2.dp))
-                            Text(
-                                text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
-                                style = TextStyle(
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.surfaceTint
-                                )
-                            )
-                        }
-                        Spacer(
-                            Modifier
-                                .weight(1f)
-                                .fillMaxWidth())
-                        Column(
-                            horizontalAlignment = Alignment.End
-                        ) {
-                            if (transaction.amount < 0) {   // If amount is negative
-                                Text(
-                                    text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Red
-                                    )
-                                )
-                            }
-                            else {
-                                Text(
-                                    text = Values.currency + Values.balanceFormat.format(transaction.amount),
-                                    style = TextStyle(
-                                        fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Green
-                                    )
-                                )
-                            }
-                            Spacer(modifier = Modifier.padding(15.dp))
-                            Text(
-                                text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
-                                style = TextStyle(
-                                    fontSize = 18.sp
-                                )
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.padding(10.dp))
+    fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>) {
+        var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+        var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        transactions.forEach {transaction ->
+            var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+            var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+            Row(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(10.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable(enabled = true, onClick = {
+                        Values.currentTransaction = transaction
+                        navHostController.navigate("View Transaction Activity")
+                    })
+                    .padding(10.dp)
+                    .fillMaxWidth()
+            ) {
+                Column {
+                    Text(
+                        text = transaction.category,  // category
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.tertiary
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = transaction.accountName,     // account
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.surfaceTint
+                        )
+                    )
                 }
- //           }
-//        }
+                Spacer(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth())
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    if (transaction.amount < 0) {   // If amount is negative
+                        Text(
+                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Red
+                            )
+                        )
+                    }
+                    else {
+                        Text(
+                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Green
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.padding(15.dp))
+                    Text(
+                        text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
+                        style = TextStyle(
+                            fontSize = 18.sp
+                        )
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.padding(10.dp))
+        }
    }
 }

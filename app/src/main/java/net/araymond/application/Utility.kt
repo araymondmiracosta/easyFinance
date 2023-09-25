@@ -7,7 +7,7 @@ import java.time.ZonedDateTime
 
 object Utility {
 
-    fun readAccounts() {
+    private fun readAccounts() {
         Values.accountNames = ArrayList()
         var duplicate = false
         Values.transactions.forEach{ transaction ->
@@ -25,7 +25,7 @@ object Utility {
         }
     }
 
-    fun readAccountTotal(accountName: String): Double {
+    fun getAccountTotal(accountName: String): Double {
         var accountTotal = 0.0
         Values.transactions.forEach{ transaction ->
             if (transaction.accountName == accountName) {
@@ -36,11 +36,11 @@ object Utility {
         return accountTotal
     }
 
-    fun readTransactions() {
+    private fun readTransactions() {
         Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
     }
 
-    fun readCategories() {
+    private fun readCategories() {
         Values.transactions.forEach{ transaction ->
             Values.categories.add(transaction.category)
         }
@@ -92,7 +92,7 @@ object Utility {
         }
     }
 
-    fun writeLedgerData(context: Context): Boolean {
+    private fun writeLedgerData(context: Context): Boolean {
         return (writeSaveData(Values.transactions, "ledger", context))
     }
 
@@ -156,5 +156,36 @@ object Utility {
 
     fun convertLocalDateTimeToUTC(localDateTime: ZonedDateTime): ZonedDateTime {
         return (localDateTime.withZoneSameInstant(Values.UTCTimeZone))
+    }
+
+    fun getAccountTransactions(accountName: String): ArrayList<Transaction> {
+        var accountTransactions = ArrayList<Transaction>()
+        Values.transactions.forEach{ transaction->
+            if (transaction.accountName == accountName) {
+                accountTransactions.add(transaction)
+            }
+        }
+        return accountTransactions
+    }
+
+    fun changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean {
+        var accountTransactions = getAccountTransactions(oldAccountName)
+        accountTransactions.forEach{ transaction ->
+            transaction.editTransaction(transaction.category, transaction.description,
+                transaction.amount, transaction.utcDateTime, newAccountName)
+        }
+        readAll()
+        return (writeLedgerData(context))
+    }
+
+    fun removeAccount(context: Context, accountName: String): Boolean {
+        var writeSucceed = true
+        var accountTransactions = getAccountTransactions(accountName)
+        accountTransactions.forEach{ transaction ->
+            if (!(removeTransaction(transaction, context))) {
+                writeSucceed = false
+            }
+        }
+        return (writeSucceed)
     }
 }
