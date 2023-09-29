@@ -1,6 +1,9 @@
 package net.araymond.application
 
 import android.content.Context
+import android.util.Log
+import androidx.compose.material3.SnackbarDuration
+import kotlinx.coroutines.launch
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.time.ZonedDateTime
@@ -187,5 +190,18 @@ object Utility {
             }
         }
         return (writeSucceed)
+    }
+
+    fun showSnackbar(message: String) {
+        Log.d("Snackbar", Values.lastSnackbarMessage)
+        Log.d("Snackbar", message)
+        if (message.compareTo(Values.lastSnackbarMessage) != 0) {
+            Values.lastSnackbarMessage = message
+            Values.scope.launch {
+                Values.snackbarHostState.showSnackbar(
+                    message = message, duration = SnackbarDuration.Short
+                )
+            }
+        }
     }
 }

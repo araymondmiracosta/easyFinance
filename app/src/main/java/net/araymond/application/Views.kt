@@ -2,7 +2,6 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,7 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import net.araymond.application.ui.theme.ApplicationTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -80,6 +78,9 @@ object Views {
 
         ApplicationTheme {
             Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
                 topBar = {
                     TopAppBar(
                         title = {
@@ -137,8 +138,6 @@ object Views {
             var accountBalanceLabel by remember { mutableStateOf("Account balance")}
             var accountNameIsEmpty = true
             var accountBalanceIsNotNumber = true
-            val scope = rememberCoroutineScope()
-            val snackbarHostState = remember { SnackbarHostState() }
             var fieldEnabled = true
             var deleteDialog by remember { mutableStateOf(false) }
 
@@ -152,17 +151,15 @@ object Views {
             if (deleteDialog) {
                 if (Viewlets.confirmDialog("Delete Account", "Are you sure you want to delete this account? All transactions will be removed.")) {
                     if (Utility.removeAccount(context, accountNameInput)) {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Account successfully deleted", duration = SnackbarDuration.Short)
-                            navHostController.navigate("Main Activity")
-                        }
+                        navHostController.navigate("Main Activity")
+                        Utility.showSnackbar("Account successfully deleted")
                     }
                 }
             }
 
             Scaffold(
                 snackbarHost = {
-                               SnackbarHost(hostState = snackbarHostState)
+                    SnackbarHost(hostState = Values.snackbarHostState)
                 },
                 topBar = {
                     TopAppBar(
@@ -275,17 +272,12 @@ object Views {
                                     snackbarMessage = "New account saved"
                                 }
                                 if (writeSuccess) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            snackbarMessage,
-                                            duration = SnackbarDuration.Short
-                                        )
-                                        if (accountNameInput.isNotEmpty()) {
-                                            navHostController.navigate("Main Activity")
-                                        } else {
-                                            navHostController.navigateUp()
-                                        }
+                                    if (accountNameInput.isNotEmpty()) {
+                                        navHostController.navigate("Main Activity")
+                                    } else {
+                                        navHostController.navigateUp()
                                     }
+                                    Utility.showSnackbar(snackbarMessage)
                                 }
                             }
                         )
@@ -312,9 +304,6 @@ object Views {
             var category by remember { mutableStateOf("") }
             var description by remember { mutableStateOf("") }
             var title by remember { mutableStateOf("New Transaction") }
-
-            val scope = rememberCoroutineScope()
-            val snackbarHostState = remember { SnackbarHostState() }
 
             var localDate = LocalDate.now() // Must initialize
             var localTime = LocalTime.now() // Must initialize
@@ -343,13 +332,8 @@ object Views {
                     if(Viewlets.confirmDialog("Delete transaction", "Are you sure you want to delete this transaction?")) {
                         if (Utility.removeTransaction(transaction, context)) {
                             fieldEnabled = false
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    "Transaction removed",
-                                    duration = SnackbarDuration.Short
-                                )
-                                navHostController.navigateUp()
-                            }
+                            navHostController.navigateUp()
+                            Utility.showSnackbar("Transaction removed")
                         }
                     }
                 }
@@ -371,7 +355,7 @@ object Views {
 
             Scaffold(
                 snackbarHost = {
-                    SnackbarHost(hostState = snackbarHostState)
+                    SnackbarHost(hostState = Values.snackbarHostState)
                 },
                 topBar = {
                     TopAppBar(
@@ -688,6 +672,7 @@ object Views {
                 },
                 floatingActionButton = {
                     if (fieldEnabled) {
+                        var snackbarMessage: String
                         ExtendedFloatingActionButton(
                             text = { Text(text = "Apply") },
                             icon = { Icon(Icons.Default.Check, "") },
@@ -705,19 +690,16 @@ object Views {
                                     if (transaction != null) {
                                         writeSuccess = Utility.editTransaction(transaction, context, category, description,
                                             transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
+                                        snackbarMessage = "Transaction changes saved"
                                     }
                                     else {  // New transaction
                                         var newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                         writeSuccess = Utility.newTransaction(newTransaction, context)
+                                        snackbarMessage = "New transaction added"
                                     }
                                     if (writeSuccess) {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                "New transaction added!",
-                                                duration = SnackbarDuration.Short
-                                            )
-                                            navHostController.navigateUp()
-                                        }
+                                        navHostController.navigateUp()
+                                        Utility.showSnackbar(snackbarMessage)
                                     }
                                 }
                             }
@@ -734,6 +716,9 @@ object Views {
     fun generateSettingsView(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
             Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
                 topBar = {
                     TopAppBar(
                         title = {
@@ -781,6 +766,9 @@ object Views {
     fun generateAccountSpecificView(navHostController: NavHostController, context: Context, accountName: String) {
         ApplicationTheme {
             Scaffold(
+                snackbarHost = {
+                               SnackbarHost(hostState = Values.snackbarHostState)
+                },
                 topBar = {
                     TopAppBar(
                         title = {
