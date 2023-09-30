@@ -34,9 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -60,7 +58,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -108,7 +105,7 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(
                                 navHostController,
-                                Values.transactions
+                                Values.transactions, false
                             )
                         }
                     }
@@ -736,22 +733,30 @@ object Views {
                     )
                 },
                 content = {
-                    Surface(modifier = Modifier.padding(vertical = 75.dp)) {
+                    Surface(modifier = Modifier.padding(top = 50.dp)) {
                         Column(
                             modifier = Modifier.fillMaxSize()
                         ) {
                             Viewlets.settingsLabel("Accounts", true)
-                            Viewlets.settingsButton("Add new account",
-                                onClick = {
-                                    navHostController.navigate("New Account Activity")
-                                }
-                            )
+                            Viewlets.settingsButton(
+                                 "Add new account", ""
+                            ) {
+                                navHostController.navigate("New Account Activity")
+                            }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Preferences", false)
                             val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
                             if (newCurrency != Values.currency && newCurrency != "-1") {
                                 Values.currency = newCurrency
                                 Utility.writeCurrencyData(context)
+                            }
+                            Viewlets.settingsDivider()
+                            Viewlets.settingsLabel("Data", false)
+                            Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
+                                // CSV Import
+                            }
+                            Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
+                                // CSV Export
                             }
                         }
                     }
@@ -833,7 +838,7 @@ object Views {
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateTransactionScroller(navHostController, Utility.getAccountTransactions(accountName))
+                            Viewlets.generateTransactionScroller(navHostController, Utility.getAccountTransactions(accountName), true)
                         }
                     }
                 }

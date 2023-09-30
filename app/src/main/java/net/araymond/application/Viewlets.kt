@@ -49,9 +49,9 @@ object Viewlets {
 
     @Composable
     fun settingsLabel(label: String, firstLabel: Boolean) {
-        if (!firstLabel) {
+//        if (!firstLabel) {
             Spacer(modifier = Modifier.padding(vertical = 10.dp))
-        }
+//        }
         Row(
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
@@ -68,21 +68,34 @@ object Viewlets {
     }
 
     @Composable
-    fun settingsButton(text: String, onClick: () -> Unit) {
+    fun settingsButton(title: String, text: String, onClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(enabled = true, onClick = onClick)
-                .padding(bottom = 15.dp)
-                .padding(top = 15.dp)
+                .padding(top = 10.dp)
                 .padding(horizontal = 16.dp)
         ) {
-            Text(
-                text = text,
-                style = TextStyle(
-                    fontSize = 17.sp
+            Column {
+                Text(
+                    text = title,
+                    style = TextStyle(
+                        fontSize = 17.sp,
+                    ),
+                    fontWeight = FontWeight.Bold
                 )
-            )
+                Spacer(modifier = Modifier.padding(vertical = 2.dp))
+                Text(
+                    text = text,
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                )
+                if (text.isNotEmpty()) {
+                    Spacer(modifier = Modifier.padding(bottom = 10.dp))
+                }
+            }
         }
     }
 
@@ -163,7 +176,7 @@ object Viewlets {
                 )
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(top = 15.dp)
+                .padding(top = 10.dp)
         ) {
             Text(
                 text = label,
@@ -180,6 +193,7 @@ object Viewlets {
                     color = MaterialTheme.colorScheme.outline
                 )
             )
+            Spacer(modifier = Modifier.padding(bottom = 10.dp))
         }
         if (dialogIsOpen) {
             Dialog(
@@ -353,7 +367,7 @@ object Viewlets {
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>) {
+    fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean) {
         var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
         transactions.forEach {transaction ->
@@ -401,7 +415,8 @@ object Viewlets {
                 Spacer(
                     Modifier
                         .weight(1f)
-                        .fillMaxWidth())
+                        .fillMaxWidth()
+                )
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
@@ -425,13 +440,20 @@ object Viewlets {
                             )
                         )
                     }
-                    Spacer(modifier = Modifier.padding(15.dp))
-                    Text(
-                        text = Values.currency + Values.balanceFormat.format(Utility.calculateTransactionRunningBalance(transaction, Values.transactions)),
-                        style = TextStyle(
-                            fontSize = 18.sp
+                    if (showRunningBalance) {
+                        Spacer(modifier = Modifier.padding(15.dp))
+                        Text(
+                            text = Values.currency + Values.balanceFormat.format(
+                                Utility.calculateTransactionRunningBalance(
+                                    transaction,
+                                    Values.transactions
+                                )
+                            ),
+                            style = TextStyle(
+                                fontSize = 18.sp
+                            )
                         )
-                    )
+                    }
                 }
             }
             Spacer(modifier = Modifier.padding(10.dp))
