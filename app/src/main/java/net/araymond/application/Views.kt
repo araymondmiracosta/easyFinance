@@ -713,8 +713,12 @@ object Views {
     fun generateSettingsView(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
             var createDialog by remember { mutableStateOf(false) }
+            var openDialog by remember { mutableStateOf(false) }
             if (createDialog) {
                 Viewlets.exportCSVPathSelector()
+            }
+            if (openDialog) {
+                Viewlets.importCSVPathSelector(context)
             }
             Scaffold(
                 snackbarHost = {
@@ -759,10 +763,10 @@ object Views {
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Data", false)
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
-                                // CSV Import
+                                openDialog = !openDialog
                             }
                             Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
-                                createDialog = true
+                                createDialog = !createDialog
                             }
                         }
                     }

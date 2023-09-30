@@ -56,6 +56,22 @@ import kotlin.math.absoluteValue
 object Viewlets: ComponentActivity() {
 
     @Composable
+    fun importCSVPathSelector(context: Context) {
+        val contentResolver = LocalContext.current.contentResolver
+        val filePicker =
+            rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) {
+                    contentResolver.openInputStream(uri)?.use {
+                        Utility.readCSV(context, it)
+                    }
+                }
+            }
+        LaunchedEffect(Unit) {
+            filePicker.launch(arrayOf("text/*"))
+        }
+    }
+
+    @Composable
     fun exportCSVPathSelector() {
         val contentResolver = LocalContext.current.contentResolver
         val filePicker =

@@ -4,10 +4,12 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.material3.SnackbarDuration
 import kotlinx.coroutines.launch
+import java.io.InputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.OutputStream
 import java.time.ZonedDateTime
+import java.util.Scanner
 
 object Utility {
 
@@ -206,12 +208,16 @@ object Utility {
         }
     }
 
+    fun clearTransactions(context: Context) {
+        Values.transactions.clear()
+        writeLedgerData(context)
+    }
+
     fun writeCSV(outputStream: OutputStream) {
         val header = "date,category,description,amount,account\n"
         outputStream.write(header.toByteArray())
         Values.transactions.forEach{ transaction ->
-            val date = transaction.utcDateTime.toString().substring(0,
-                transaction.utcDateTime.toString().length - 5)  // Remove redundant [UTC] tag
+            val date = transaction.utcDateTime.toString()
             val category = transaction.category
             val description = transaction.description
             val amount = transaction.amount.toString()
@@ -220,6 +226,63 @@ object Utility {
             val line = "$date,$category,$description,$amount,$account\n"
 
             outputStream.write(line.toByteArray())
+        }
+
+        showSnackbar("Ledger data sucessfully exported")
+    }
+
+    fun readCSV(context: Context, inputStream: InputStream) {
+        val scannerInput = Scanner(inputStream)
+        var line = scannerInput.nextLine().split(",")
+        val otherFormat = (line[0] == "id")     // Check for import format from another app
+        val backup = ArrayList<Transaction>()    // Make backup in case
+        Values.transactions.forEach {transaction ->
+            backup.add(transaction)
+        }
+
+        if (scannerInput.hasNext()) {   // Clear transactions if the file checks out
+            clearTransactions(context)
+        }
+
+        val dateIndex: Int
+        val categoryIndex: Int
+        val descriptionIndex: Int
+        val amountIndex: Int
+        val accountIndex: Int
+
+        if (!otherFormat) {
+            dateIndex = 0
+            categoryIndex = 1
+            descriptionIndex = 2
+            amountIndex = 3
+            accountIndex = 4
+        }
+        else {
+            dateIndex = 8
+            categoryIndex = 3
+            descriptionIndex = 4
+            amountIndex = 5
+            accountIndex = 9
+        }
+
+        // Need to handle initial amount field from other apps
+
+        try {
+            while (scannerInput.hasNext()) {
+                line = scannerInput.nextLine().split(",")
+                val category = line[categoryIndex]
+                val description = line[descriptionIndex]
+                val amount = line[amountIndex].toDouble()
+                val date = ZonedDateTime.parse(line[dateIndex])
+                val account = line[accountIndex]
+                val newTransaction = Transaction(category, description, amount, date, account)
+
+                newTransaction(newTransaction, context)
+            }
+            showSnackbar("Ledger data sucessfully imported")
+        } catch (exception: Exception) {
+            Values.transactions = backup
+            showSnackbar("File corrupted, unable to import ledger data")
         }
     }
 }
