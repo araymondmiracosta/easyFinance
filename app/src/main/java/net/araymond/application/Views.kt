@@ -712,6 +712,10 @@ object Views {
     @Composable
     fun generateSettingsView(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
+            var createDialog by remember { mutableStateOf(false) }
+            if (createDialog) {
+                Viewlets.exportCSVPathSelector()
+            }
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -758,7 +762,7 @@ object Views {
                                 // CSV Import
                             }
                             Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
-                                // CSV Export
+                                createDialog = true
                             }
                         }
                     }

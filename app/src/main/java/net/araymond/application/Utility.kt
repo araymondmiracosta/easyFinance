@@ -6,6 +6,7 @@ import androidx.compose.material3.SnackbarDuration
 import kotlinx.coroutines.launch
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.io.OutputStream
 import java.time.ZonedDateTime
 
 object Utility {
@@ -202,6 +203,23 @@ object Utility {
                     message = message, duration = SnackbarDuration.Short
                 )
             }
+        }
+    }
+
+    fun writeCSV(outputStream: OutputStream) {
+        val header = "date,category,description,amount,account\n"
+        outputStream.write(header.toByteArray())
+        Values.transactions.forEach{ transaction ->
+            val date = transaction.utcDateTime.toString().substring(0,
+                transaction.utcDateTime.toString().length - 5)  // Remove redundant [UTC] tag
+            val category = transaction.category
+            val description = transaction.description
+            val amount = transaction.amount.toString()
+            val account = transaction.accountName
+
+            val line = "$date,$category,$description,$amount,$account\n"
+
+            outputStream.write(line.toByteArray())
         }
     }
 }
