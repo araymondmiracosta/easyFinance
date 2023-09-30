@@ -735,7 +735,9 @@ object Views {
                 content = {
                     Surface(modifier = Modifier.padding(top = 50.dp)) {
                         Column(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
                         ) {
                             Viewlets.settingsLabel("Accounts", true)
                             Viewlets.settingsButton(
