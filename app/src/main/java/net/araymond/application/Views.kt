@@ -717,7 +717,7 @@ object Views {
             if (createDialog) {
                 Viewlets.exportCSVPathSelector()
             }
-            if (openDialog) {
+            if (openDialog && (Viewlets.confirmDialog("Import ledger", "Existing ledger information will be deleted. Are you sure you want to continue?"))) {
                 Viewlets.importCSVPathSelector(context)
             }
             Scaffold(
