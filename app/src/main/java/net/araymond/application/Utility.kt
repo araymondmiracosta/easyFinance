@@ -41,6 +41,7 @@ object Utility {
      * Returns the balance of the given account
      *
      * @param accountName The account name
+     *
      * @return Balance of the account
      */
     fun getAccountTotal(accountName: String): Double {
@@ -77,6 +78,8 @@ object Utility {
      * Reads in saved ledger data from private app storage
      *
      * @param context The main context for this application
+     *
+     * @return If reading the transaction list succeeded
      */
     fun readLedgerSaveData(context: Context): Boolean {
         return try {
@@ -96,6 +99,8 @@ object Utility {
      * Reads in the saved currency preference
      *
      * @param context The main context for this application
+     *
+     * @return If reading the currency preference succeeded
      */
     fun readCurrencySaveData(context: Context): Boolean {
         return try {
@@ -117,6 +122,8 @@ object Utility {
      * @param data The data object to write out
      * @param file The file name to write to
      * @param context The main context for this application
+     *
+     * @return If writing the data succeeded
      */
     private fun writeSaveData(data: Any, file: String, context: Context): Boolean {
         return try {
@@ -137,6 +144,8 @@ object Utility {
      * Writes the ledger data to private app storage
      *
      * @param context The main context for this application
+     *
+     * @return If writing the transaction list succeeded
      */
     private fun writeLedgerData(context: Context): Boolean {
         return (writeSaveData(Values.transactions, "ledger", context))
@@ -146,26 +155,32 @@ object Utility {
      * Writes the currency preference to private app storage
      *
      * @param context The main context for this application
+     *
+     * @return If writing the transaction list succeeded
      */
     fun writeCurrencyData(context: Context): Boolean {
         return (writeSaveData(Values.currency, "currency", context))
     }
 
     /**
-     * Sorts the given transaction list in descending order (recent date last, on top of
+     * Sorts the given transaction list in descending order (recent date first, on top of
      * transaction list view)
      *
      * @param list The transaction list to sort
+     *
+     * @return The sorted list
      */
     private fun sortTransactionListByRecentDateFirst(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     /**
-     * Sorts the given transaction list in ascending order (recent date first, at bottom of
+     * Sorts the given transaction list in ascending order (recent date last, at bottom of
      * transaction list view)
      *
      * @param list The transaction list to sort
+     *
+     * @return The sorted list
      */
     private fun sortTransactionListByRecentDateLast(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
@@ -302,7 +317,7 @@ object Utility {
      * @return A transaction list
      */
     fun getAccountTransactions(accountName: String): ArrayList<Transaction> {
-        var accountTransactions = ArrayList<Transaction>()
+        val accountTransactions = ArrayList<Transaction>()
         Values.transactions.forEach{ transaction->
             if (transaction.accountName == accountName) {
                 accountTransactions.add(transaction)
@@ -434,7 +449,7 @@ object Utility {
             amountIndex = 3
             accountIndex = 4
         }
-        else {
+        else {  // Foreign CSV import
             dateIndex = 8
             categoryIndex = 3
             descriptionIndex = 4
@@ -442,7 +457,9 @@ object Utility {
             accountIndex = 9
         }
 
-        // Need to handle initial amount field from other apps
+        // Handle initial amount field from other apps
+
+        val initialTransactionList = ArrayList<Transaction>()
 
         try {
             while (scannerInput.hasNext()) {
@@ -453,13 +470,63 @@ object Utility {
                 val date = ZonedDateTime.parse(line[dateIndex])
                 val account = line[accountIndex]
                 val newTransaction = Transaction(category, description, amount, date, account)
+                var transactionFound = false
 
-                newTransaction(newTransaction, context)
+                // Handle foreign import
+                if (otherFormat) {
+                    // Handle initial amount
+                    // If the account name is not in temp accounts
+                    initialTransactionList.forEach {
+                        if (account == it.accountName) {
+                            transactionFound = true
+                        }
+                    }
+                    if (!transactionFound) {
+                        // Mark that the initial amount for this account has been recorded
+                        initialTransactionList.add(
+                            Transaction(
+                                "Opening Deposit", "", line[10].toDouble(),
+                                ZonedDateTime.now(), account
+                            )
+                        )
+                    }
+
+                    // Handle transfers, line[11] equals destination account
+                    if (line[11] != "null") {
+                        // Use Utility.newTransfer to create a new transaction object
+                        newTransfer(newTransaction, line[11], context)
+                    }
+                    else {
+                        newTransaction(newTransaction, context)
+                    }
+                }
+                else {
+                    newTransaction(newTransaction, context)
+                }
             }
-            showSnackbar("Ledger data sucessfully imported")
+
+            // TODO: Fix initial amount code
+            // Iterate through all accounts for initial transactions
+            initialTransactionList.forEach { transaction ->
+                // Oldest transaction of tempTransactionList is index 0
+                val tempTransactionList = sortTransactionListByRecentDateLast(
+                    getAccountTransactions(transaction.accountName)
+                )
+                val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
+                    .minusMinutes(5)    // So running balance is correct
+
+                transaction.utcDateTime = openingDepositTransactionDate
+
+                newTransaction(transaction, context)
+            }
+
+            showSnackbar("Ledger data successfully imported")
         } catch (exception: Exception) {
             Values.transactions = backup
             showSnackbar("File corrupted, unable to import ledger data")
         }
+
+        readAll()
+        writeLedgerData(context)
     }
 }
