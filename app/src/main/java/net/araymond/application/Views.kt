@@ -66,7 +66,16 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 
+/**
+ * Contains the primary UI screen drawing functions
+ */
 object Views {
+    /**
+     * Creates the main view (account carousel and transaction list)
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -123,6 +132,14 @@ object Views {
         }
     }
 
+    /**
+     * Draws the account creation, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param accountNameInput If not empty, then displays the information for this account and
+     *                          allows editing
+     */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -284,6 +301,14 @@ object Views {
         }
     }
 
+    /**
+     * Draws the transaction creating, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param transaction If not null, then displays the information for this transaction and
+     *                      allows editing
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
         "CoroutineCreationDuringComposition"
@@ -769,7 +794,11 @@ object Views {
                                     else {  // New transaction
                                         val newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                         if (isTransfer) {
-                                            writeSuccess = Utility.newTransfer(newTransaction, context, accountNameTransfer)
+                                            writeSuccess = Utility.newTransfer(
+                                                newTransaction,
+                                                accountNameTransfer,
+                                                context
+                                            )
                                             snackbarMessage = "New transfer added"
                                         }
                                         else {
@@ -791,6 +820,12 @@ object Views {
         }
     }
 
+    /**
+     * Draws the settings screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
@@ -859,6 +894,13 @@ object Views {
         }
     }
 
+    /**
+     * Draws the account specific screen to show transactions specific to this account
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param accountName The account to show information of
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable

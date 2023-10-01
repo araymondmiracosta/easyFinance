@@ -1,16 +1,9 @@
 package net.araymond.application
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -53,8 +46,16 @@ import net.araymond.application.ui.theme.Red
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
 
+/**
+ * Contains functions which draw UI elements that are used in building screens (pages)
+ */
 object Viewlets: ComponentActivity() {
 
+    /**
+     * Creates a file picker dialog to select a CSV file to import transaction data from
+     *
+     * @param context The main context for this application
+     */
     @Composable
     fun importCSVPathSelector(context: Context) {
         val contentResolver = LocalContext.current.contentResolver
@@ -71,6 +72,10 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Creates a file picker dialog to select a CSV file to export transaction data to
+     *
+     */
     @Composable
     fun exportCSVPathSelector() {
         val contentResolver = LocalContext.current.contentResolver
@@ -87,11 +92,17 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Draws a divider (thin line) used in the settings screen
+     */
     @Composable
     fun settingsDivider() {
         Divider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 1.dp)
     }
 
+    /**
+     * Draws a label (header) for a section, used in the settings screen
+     */
     @Composable
     fun settingsLabel(label: String, firstLabel: Boolean) {
 //        if (!firstLabel) {
@@ -112,6 +123,13 @@ object Viewlets: ComponentActivity() {
         Spacer(modifier = Modifier.padding(5.dp))
     }
 
+    /**
+     * Draws a function customizable button, used in the settings screen
+     *
+     * @param title The title (header) of the button
+     * @param text The small text below the title
+     * @param onClick The function to execute when the button is pressed
+     */
     @Composable
     fun settingsButton(title: String, text: String, onClick: () -> Unit) {
         Row(
@@ -144,6 +162,14 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Draws a dialog to confirm something
+     *
+     * @param title The title of the dialog
+     * @param message The message below the title
+     *
+     * @return If the user confirmed something
+     */
     @Composable
     fun confirmDialog(title: String, message: String): Boolean {
         var dialogIsOpen by remember { mutableStateOf(true) }
@@ -210,6 +236,15 @@ object Viewlets: ComponentActivity() {
         return optionValue
     }
 
+    /**
+     * Creates a settings button with a dropdown menu in a dialog when pressed
+     *
+     * @param value The initial value of the option
+     * @param label The label of the settings button
+     * @param options The options to list in the dropdown menu
+     *
+     * @return The option selected
+     */
     @Composable
     fun settingsDropdown(value: String, label: String, options: Array<String>): String {
         var dialogIsOpen by remember { mutableStateOf(false) }
@@ -317,8 +352,8 @@ object Viewlets: ComponentActivity() {
     }
 
     /**
-     * TimePickerDialog is not officially implemented.
-     * https://stackoverflow.com/questions/75853449/timepickerdialog-in-jetpack-compose
+     * Time picker dialog used as it is not officially implemented at this time
+     * Used from: https://stackoverflow.com/questions/75853449/timepickerdialog-in-jetpack-compose
      */
     @Composable
     fun TimePickerDialog(
@@ -375,6 +410,11 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Creates a carousel with clickable account tiles to access the account specific screen
+     *
+     * @param navHostController The main navHostController for this application
+     */
     @Composable
     fun generateAccountScroller(navHostController: NavHostController) {
         Row(
@@ -416,6 +456,13 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Creates a scrollable list of the transactions in the given transaction list
+     *
+     * @param navHostController The main navHostController for this application
+     * @param transactions The transaction list to iterate through
+     * @param showRunningBalance If the running balance should be displayed for each transaction
+     */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean) {

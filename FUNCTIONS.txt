@@ -1,12 +1,5 @@
 This document holds function descriptions. Functions are sorted alphabetically and are grouped according to their class.
 
-Account:
-	newTransaction(category: String?, description: String?, amount: Double, date: LocalDate?, time: LocalTime?)
-		Creates a new transaction which is added to the transaction list for this account.
-
-	removeTransaction(index: Int)
-		Removes the transaction at the given index for this account.
-
 MainActivity:
 	applicationNavHost(context: Context) {
 		Holds the navHostController for the application. All navigation is done through this function and the navHostController is passed to all main screens to achieve this.
@@ -15,13 +8,26 @@ MainActivity:
 		Reads in any saved ledger or preference data and creates the ArrayList<Account> Values.accounts, ArrayList<Transaction> Values.transactions, ArrayList<String> Values.categories lists.
 	
 Transaction:
-	Transaction(category: String, description: String, amount: Double, date: LocalDate, time: LocalTime, account: String)
-		Creates a new Transaction object with associated localDateTime object for sorting purposes.
+	Transaction(category: String, description: String, amount: Double, utcDateTime: ZonedDateTime, accountName: String)
+		Creates a new Transaction object with associated ZonedDateTime object for sorting purposes (always in UTC).
+	
+	editTransaction(category: String, description: String, amount: Double, utcDateTime: ZonedDateTime, account:String) {
+		Assigns this transaction's data with the given data.
 
 Utility:
-	calculateTransactionRunningBalance(transaction: Transaction): Double
-		Calculates and returns the running balance (balance of the account if no other transactions occurred after this one).
+	calculateTransactionRunningBalance(transaction: Transaction, transactionList: ArrayList<Transaction>): Double
+		Calculates and returns the running balance (balance of the account if no other transactions occurred after this one) of the transactions on transactionList on a per account basis.
 		This function is used in displaying the running balance on the transaction list display.
+
+	changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean
+		Changes the account name on all transactions with oldAccountName to newAccountName.
+		Returns true if writeLedgerData succeeded.
+	
+	clearTransactions(context: Context)
+		Deletes all transactions from Values.transactions
+
+	convertLocalDateTimeToUTC(localDateTime: ZonedDateTime): ZonedDateTime
+		Returns a 
 
 	indexFromName(accountName: String): Int
 		Returns the index in Values.accounts of where an account with the given name is.

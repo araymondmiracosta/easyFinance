@@ -24,6 +24,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Reads in any saved ledger or preference data and creates the
+     * ArrayList<Account> Values.accounts, ArrayList<Transaction> Values.transactions,
+     * ArrayList<String> Values.categories lists.
+     *
+     */
     private fun initialize() {
         if (Utility.readLedgerSaveData(this)) {
             Log.d("INFO", "Ledger data read successfully")
@@ -34,6 +40,10 @@ class MainActivity : ComponentActivity() {
         Utility.readAll()
     }
 
+    /**
+     * Holds the navHostController for the application. All navigation is done through this
+     * function and the navHostController is passed to all main screens to achieve this.
+     */
     @Composable
     fun applicationNavHost(context: Context) {
         val navHostController = rememberNavController()
