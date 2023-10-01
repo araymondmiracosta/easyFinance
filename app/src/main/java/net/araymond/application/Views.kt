@@ -2,7 +2,6 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,9 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import net.araymond.application.ui.theme.ApplicationTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -62,7 +58,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -80,6 +75,9 @@ object Views {
 
         ApplicationTheme {
             Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
                 topBar = {
                     TopAppBar(
                         title = {
@@ -107,7 +105,7 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(
                                 navHostController,
-                                Values.transactions
+                                Values.transactions, false
                             )
                         }
                     }
@@ -137,8 +135,6 @@ object Views {
             var accountBalanceLabel by remember { mutableStateOf("Account balance")}
             var accountNameIsEmpty = true
             var accountBalanceIsNotNumber = true
-            val scope = rememberCoroutineScope()
-            val snackbarHostState = remember { SnackbarHostState() }
             var fieldEnabled = true
             var deleteDialog by remember { mutableStateOf(false) }
 
@@ -152,17 +148,15 @@ object Views {
             if (deleteDialog) {
                 if (Viewlets.confirmDialog("Delete Account", "Are you sure you want to delete this account? All transactions will be removed.")) {
                     if (Utility.removeAccount(context, accountNameInput)) {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Account successfully deleted", duration = SnackbarDuration.Short)
-                            navHostController.navigate("Main Activity")
-                        }
+                        navHostController.navigate("Main Activity")
+                        Utility.showSnackbar("Account successfully deleted")
                     }
                 }
             }
 
             Scaffold(
                 snackbarHost = {
-                               SnackbarHost(hostState = snackbarHostState)
+                    SnackbarHost(hostState = Values.snackbarHostState)
                 },
                 topBar = {
                     TopAppBar(
@@ -275,17 +269,12 @@ object Views {
                                     snackbarMessage = "New account saved"
                                 }
                                 if (writeSuccess) {
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            snackbarMessage,
-                                            duration = SnackbarDuration.Short
-                                        )
-                                        if (accountNameInput.isNotEmpty()) {
-                                            navHostController.navigate("Main Activity")
-                                        } else {
-                                            navHostController.navigateUp()
-                                        }
+                                    if (accountNameInput.isNotEmpty()) {
+                                        navHostController.navigate("Main Activity")
+                                    } else {
+                                        navHostController.navigateUp()
                                     }
+                                    Utility.showSnackbar(snackbarMessage)
                                 }
                             }
                         )
@@ -301,26 +290,36 @@ object Views {
     )
     @Composable
     fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
+        val scrollState = rememberScrollState()
+
         ApplicationTheme {
             var isPositiveTransaction by remember { mutableStateOf(false) }
             var transactionAmount by remember { mutableStateOf("") }
             var transactionAmountIsNotNumber = true
-            var transactionAmountLabel by remember { mutableStateOf("Transaction amount") }
+            val transactionAmountLabel by remember { mutableStateOf("Transaction amount") }
+            var transactionAccountLabel by remember { mutableStateOf("Transaction account") }
             var accountNameListIsExpanded by remember { mutableStateOf(false) }
             var accountName by remember { mutableStateOf("") }
             var categoryListIsExpanded by remember { mutableStateOf(false) }
             var category by remember { mutableStateOf("") }
             var description by remember { mutableStateOf("") }
             var title by remember { mutableStateOf("New Transaction") }
-
-            val scope = rememberCoroutineScope()
-            val snackbarHostState = remember { SnackbarHostState() }
+            var isTransfer by remember { mutableStateOf (false) }
+            var accountNameTransferListIsExpanded by remember { mutableStateOf(false) }
+            var accountNameTransfer by remember { mutableStateOf("") }
 
             var localDate = LocalDate.now() // Must initialize
             var localTime = LocalTime.now() // Must initialize
 
             var fieldEnabled by remember { mutableStateOf(false) }
             var deleteDialog by remember { mutableStateOf(false) }
+
+            if (isTransfer) {
+                transactionAccountLabel = "Transfer source account"
+            }
+            else {
+                transactionAccountLabel = "Transaction account"
+            }
 
             if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
                 if (transaction.amount > 0) {
@@ -343,13 +342,8 @@ object Views {
                     if(Viewlets.confirmDialog("Delete transaction", "Are you sure you want to delete this transaction?")) {
                         if (Utility.removeTransaction(transaction, context)) {
                             fieldEnabled = false
-                            scope.launch {
-                                snackbarHostState.showSnackbar(
-                                    "Transaction removed",
-                                    duration = SnackbarDuration.Short
-                                )
-                                navHostController.navigateUp()
-                            }
+                            navHostController.navigateUp()
+                            Utility.showSnackbar("Transaction removed")
                         }
                     }
                 }
@@ -358,8 +352,8 @@ object Views {
                 fieldEnabled = true
             }
 
-            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
 
             var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
             var openDatePickerDialog by remember { mutableStateOf(false) }
@@ -371,7 +365,7 @@ object Views {
 
             Scaffold(
                 snackbarHost = {
-                    SnackbarHost(hostState = snackbarHostState)
+                    SnackbarHost(hostState = Values.snackbarHostState)
                 },
                 topBar = {
                     TopAppBar(
@@ -415,22 +409,40 @@ object Views {
                     )
                 },
                 content = {
-                    Surface(modifier = Modifier.padding(vertical = 70.dp, horizontal = 16.dp)) {
+                    Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
                         Column(modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(
-                                rememberScrollState()
-                            )) {
+                            .verticalScroll(scrollState)
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Deposit or withdrawal
-                                Text("Deposit")
-                                Checkbox(
-                                    checked = isPositiveTransaction,
-                                    onCheckedChange = {
-                                        isPositiveTransaction = it
-                                    },
-                                    enabled = fieldEnabled
-                                )
+                                Column {
+                                    if (!isTransfer) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            // Deposit or withdrawal
+                                            Text("Deposit ")
+                                            Checkbox(
+                                                checked = isPositiveTransaction,
+                                                onCheckedChange = {
+                                                    isPositiveTransaction = it
+                                                },
+                                                enabled = fieldEnabled
+                                            )
+                                        }
+                                    }
+//                                    Spacer(modifier = Modifier.padding(vertical = 3.dp))
+                                    if (transaction == null) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Transfer")
+                                            Checkbox(
+                                                checked = isTransfer,
+                                                onCheckedChange = {
+                                                                  isTransfer = !isTransfer
+                                                },
+                                                enabled = fieldEnabled,
+                                            )
+                                        }
+                                    }
+                                }
                                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                                 // amount
                                 OutlinedTextField(
@@ -438,10 +450,12 @@ object Views {
                                     modifier = Modifier.fillMaxWidth(),
                                     value = transactionAmount,
                                     prefix = {
-                                        if (!isPositiveTransaction) {
-                                            Text("-", color = Color.Red)
-                                        } else {
-                                            Text("+", color = Color.Green)
+                                        if (!isTransfer) {
+                                            if (!isPositiveTransaction) {
+                                                Text("-", color = Color.Red)
+                                            } else {
+                                                Text("+", color = Color.Green)
+                                            }
                                         }
                                     },
                                     suffix = {
@@ -459,7 +473,7 @@ object Views {
                                     },
                                 )
                             }
-                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            Spacer(modifier = Modifier.padding(vertical = 8.dp))
                             // Account name
                             if (fieldEnabled) {
                                 ExposedDropdownMenuBox(
@@ -478,7 +492,7 @@ object Views {
                                             .menuAnchor()
                                             .fillMaxWidth(),
                                         label = {
-                                            Text("Transaction account")
+                                            Text(transactionAccountLabel)
                                         },
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameListIsExpanded)
@@ -500,6 +514,50 @@ object Views {
                                                     Text(selectedOption)
                                                 }
                                             )
+                                        }
+                                    }
+                                }
+                                if (isTransfer) {   // Transfer destination account
+                                    Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                    ExposedDropdownMenuBox(
+                                        expanded = accountNameTransferListIsExpanded,
+                                        onExpandedChange = {
+                                            accountNameTransferListIsExpanded = !accountNameTransferListIsExpanded
+                                        }
+                                    ) {
+                                        OutlinedTextField(
+                                            value = accountNameTransfer,
+                                            readOnly = !(fieldEnabled),
+                                            onValueChange = {
+                                                accountNameTransfer = it
+                                            },
+                                            modifier = Modifier
+                                                .menuAnchor()
+                                                .fillMaxWidth(),
+                                            label = {
+                                                Text("Transfer destination account")
+                                            },
+                                            trailingIcon = {
+                                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameTransferListIsExpanded)
+                                            },
+                                            isError = accountNameTransfer.isEmpty() || (accountNameTransfer == accountName),
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = accountNameTransferListIsExpanded,
+                                            onDismissRequest = {
+                                                accountNameTransferListIsExpanded = false
+                                            }
+                                        ) {
+                                            Values.accountNames.forEach { selectedOption ->    // Issue: only most recent account name shown
+                                                DropdownMenuItem(onClick = {
+                                                    accountNameTransfer = selectedOption
+                                                    accountNameTransferListIsExpanded = false
+                                                },
+                                                    text = {
+                                                        Text(selectedOption)
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -687,7 +745,8 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    if (fieldEnabled) {
+                    if (!scrollState.isScrollInProgress && fieldEnabled) {
+                        var snackbarMessage: String
                         ExtendedFloatingActionButton(
                             text = { Text(text = "Apply") },
                             icon = { Icon(Icons.Default.Check, "") },
@@ -705,19 +764,23 @@ object Views {
                                     if (transaction != null) {
                                         writeSuccess = Utility.editTransaction(transaction, context, category, description,
                                             transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
+                                        snackbarMessage = "Transaction changes saved"
                                     }
                                     else {  // New transaction
-                                        var newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
-                                        writeSuccess = Utility.newTransaction(newTransaction, context)
+                                        val newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
+                                        if (isTransfer) {
+                                            writeSuccess = Utility.newTransfer(newTransaction, context, accountNameTransfer)
+                                            snackbarMessage = "New transfer added"
+                                        }
+                                        else {
+                                            writeSuccess =
+                                                Utility.newTransaction(newTransaction, context)
+                                            snackbarMessage = "New transaction added"
+                                        }
                                     }
                                     if (writeSuccess) {
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                "New transaction added!",
-                                                duration = SnackbarDuration.Short
-                                            )
-                                            navHostController.navigateUp()
-                                        }
+                                        navHostController.navigateUp()
+                                        Utility.showSnackbar(snackbarMessage)
                                     }
                                 }
                             }
@@ -733,7 +796,18 @@ object Views {
     @Composable
     fun generateSettingsView(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
+            var createDialog by remember { mutableStateOf(false) }
+            var openDialog by remember { mutableStateOf(false) }
+            if (createDialog) {
+                Viewlets.exportCSVPathSelector()
+            }
+            if (openDialog && (Viewlets.confirmDialog("Import ledger", "Existing ledger information will be deleted. Are you sure you want to continue?"))) {
+                Viewlets.importCSVPathSelector(context)
+            }
             Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
                 topBar = {
                     TopAppBar(
                         title = {
@@ -751,22 +825,32 @@ object Views {
                     )
                 },
                 content = {
-                    Surface(modifier = Modifier.padding(vertical = 75.dp)) {
+                    Surface(modifier = Modifier.padding(top = 50.dp)) {
                         Column(
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
                         ) {
                             Viewlets.settingsLabel("Accounts", true)
-                            Viewlets.settingsButton("Add new account",
-                                onClick = {
-                                    navHostController.navigate("New Account Activity")
-                                }
-                            )
+                            Viewlets.settingsButton(
+                                 "Add new account", ""
+                            ) {
+                                navHostController.navigate("New Account Activity")
+                            }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Preferences", false)
                             val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
                             if (newCurrency != Values.currency && newCurrency != "-1") {
                                 Values.currency = newCurrency
                                 Utility.writeCurrencyData(context)
+                            }
+                            Viewlets.settingsDivider()
+                            Viewlets.settingsLabel("Data", false)
+                            Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
+                                openDialog = !openDialog
+                            }
+                            Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
+                                createDialog = !createDialog
                             }
                         }
                     }
@@ -781,6 +865,9 @@ object Views {
     fun generateAccountSpecificView(navHostController: NavHostController, context: Context, accountName: String) {
         ApplicationTheme {
             Scaffold(
+                snackbarHost = {
+                               SnackbarHost(hostState = Values.snackbarHostState)
+                },
                 topBar = {
                     TopAppBar(
                         title = {
@@ -845,7 +932,7 @@ object Views {
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateTransactionScroller(navHostController, Utility.getAccountTransactions(accountName))
+                            Viewlets.generateTransactionScroller(navHostController, Utility.getAccountTransactions(accountName), true)
                         }
                     }
                 }
