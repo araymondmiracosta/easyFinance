@@ -294,19 +294,30 @@ object Views {
             var isPositiveTransaction by remember { mutableStateOf(false) }
             var transactionAmount by remember { mutableStateOf("") }
             var transactionAmountIsNotNumber = true
-            var transactionAmountLabel by remember { mutableStateOf("Transaction amount") }
+            val transactionAmountLabel by remember { mutableStateOf("Transaction amount") }
+            var transactionAccountLabel by remember { mutableStateOf("Transaction account") }
             var accountNameListIsExpanded by remember { mutableStateOf(false) }
             var accountName by remember { mutableStateOf("") }
             var categoryListIsExpanded by remember { mutableStateOf(false) }
             var category by remember { mutableStateOf("") }
             var description by remember { mutableStateOf("") }
             var title by remember { mutableStateOf("New Transaction") }
+            var isTransfer by remember { mutableStateOf (false) }
+            var accountNameTransferListIsExpanded by remember { mutableStateOf(false) }
+            var accountNameTransfer by remember { mutableStateOf("") }
 
             var localDate = LocalDate.now() // Must initialize
             var localTime = LocalTime.now() // Must initialize
 
             var fieldEnabled by remember { mutableStateOf(false) }
             var deleteDialog by remember { mutableStateOf(false) }
+
+            if (isTransfer) {
+                transactionAccountLabel = "Transfer source account"
+            }
+            else {
+                transactionAccountLabel = "Transaction account"
+            }
 
             if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
                 if (transaction.amount > 0) {
@@ -339,8 +350,8 @@ object Views {
                 fieldEnabled = true
             }
 
-            var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-            var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
 
             var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
             var openDatePickerDialog by remember { mutableStateOf(false) }
@@ -403,15 +414,34 @@ object Views {
                                 rememberScrollState()
                             )) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                // Deposit or withdrawal
-                                Text("Deposit")
-                                Checkbox(
-                                    checked = isPositiveTransaction,
-                                    onCheckedChange = {
-                                        isPositiveTransaction = it
-                                    },
-                                    enabled = fieldEnabled
-                                )
+                                Column {
+                                    if (!isTransfer) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            // Deposit or withdrawal
+                                            Text("Deposit ")
+                                            Checkbox(
+                                                checked = isPositiveTransaction,
+                                                onCheckedChange = {
+                                                    isPositiveTransaction = it
+                                                },
+                                                enabled = fieldEnabled
+                                            )
+                                        }
+                                    }
+//                                    Spacer(modifier = Modifier.padding(vertical = 3.dp))
+                                    if (transaction == null) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Transfer")
+                                            Checkbox(
+                                                checked = isTransfer,
+                                                onCheckedChange = {
+                                                                  isTransfer = !isTransfer
+                                                },
+                                                enabled = fieldEnabled,
+                                            )
+                                        }
+                                    }
+                                }
                                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
                                 // amount
                                 OutlinedTextField(
@@ -419,10 +449,12 @@ object Views {
                                     modifier = Modifier.fillMaxWidth(),
                                     value = transactionAmount,
                                     prefix = {
-                                        if (!isPositiveTransaction) {
-                                            Text("-", color = Color.Red)
-                                        } else {
-                                            Text("+", color = Color.Green)
+                                        if (!isTransfer) {
+                                            if (!isPositiveTransaction) {
+                                                Text("-", color = Color.Red)
+                                            } else {
+                                                Text("+", color = Color.Green)
+                                            }
                                         }
                                     },
                                     suffix = {
@@ -440,7 +472,7 @@ object Views {
                                     },
                                 )
                             }
-                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            Spacer(modifier = Modifier.padding(vertical = 8.dp))
                             // Account name
                             if (fieldEnabled) {
                                 ExposedDropdownMenuBox(
@@ -459,7 +491,7 @@ object Views {
                                             .menuAnchor()
                                             .fillMaxWidth(),
                                         label = {
-                                            Text("Transaction account")
+                                            Text(transactionAccountLabel)
                                         },
                                         trailingIcon = {
                                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameListIsExpanded)
@@ -481,6 +513,50 @@ object Views {
                                                     Text(selectedOption)
                                                 }
                                             )
+                                        }
+                                    }
+                                }
+                                if (isTransfer) {   // Transfer destination account
+                                    Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                    ExposedDropdownMenuBox(
+                                        expanded = accountNameTransferListIsExpanded,
+                                        onExpandedChange = {
+                                            accountNameTransferListIsExpanded = !accountNameTransferListIsExpanded
+                                        }
+                                    ) {
+                                        OutlinedTextField(
+                                            value = accountNameTransfer,
+                                            readOnly = !(fieldEnabled),
+                                            onValueChange = {
+                                                accountNameTransfer = it
+                                            },
+                                            modifier = Modifier
+                                                .menuAnchor()
+                                                .fillMaxWidth(),
+                                            label = {
+                                                Text("Transfer destination account")
+                                            },
+                                            trailingIcon = {
+                                                ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameTransferListIsExpanded)
+                                            },
+                                            isError = accountNameTransfer.isEmpty() && (accountNameTransfer != accountName),
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = accountNameTransferListIsExpanded,
+                                            onDismissRequest = {
+                                                accountNameTransferListIsExpanded = false
+                                            }
+                                        ) {
+                                            Values.accountNames.forEach { selectedOption ->    // Issue: only most recent account name shown
+                                                DropdownMenuItem(onClick = {
+                                                    accountNameTransfer = selectedOption
+                                                    accountNameTransferListIsExpanded = false
+                                                },
+                                                    text = {
+                                                        Text(selectedOption)
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -690,9 +766,16 @@ object Views {
                                         snackbarMessage = "Transaction changes saved"
                                     }
                                     else {  // New transaction
-                                        var newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
-                                        writeSuccess = Utility.newTransaction(newTransaction, context)
-                                        snackbarMessage = "New transaction added"
+                                        val newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
+                                        if (isTransfer) {
+                                            writeSuccess = Utility.newTransfer(newTransaction, context, accountNameTransfer)
+                                            snackbarMessage = "New transfer added"
+                                        }
+                                        else {
+                                            writeSuccess =
+                                                Utility.newTransaction(newTransaction, context)
+                                            snackbarMessage = "New transaction added"
+                                        }
                                     }
                                     if (writeSuccess) {
                                         navHostController.navigateUp()

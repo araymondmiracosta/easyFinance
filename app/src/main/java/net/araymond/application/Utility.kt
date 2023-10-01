@@ -142,6 +142,14 @@ object Utility {
         return (writeLedgerData(context))
     }
 
+    fun newTransfer(transaction: Transaction, context: Context, destinationAccount: String) : Boolean {
+        transaction.amount = (-1) * (kotlin.math.abs(transaction.amount))
+        val destinationTransaction = newTransaction(Transaction(transaction.category,
+            transaction.description, kotlin.math.abs(transaction.amount), transaction.utcDateTime,
+            destinationAccount), context)
+        return (destinationTransaction && newTransaction(transaction, context))
+    }
+
     fun removeTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.remove(transaction)
         readAll()
