@@ -290,6 +290,8 @@ object Views {
     )
     @Composable
     fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
+        val scrollState = rememberScrollState()
+
         ApplicationTheme {
             var isPositiveTransaction by remember { mutableStateOf(false) }
             var transactionAmount by remember { mutableStateOf("") }
@@ -407,12 +409,11 @@ object Views {
                     )
                 },
                 content = {
-                    Surface(modifier = Modifier.padding(vertical = 70.dp, horizontal = 16.dp)) {
+                    Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
                         Column(modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(
-                                rememberScrollState()
-                            )) {
+                            .verticalScroll(scrollState)
+                        ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column {
                                     if (!isTransfer) {
@@ -539,7 +540,7 @@ object Views {
                                             trailingIcon = {
                                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountNameTransferListIsExpanded)
                                             },
-                                            isError = accountNameTransfer.isEmpty() && (accountNameTransfer != accountName),
+                                            isError = accountNameTransfer.isEmpty() || (accountNameTransfer == accountName),
                                         )
                                         ExposedDropdownMenu(
                                             expanded = accountNameTransferListIsExpanded,
@@ -744,7 +745,7 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    if (fieldEnabled) {
+                    if (!scrollState.isScrollInProgress && fieldEnabled) {
                         var snackbarMessage: String
                         ExtendedFloatingActionButton(
                             text = { Text(text = "Apply") },
