@@ -168,7 +168,7 @@ object Utility {
     }
 
     /**
-     * Sorts the given transaction list in ascending order (recent date last [size - 1]
+     * Sorts the given transaction list in ascending order (recent date last [size - 1])
      *
      * @param list The transaction list to sort
      *
@@ -519,5 +519,27 @@ object Utility {
 
         readAll()
         writeLedgerData(context)
+    }
+
+    /**
+     * Sorts the given account names list in ascending alphabetical order
+     *
+     * @param list The list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByNameAscendingOrder(list: ArrayList<String>): ArrayList<String> {
+        return (list.sortedBy { it }.toCollection(ArrayList()))
+    }
+
+    /**
+     * Sorts the given account names list in descending alphabetical order
+     *
+     * @param list The list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByNameDescendingOrder(list: ArrayList<String>): ArrayList<String> {
+        return (list.sortedByDescending { it }.toCollection(ArrayList()))
     }
 }

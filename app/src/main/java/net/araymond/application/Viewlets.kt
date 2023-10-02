@@ -417,7 +417,7 @@ object Viewlets: ComponentActivity() {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
-            Values.accountNames.forEach{ accountName ->
+            Utility.sortAccountListByNameAscendingOrder(Values.accountNames).forEach{ accountName ->
                 val accountTotal = Utility.getAccountTotal(accountName)
                 Row {
                     Column(
