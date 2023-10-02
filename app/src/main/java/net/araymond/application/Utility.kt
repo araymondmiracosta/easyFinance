@@ -56,13 +56,6 @@ object Utility {
     }
 
     /**
-     * Populates Values.transactions with the sorted version
-     */
-    private fun readTransactions() {
-        Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
-    }
-
-    /**
      * Populates Values.categories with the categories found in transactions
      */
     private fun readCategories() {
@@ -85,6 +78,7 @@ object Utility {
         return try {
             val inputLedgerStream = context.openFileInput("ledger")
             val objectInputLedgerStream = ObjectInputStream(inputLedgerStream)
+            // Need to resolve
             Values.transactions = objectInputLedgerStream.readObject() as ArrayList<Transaction>
             objectInputLedgerStream.close()
             inputLedgerStream.close()
@@ -163,26 +157,24 @@ object Utility {
     }
 
     /**
-     * Sorts the given transaction list in descending order (recent date first, on top of
-     * transaction list view)
+     * Sorts the given transaction list in descending order (recent date first [0])
      *
      * @param list The transaction list to sort
      *
      * @return The sorted list
      */
-    private fun sortTransactionListByRecentDateFirst(list: ArrayList<Transaction>): ArrayList<Transaction> {
+    fun sortTransactionListDescendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     /**
-     * Sorts the given transaction list in ascending order (recent date last, at bottom of
-     * transaction list view)
+     * Sorts the given transaction list in ascending order (recent date last [size - 1]
      *
      * @param list The transaction list to sort
      *
      * @return The sorted list
      */
-    private fun sortTransactionListByRecentDateLast(list: ArrayList<Transaction>): ArrayList<Transaction> {
+    fun sortTransactionListAscendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
     }
 
@@ -198,7 +190,7 @@ object Utility {
     fun calculateTransactionRunningBalance(transaction: Transaction, transactionList: ArrayList<Transaction>): Double {
         var currentRunningBalance = 0.0
 
-        sortTransactionListByRecentDateLast(transactionList).forEach {  // Have the oldest one first, so we can count from there
+        sortTransactionListAscendingOrder(transactionList).forEach {  // Have the oldest one first, so we can count from there
             if (transaction.accountName == it.accountName) {
                 currentRunningBalance += it.amount
                 if (it == transaction) {
@@ -214,7 +206,6 @@ object Utility {
      * Function to call list populating functions
      */
     fun readAll() {
-        readTransactions()
         readCategories()
         readAccounts()
     }
@@ -229,7 +220,7 @@ object Utility {
      */
     fun newTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.add(transaction)
-        Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
+        Values.transactions = sortTransactionListDescendingOrder(Values.transactions)
         readAll()
         return (writeLedgerData(context))
     }
@@ -336,7 +327,7 @@ object Utility {
      * @return If writing the transaction list succeeded
      */
     fun changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean {
-        var accountTransactions = getAccountTransactions(oldAccountName)
+        val accountTransactions = getAccountTransactions(oldAccountName)
         accountTransactions.forEach{ transaction ->
             transaction.editTransaction(transaction.category, transaction.description,
                 transaction.amount, transaction.utcDateTime, newAccountName)
@@ -355,7 +346,7 @@ object Utility {
      */
     fun removeAccount(context: Context, accountName: String): Boolean {
         var writeSucceed = true
-        var accountTransactions = getAccountTransactions(accountName)
+        val accountTransactions = getAccountTransactions(accountName)
         accountTransactions.forEach{ transaction ->
             if (!(removeTransaction(transaction, context))) {
                 writeSucceed = false
@@ -402,7 +393,7 @@ object Utility {
     fun writeCSV(outputStream: OutputStream) {
         val header = "date,category,description,amount,account\n"
         outputStream.write(header.toByteArray())
-        Values.transactions.forEach{ transaction ->
+        sortTransactionListAscendingOrder(Values.transactions).forEach{ transaction ->
             val date = transaction.utcDateTime.toString()
             val category = transaction.category
             val description = transaction.description
@@ -414,7 +405,7 @@ object Utility {
             outputStream.write(line.toByteArray())
         }
 
-        showSnackbar("Ledger data sucessfully exported")
+        showSnackbar("Ledger data successfully exported")
     }
 
     /**
@@ -509,7 +500,7 @@ object Utility {
             // Iterate through all accounts for initial transactions
             initialTransactionList.forEach { transaction ->
                 // Oldest transaction of tempTransactionList is index 0
-                val tempTransactionList = sortTransactionListByRecentDateLast(
+                val tempTransactionList = sortTransactionListAscendingOrder(
                     getAccountTransactions(transaction.accountName)
                 )
                 val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)

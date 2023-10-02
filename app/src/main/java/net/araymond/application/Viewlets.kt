@@ -104,10 +104,8 @@ object Viewlets: ComponentActivity() {
      * Draws a label (header) for a section, used in the settings screen
      */
     @Composable
-    fun settingsLabel(label: String, firstLabel: Boolean) {
-//        if (!firstLabel) {
-            Spacer(modifier = Modifier.padding(vertical = 10.dp))
-//        }
+    fun settingsLabel(label: String) {
+        Spacer(modifier = Modifier.padding(vertical = 10.dp))
         Row(
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
@@ -360,7 +358,6 @@ object Viewlets: ComponentActivity() {
         title: String = "Select Time",
         onDismissRequest: () -> Unit,
         onConfirm: () -> Unit,
-        toggle: @Composable () -> Unit = {},
         content: @Composable () -> Unit,
     ) {
         Dialog(
@@ -421,7 +418,7 @@ object Viewlets: ComponentActivity() {
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
             Values.accountNames.forEach{ accountName ->
-                var accountTotal = Utility.getAccountTotal(accountName)
+                val accountTotal = Utility.getAccountTotal(accountName)
                 Row {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -466,11 +463,11 @@ object Viewlets: ComponentActivity() {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean) {
-        var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-        var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
-        transactions.forEach { transaction ->
-            var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-            var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+        val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+        val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        Utility.sortTransactionListDescendingOrder(transactions).forEach { transaction ->
+            val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+            val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
             Row(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(10.dp))

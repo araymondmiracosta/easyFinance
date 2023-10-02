@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         val navHostController = rememberNavController()
         NavHost(navController = navHostController, startDestination = "Main Activity") {
             composable("Main Activity") {
-                Views.mainDraw(navHostController, context)
+                Views.mainDraw(navHostController)
             }
             composable("Edit Account Activity/{accountName}") {
                 it.arguments?.getString("accountName")?.let { it1 ->
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             composable("New Account Activity") {
-                Views.generateAccountCreationView(navHostController, context, "");
+                Views.generateAccountCreationView(navHostController, context, "")
             }
             composable("New Transaction Activity") {
                 Views.generateNewTransactionView(navHostController, context, null)
@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
             }
             composable("Account Specific Activity/{accountName}") {
                 it.arguments?.getString("accountName")?.let { it1 ->
-                    Views.generateAccountSpecificView(navHostController, context, it1)
+                    Views.generateAccountSpecificView(navHostController, it1)
                 }
             }
         }

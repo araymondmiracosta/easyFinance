@@ -26,7 +26,7 @@ class Transaction(
      * @param description The description
      * @param amount The amount
      * @param utcDateTime The utc time of this transaction
-     * @param accountName The account associated with this transaction
+     * @param account The account associated with this transaction
      */
     fun editTransaction(category: String, description: String, amount: Double,
                         utcDateTime: ZonedDateTime, account: String) {

@@ -12,22 +12,34 @@ import java.util.Locale
  * Some values are used as a dirty method of transferring data between navigation
  */
 object Values {
-    var total = 0
+    // Localization
     var language = "en"
     var country = "us"
+    var locale = Locale(language, country)
     var dateFormat = "MM-dd-yyyy"
     var timeFormat = "HH:mm"
-    var UTCTimeZone = ZoneId.of("UTC")
-    var localTimeZone = ZoneId.systemDefault()  // local time zone for this device
     var currency = "$"
+    var balanceFormat = DecimalFormat("#,##0.00")
+
+    // Time tracking constants
+    var UTCTimeZone: ZoneId = ZoneId.of("UTC")
+    var localTimeZone: ZoneId = ZoneId.systemDefault()  // local time zone for this device
+
+    // Currency options
     var currencies = arrayOf("$", "€", "¥", "£")
+
+    // Value arrays
     var transactions = ArrayList<Transaction>()     // Main transaction list
     var categories = ArrayList<String>()
     var accountNames = ArrayList<String>()
-    var locale = Locale(language, country)
-    var balanceFormat = DecimalFormat("#,##0.00")
+
+    // Variables to hold data between navigation
     lateinit var currentTransaction: Transaction
+
+    // Global snackbar information
     lateinit var scope: CoroutineScope
     lateinit var snackbarHostState: SnackbarHostState
+
+    // Used to avoid repeating same snackbar message
     var lastSnackbarMessage = ""
 }

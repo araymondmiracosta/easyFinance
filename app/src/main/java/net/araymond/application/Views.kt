@@ -74,12 +74,11 @@ object Views {
      * Creates the main view (account carousel and transaction list)
      *
      * @param navHostController The main navHostController for this application
-     * @param context The main context for this application
      */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun mainDraw(navHostController: NavHostController, context: Context) {
+    fun mainDraw(navHostController: NavHostController) {
         val scrollState = rememberScrollState()
 
         ApplicationTheme {
@@ -148,8 +147,8 @@ object Views {
             var accountName by remember { mutableStateOf(accountNameInput) }
             var accountBalance by remember { mutableStateOf("")}
             var title = "New Account"
-            var accountNameLabel by remember { mutableStateOf("Account name")}
-            var accountBalanceLabel by remember { mutableStateOf("Account balance")}
+            val accountNameLabel by remember { mutableStateOf("Account name")}
+            val accountBalanceLabel by remember { mutableStateOf("Account balance")}
             var accountNameIsEmpty = true
             var accountBalanceIsNotNumber = true
             var fieldEnabled = true
@@ -589,7 +588,7 @@ object Views {
                             }
                             else {
                                 OutlinedTextField(
-                                    readOnly = (!fieldEnabled),
+                                    readOnly = true,
                                     value = accountName,
                                     onValueChange = {
                                         accountName = it
@@ -686,7 +685,7 @@ object Views {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onFocusChanged() {
+                                    .onFocusChanged {
                                         if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
                                             openDatePickerDialog = true
                                         }
@@ -707,7 +706,7 @@ object Views {
                                         TextButton(
                                             onClick = {
                                                 openDatePickerDialog = false
-                                                var milliseconds = datePickerState.selectedDateMillis as Long
+                                                val milliseconds = datePickerState.selectedDateMillis as Long
                                                 localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
                                                 stringDate = localDate.format(dateFormatter)
                                             },
@@ -739,7 +738,7 @@ object Views {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onFocusChanged() {
+                                    .onFocusChanged {
                                         if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
                                             openTimePickerDialog = true
                                         }
@@ -779,8 +778,8 @@ object Views {
                                 // Check that input fields are valid
                                 if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
                                     fieldEnabled = false
-                                    var writeSuccess: Boolean
-                                    var localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
+                                    val writeSuccess: Boolean
+                                    val localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
                                         ZonedDateTime.of(localDate, localTime, Values.localTimeZone))
 
                                     if (!isPositiveTransaction) {
@@ -866,21 +865,21 @@ object Views {
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
                         ) {
-                            Viewlets.settingsLabel("Accounts", true)
+                            Viewlets.settingsLabel("Accounts")
                             Viewlets.settingsButton(
                                  "Add new account", ""
                             ) {
                                 navHostController.navigate("New Account Activity")
                             }
                             Viewlets.settingsDivider()
-                            Viewlets.settingsLabel("Preferences", false)
+                            Viewlets.settingsLabel("Preferences")
                             val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
                             if (newCurrency != Values.currency && newCurrency != "-1") {
                                 Values.currency = newCurrency
                                 Utility.writeCurrencyData(context)
                             }
                             Viewlets.settingsDivider()
-                            Viewlets.settingsLabel("Data", false)
+                            Viewlets.settingsLabel("Data")
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
                                 openDialog = !openDialog
                             }
@@ -898,13 +897,12 @@ object Views {
      * Draws the account specific screen to show transactions specific to this account
      *
      * @param navHostController The main navHostController for this application
-     * @param context The main context for this application
      * @param accountName The account to show information of
      */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateAccountSpecificView(navHostController: NavHostController, context: Context, accountName: String) {
+    fun generateAccountSpecificView(navHostController: NavHostController, accountName: String) {
         ApplicationTheme {
             Scaffold(
                 snackbarHost = {
