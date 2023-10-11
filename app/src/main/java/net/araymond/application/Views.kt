@@ -483,7 +483,7 @@ object Views {
                                         }
                                     },
                                     suffix = {
-                                        Text(Values.currencies[Values.currency])
+                                        Text(Values.currencies[Utility.getPreference("currencyPreference")])
                                     },
                                     singleLine = true,
                                     isError = transactionAmountIsNotNumber,
@@ -873,23 +873,15 @@ object Views {
                             }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Preferences")
-                            Values.currency = Viewlets.settingsDropdown(
-                                Values.currency, "Currency", Values.currencies
-                            )
-//                            if (newCurrency != Values.currency) {
-//                                Values.currency = newCurrency
-//                                Utility.writeCurrencyData(context)
-//                            }
-                            val accountSortingPreference = Viewlets.settingsDropdown(
-                                Values.accountSortingPreference, "Account sorting"
+                            Utility.setPreference("currencyPreference",
+                                Viewlets.settingsDropdown(
+                                Utility.getPreference("currencyPreference"), "Currency", Values.currencies
+                            ), context)
+                            Utility.setPreference("accountSortingPreference",
+                            Viewlets.settingsDropdown(
+                                Utility.getPreference("accountSortingPreference"), "Account sorting"
                                 ,Values.accountSortingOptions
-                            )
-                            if (
-                                accountSortingPreference != Values.accountSortingPreference
-                                ) {
-                                Values.accountSortingPreference = accountSortingPreference
-                                // Utility.writeAccountSortingPreference
-                            }
+                            ), context)
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Data")
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
@@ -978,7 +970,7 @@ object Views {
                                     )
                                     Spacer(modifier = Modifier.padding(5.dp))
                                     Text(
-                                        text = Values.currencies[Values.currency] + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
                                         style = TextStyle(fontSize = 19.sp)
                                     )
                                 }

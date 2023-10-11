@@ -34,8 +34,8 @@ class MainActivity : ComponentActivity() {
         if (Utility.readLedgerSaveData(this)) {
             Log.d("INFO", "Ledger data read successfully")
         }
-        if (Utility.readCurrencySaveData(this)) {
-            Log.d("INFO", "Currency preference read successfully")
+        if (Utility.readPreferenceSaveData(this)) {
+            Log.d("INFO", "User preferences read successfully")
         }
         Utility.readAll()
     }

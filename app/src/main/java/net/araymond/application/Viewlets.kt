@@ -419,8 +419,9 @@ object Viewlets: ComponentActivity() {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
-            Log.d("preference", Values.accountSortingPreference.toString())
-            Utility.sortAccountListByPreference(Values.accountNames, Values.accountSortingPreference).forEach{ accountName ->
+            val preference = Utility.getPreference("accountSortingPreference")
+            val currency = Utility.getPreference("currencyPreference")
+            Utility.sortAccountListByPreference(Values.accountNames, preference).forEach{ accountName ->
                 val accountTotal = Utility.getAccountTotal(accountName)
                 Row {
                     Column(
@@ -446,7 +447,7 @@ object Viewlets: ComponentActivity() {
                         )
                         Spacer(modifier = Modifier.padding(5.dp))
                         Text(
-                            text = Values.currencies[Values.currency] + Values.balanceFormat.format(accountTotal),
+                            text = Values.currencies[currency] + Values.balanceFormat.format(accountTotal),
                             style = TextStyle(fontSize = 19.sp)
                         )
                     }
@@ -468,6 +469,7 @@ object Viewlets: ComponentActivity() {
     fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean) {
         val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        val currency = Utility.getPreference("currencyPreference")
         Utility.sortTransactionListDescendingOrder(transactions).forEach { transaction ->
             val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
             val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
@@ -520,7 +522,7 @@ object Viewlets: ComponentActivity() {
                 ) {
                     if (transaction.amount < 0) {   // If amount is negative
                         Text(
-                            text = "(" + Values.currencies[Values.currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -530,7 +532,7 @@ object Viewlets: ComponentActivity() {
                     }
                     else {
                         Text(
-                            text = Values.currencies[Values.currency] + Values.balanceFormat.format(transaction.amount),
+                            text = Values.currencies[currency] + Values.balanceFormat.format(transaction.amount),
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -541,7 +543,7 @@ object Viewlets: ComponentActivity() {
                     if (showRunningBalance) {
                         Spacer(modifier = Modifier.padding(15.dp))
                         Text(
-                            text = Values.currencies[Values.currency] + Values.balanceFormat.format(
+                            text = Values.currencies[currency] + Values.balanceFormat.format(
                                 Utility.calculateTransactionRunningBalance(
                                     transaction,
                                     Values.transactions

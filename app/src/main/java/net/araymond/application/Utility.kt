@@ -3,6 +3,7 @@ package net.araymond.application
 import android.content.Context
 import android.util.Log
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.ObjectInputStream
@@ -90,19 +91,20 @@ object Utility {
     }
 
     /**
-     * Reads in the saved currency preference
+     * Reads in saved preferences
      *
      * @param context The main context for this application
      *
-     * @return If reading the currency preference succeeded
+     * @return If reading preferences succeeded
      */
-    fun readCurrencySaveData(context: Context): Boolean {
+    fun readPreferenceSaveData(context: Context): Boolean {
         return try {
-            val inputCurrencyStream = context.openFileInput("currency")
-            val objectInputCurrencyStream = ObjectInputStream(inputCurrencyStream)
-            Values.currency = objectInputCurrencyStream.readObject() as Int
-            objectInputCurrencyStream.close()
-            inputCurrencyStream.close()
+            val inputStream = context.openFileInput("preferences")
+            val objectInputStream = ObjectInputStream(inputStream)
+            // Need to resolve
+            Values.preferences = objectInputStream.readObject() as MutableMap<String, Int>
+            objectInputStream.close()
+            inputStream.close()
 
             true
         } catch (exception: Exception) {
@@ -146,14 +148,14 @@ object Utility {
     }
 
     /**
-     * Writes the currency preference to private app storage
+     * Writes the user's preferences to private app storage
      *
      * @param context The main context for this application
      *
-     * @return If writing the transaction list succeeded
+     * @return If writing preferences succeeded
      */
-    fun writeCurrencyData(context: Context): Boolean {
-        return (writeSaveData(Values.currency, "currency", context))
+    fun writePreferences(context: Context): Boolean {
+        return (writeSaveData(Values.preferences, "preferences", context))
     }
 
     /**
@@ -628,5 +630,14 @@ object Utility {
             5 -> return (sortAccountListByTransactionDate(list, ascending = false))
             else -> return list
         }
+    }
+
+    fun getPreference(preference: String): Int {
+        return (Values.preferences[preference]!!)
+    }
+
+    fun setPreference(preference: String, value: Int, context: Context) {
+        Values.preferences[preference] = value
+        writePreferences(context)
     }
 }

@@ -14,7 +14,6 @@ object Values {
     // Localization
     var dateFormat = "MM-dd-yyyy"
     var timeFormat = "HH:mm"
-    var currency = 0
     var balanceFormat = DecimalFormat("#,##0.00")
 
     // Time tracking constants
@@ -22,7 +21,10 @@ object Values {
     var localTimeZone: ZoneId = ZoneId.systemDefault()  // local time zone for this device
 
     // Preferences
-    var accountSortingPreference = 0
+    var preferences: MutableMap<String, Int> = mutableMapOf(
+        "currencyPreference" to 0,
+        "accountSortingPreference" to 0
+    )
 
     // Currency options
     val currencies = arrayOf("$", "€", "¥", "£")
