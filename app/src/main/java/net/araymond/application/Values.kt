@@ -4,7 +4,6 @@ import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.CoroutineScope
 import java.text.DecimalFormat
 import java.time.ZoneId
-import java.util.Locale
 
 /**
  * Contains global values
@@ -13,20 +12,26 @@ import java.util.Locale
  */
 object Values {
     // Localization
-    var language = "en"
-    var country = "us"
-    var locale = Locale(language, country)
     var dateFormat = "MM-dd-yyyy"
     var timeFormat = "HH:mm"
-    var currency = "$"
+    var currency = 0
     var balanceFormat = DecimalFormat("#,##0.00")
 
     // Time tracking constants
     var UTCTimeZone: ZoneId = ZoneId.of("UTC")
     var localTimeZone: ZoneId = ZoneId.systemDefault()  // local time zone for this device
 
+    // Preferences
+    var accountSortingPreference = 0
+
     // Currency options
-    var currencies = arrayOf("$", "€", "¥", "£")
+    val currencies = arrayOf("$", "€", "¥", "£")
+
+    // Sorting options
+    val accountSortingOptions = arrayOf(
+        "Name (ascending)", "Name (descending)", "Amount (ascending)", "Amount (descending)",
+        "Transaction date (ascending)", "Transaction date (descending)"
+    )
 
     // Value arrays
     var transactions = ArrayList<Transaction>()     // Main transaction list

@@ -483,7 +483,7 @@ object Views {
                                         }
                                     },
                                     suffix = {
-                                        Text(Values.currency)
+                                        Text(Values.currencies[Values.currency])
                                     },
                                     singleLine = true,
                                     isError = transactionAmountIsNotNumber,
@@ -873,10 +873,22 @@ object Views {
                             }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Preferences")
-                            val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
-                            if (newCurrency != Values.currency && newCurrency != "-1") {
-                                Values.currency = newCurrency
-                                Utility.writeCurrencyData(context)
+                            Values.currency = Viewlets.settingsDropdown(
+                                Values.currency, "Currency", Values.currencies
+                            )
+//                            if (newCurrency != Values.currency) {
+//                                Values.currency = newCurrency
+//                                Utility.writeCurrencyData(context)
+//                            }
+                            val accountSortingPreference = Viewlets.settingsDropdown(
+                                Values.accountSortingPreference, "Account sorting"
+                                ,Values.accountSortingOptions
+                            )
+                            if (
+                                accountSortingPreference != Values.accountSortingPreference
+                                ) {
+                                Values.accountSortingPreference = accountSortingPreference
+                                // Utility.writeAccountSortingPreference
                             }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Data")
@@ -966,7 +978,7 @@ object Views {
                                     )
                                     Spacer(modifier = Modifier.padding(5.dp))
                                     Text(
-                                        text = Values.currency + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
+                                        text = Values.currencies[Values.currency] + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
                                         style = TextStyle(fontSize = 19.sp)
                                     )
                                 }

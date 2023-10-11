@@ -2,6 +2,7 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -237,15 +238,16 @@ object Viewlets: ComponentActivity() {
     /**
      * Creates a settings button with a dropdown menu in a dialog when pressed
      *
-     * @param value The initial value of the option
+     * @param value The index of the initial value
      * @param label The label of the settings button
      * @param options The options to list in the dropdown menu
      *
-     * @return The option selected
+     * @return The index of the option selected
      */
     @Composable
-    fun settingsDropdown(value: String, label: String, options: Array<String>): String {
+    fun settingsDropdown(currentIndex: Int, label: String, options: Array<String>): Int {
         var dialogIsOpen by remember { mutableStateOf(false) }
+        val value = options[currentIndex]
         var tempValue by remember { mutableStateOf(value) }
         var optionValue by remember { mutableStateOf(value) }
         Column(
@@ -316,7 +318,7 @@ object Viewlets: ComponentActivity() {
                                 RadioButton(
                                     selected = (tempValue == selectedOption),
                                     onClick = {
-                                              tempValue = selectedOption
+                                        tempValue = selectedOption
                                     },
                                 )
                                 Text(selectedOption)
@@ -346,7 +348,7 @@ object Viewlets: ComponentActivity() {
                 }
             }
         }
-        return optionValue
+        return options.indexOf(optionValue)
     }
 
     /**
@@ -417,7 +419,8 @@ object Viewlets: ComponentActivity() {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
-            Utility.sortAccountListByNameAscendingOrder(Values.accountNames).forEach{ accountName ->
+            Log.d("preference", Values.accountSortingPreference.toString())
+            Utility.sortAccountListByPreference(Values.accountNames, Values.accountSortingPreference).forEach{ accountName ->
                 val accountTotal = Utility.getAccountTotal(accountName)
                 Row {
                     Column(
@@ -443,7 +446,7 @@ object Viewlets: ComponentActivity() {
                         )
                         Spacer(modifier = Modifier.padding(5.dp))
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(accountTotal),
+                            text = Values.currencies[Values.currency] + Values.balanceFormat.format(accountTotal),
                             style = TextStyle(fontSize = 19.sp)
                         )
                     }
@@ -517,7 +520,7 @@ object Viewlets: ComponentActivity() {
                 ) {
                     if (transaction.amount < 0) {   // If amount is negative
                         Text(
-                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            text = "(" + Values.currencies[Values.currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -527,7 +530,7 @@ object Viewlets: ComponentActivity() {
                     }
                     else {
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
+                            text = Values.currencies[Values.currency] + Values.balanceFormat.format(transaction.amount),
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -538,7 +541,7 @@ object Viewlets: ComponentActivity() {
                     if (showRunningBalance) {
                         Spacer(modifier = Modifier.padding(15.dp))
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(
+                            text = Values.currencies[Values.currency] + Values.balanceFormat.format(
                                 Utility.calculateTransactionRunningBalance(
                                     transaction,
                                     Values.transactions

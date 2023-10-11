@@ -100,7 +100,7 @@ object Utility {
         return try {
             val inputCurrencyStream = context.openFileInput("currency")
             val objectInputCurrencyStream = ObjectInputStream(inputCurrencyStream)
-            Values.currency = objectInputCurrencyStream.readObject() as String
+            Values.currency = objectInputCurrencyStream.readObject() as Int
             objectInputCurrencyStream.close()
             inputCurrencyStream.close()
 
@@ -496,7 +496,6 @@ object Utility {
                 }
             }
 
-            // TODO: Fix initial amount code
             // Iterate through all accounts for initial transactions
             initialTransactionList.forEach { transaction ->
                 // Oldest transaction of tempTransactionList is index 0
@@ -522,24 +521,112 @@ object Utility {
     }
 
     /**
-     * Sorts the given account names list in ascending alphabetical order
+     * Sorts the given transaction list in amount size order
      *
      * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
      *
      * @return The sorted list
      */
-    fun sortAccountListByNameAscendingOrder(list: ArrayList<String>): ArrayList<String> {
-        return (list.sortedBy { it }.toCollection(ArrayList()))
+    fun sortTransactionListByAmount(list: ArrayList<Transaction>, ascending: Boolean): ArrayList<Transaction> {
+        if (ascending) {
+            return (list.sortedBy { it.amount }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { it.amount }.toCollection(ArrayList()))
+        }
     }
 
     /**
-     * Sorts the given account names list in descending alphabetical order
+     * Sorts the given transaction list by date
      *
      * @param list The list to sort
+     * @param ascending if the list should be sorted in ascending order
      *
      * @return The sorted list
      */
-    fun sortAccountListByNameDescendingOrder(list: ArrayList<String>): ArrayList<String> {
-        return (list.sortedByDescending { it }.toCollection(ArrayList()))
+    fun sortTransactionListByDate(list: ArrayList<Transaction>, ascending: Boolean): ArrayList<Transaction> {
+        if (ascending) {
+            return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given account names list in alphabetical order
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByName(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
+        if (ascending) {
+            return (list.sortedBy { it }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { it }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given account names list by balance size
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByAmount(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
+        if (ascending) {
+            return (list.sortedBy { getAccountTotal(it) }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { getAccountTotal(it) }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given account names list by transaction date
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByTransactionDate(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
+        val sortedList = ArrayList<String>()
+        val sortedTransactionsList = sortTransactionListByDate(Values.transactions, ascending)
+        /* Get the smallest (or largest) transactions and find out which accounts the smallest
+           (or largest) transactions belong to
+        */
+        sortedTransactionsList.forEach { transaction ->
+            if (!(sortedList.contains(transaction.accountName))) {
+                sortedList.add(transaction.accountName)
+            }
+        }
+        return sortedList
+    }
+
+    /**
+     * Sorts the given account names list by order preference
+     *
+     * @param list The list to sort
+     * @param preference The sorting preference
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByPreference(list: ArrayList<String>, preference: Int): ArrayList<String> {
+        when (preference) {
+            0 -> return (sortAccountListByName(list, ascending = true))
+            1 -> return (sortAccountListByName(list, ascending = false))
+            2 -> return (sortAccountListByAmount(list, ascending = true))
+            3 -> return (sortAccountListByAmount(list, ascending = false))
+            4 -> return (sortAccountListByTransactionDate(list, ascending = true))
+            5 -> return (sortAccountListByTransactionDate(list, ascending = false))
+            else -> return list
+        }
     }
 }
