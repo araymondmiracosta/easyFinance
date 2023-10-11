@@ -2,7 +2,6 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -235,53 +234,16 @@ object Viewlets: ComponentActivity() {
         return optionValue
     }
 
-    /**
-     * Creates a settings button with a dropdown menu in a dialog when pressed
-     *
-     * @param value The index of the initial value
-     * @param label The label of the settings button
-     * @param options The options to list in the dropdown menu
-     *
-     * @return The index of the option selected
-     */
     @Composable
-    fun settingsDropdown(currentIndex: Int, label: String, options: Array<String>): Int {
-        var dialogIsOpen by remember { mutableStateOf(false) }
+    fun dropdownDialog(currentIndex: Int, label: String, options: Array<String>): Int {
         val value = options[currentIndex]
         var tempValue by remember { mutableStateOf(value) }
         var optionValue by remember { mutableStateOf(value) }
-        Column(
-            modifier = Modifier
-                .clickable(enabled = true,
-                    onClick = {
-                        dialogIsOpen = true
-                    }
-                )
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(top = 10.dp)
-        ) {
-            Text(
-                text = label,
-                style = TextStyle(
-                    fontSize = 17.sp,
-                ),
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.padding(vertical = 2.dp))
-            Text(
-                text = optionValue,
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            )
-            Spacer(modifier = Modifier.padding(bottom = 15.dp))
-        }
-        if (dialogIsOpen) {
+        var dialogOpen by remember { mutableStateOf(true) }
+
+        if (dialogOpen) {
             Dialog(
                 onDismissRequest = {
-                    dialogIsOpen = false
                 },
             ) {
                 Surface {
@@ -330,7 +292,7 @@ object Viewlets: ComponentActivity() {
                             Spacer(Modifier.weight(1f))
                             TextButton(
                                 onClick = {
-                                    dialogIsOpen = false
+                                    dialogOpen = false
                                 }
                             ) {
                                 Text("Cancel")
@@ -338,7 +300,7 @@ object Viewlets: ComponentActivity() {
                             TextButton(
                                 onClick = {
                                     optionValue = tempValue
-                                    dialogIsOpen = false
+                                    dialogOpen = false
                                 }
                             ) {
                                 Text("OK")
@@ -470,7 +432,7 @@ object Viewlets: ComponentActivity() {
         val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
         val currency = Utility.getPreference("currencyPreference")
-        Utility.sortTransactionListDescendingOrder(transactions).forEach { transaction ->
+        Utility.sortTransactionListByPreference(transactions, Utility.getPreference("transactionSortingPreference")).forEach { transaction ->
             val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
             val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
             Row(

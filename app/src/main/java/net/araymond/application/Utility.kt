@@ -1,9 +1,7 @@
 package net.araymond.application
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.ObjectInputStream
@@ -363,8 +361,6 @@ object Utility {
      * @param message The message to show on the snackbar
      */
     fun showSnackbar(message: String) {
-        Log.d("Snackbar", Values.lastSnackbarMessage)
-        Log.d("Snackbar", message)
         if (message.compareTo(Values.lastSnackbarMessage) != 0) {
             Values.lastSnackbarMessage = message
             Values.scope.launch {
@@ -613,7 +609,7 @@ object Utility {
     }
 
     /**
-     * Sorts the given account names list by order preference
+     * Sorts the given account names list by the given preference
      *
      * @param list The list to sort
      * @param preference The sorting preference
@@ -632,10 +628,41 @@ object Utility {
         }
     }
 
-    fun getPreference(preference: String): Int {
-        return (Values.preferences[preference]!!)
+    /**
+     * Sorts the given transaction list by the given preference
+     *
+     * @param list The list to sort
+     * @param preference The sorting preference
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListByPreference(list: ArrayList<Transaction>, preference: Int): ArrayList<Transaction> {
+        when (preference) {
+            0 -> return (sortTransactionListByDate(list, ascending = true))
+            1 -> return (sortTransactionListByDate(list, ascending = false))
+            2 -> return (sortTransactionListByAmount(list, ascending = true))
+            3 -> return (sortTransactionListByAmount(list, ascending = false))
+            else -> return list
+        }
     }
 
+    /**
+     * Returns the value of the given preference from the preference store
+     *
+     * @param preference The preference to get
+     *
+     * @return The value of the preference
+     */
+    fun getPreference(preference: String): Int {
+        return (Values.preferences[preference]?: 0)
+    }
+
+    /**
+     * Sets the value of the given preference to the given value
+     *
+     * @param preference The preference to set
+     * @param value The value to set the preference to
+     */
     fun setPreference(preference: String, value: Int, context: Context) {
         Values.preferences[preference] = value
         writePreferences(context)

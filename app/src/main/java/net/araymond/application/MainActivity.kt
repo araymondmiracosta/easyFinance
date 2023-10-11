@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         val navHostController = rememberNavController()
         NavHost(navController = navHostController, startDestination = "Main Activity") {
             composable("Main Activity") {
-                Views.mainDraw(navHostController)
+                Views.mainDraw(navHostController, context)
             }
             composable("Edit Account Activity/{accountName}") {
                 it.arguments?.getString("accountName")?.let { it1 ->

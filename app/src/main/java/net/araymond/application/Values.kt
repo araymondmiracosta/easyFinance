@@ -23,7 +23,8 @@ object Values {
     // Preferences
     var preferences: MutableMap<String, Int> = mutableMapOf(
         "currencyPreference" to 0,
-        "accountSortingPreference" to 0
+        "accountSortingPreference" to 0,
+        "transactionSortingPreference" to 1
     )
 
     // Currency options
@@ -33,6 +34,9 @@ object Values {
     val accountSortingOptions = arrayOf(
         "Name (ascending)", "Name (descending)", "Amount (ascending)", "Amount (descending)",
         "Transaction date (ascending)", "Transaction date (descending)"
+    )
+    val transactionSortingOptions = arrayOf(
+        "Date (ascending)", "Date (descending)", "Amount (ascending)", "Amount (descending)"
     )
 
     // Value arrays

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -78,10 +79,18 @@ object Views {
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun mainDraw(navHostController: NavHostController) {
-        val scrollState = rememberScrollState()
-
+    fun mainDraw(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
+            val scrollState = rememberScrollState()
+            var openDialog by remember { mutableStateOf(false) }
+
+            if (openDialog) {
+                Utility.setPreference("transactionSortingPreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+                    label = "Sort transactions",
+                    options = Values.transactionSortingOptions
+                ), context)
+            }
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -92,6 +101,13 @@ object Views {
                             Text(text = "Finance")
                         },
                         actions = {
+                            IconButton(
+                                onClick = {
+                                    openDialog = !openDialog
+                                }
+                            ) {
+                                Icon(Icons.Filled.List, "Sort transactions")
+                            }
                             IconButton(
                                 onClick = {
                                     navHostController.navigate("Settings Activity")
@@ -832,11 +848,28 @@ object Views {
         ApplicationTheme {
             var createDialog by remember { mutableStateOf(false) }
             var openDialog by remember { mutableStateOf(false) }
+            var currencyDialog by remember { mutableStateOf(false) }
+            var accountSortingDialog by remember { mutableStateOf(false) }
+
             if (createDialog) {
                 Viewlets.exportCSVPathSelector()
             }
             if (openDialog && (Viewlets.confirmDialog("Import ledger", "Existing ledger information will be deleted. Are you sure you want to continue?"))) {
                 Viewlets.importCSVPathSelector(context)
+            }
+            if (currencyDialog) {
+                Utility.setPreference("currencyPreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("currencyPreference"),
+                    label = "Currency",
+                    options = Values.currencies
+                ), context)
+            }
+            if (accountSortingDialog) {
+                Utility.setPreference("accountSortingPreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("accountSortingPreference"),
+                    label = "Sort accounts",
+                    options = Values.accountSortingOptions
+                ), context)
             }
             Scaffold(
                 snackbarHost = {
@@ -873,15 +906,12 @@ object Views {
                             }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Preferences")
-                            Utility.setPreference("currencyPreference",
-                                Viewlets.settingsDropdown(
-                                Utility.getPreference("currencyPreference"), "Currency", Values.currencies
-                            ), context)
-                            Utility.setPreference("accountSortingPreference",
-                            Viewlets.settingsDropdown(
-                                Utility.getPreference("accountSortingPreference"), "Account sorting"
-                                ,Values.accountSortingOptions
-                            ), context)
+                            Viewlets.settingsButton("Currency", Values.currencies[Utility.getPreference("currencyPreference")]) {
+                                currencyDialog = !currencyDialog
+                            }
+                            Viewlets.settingsButton("Sort accounts", Values.accountSortingOptions[Utility.getPreference("accountSortingPreference")]) {
+                                accountSortingDialog = !accountSortingDialog
+                            }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Data")
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
