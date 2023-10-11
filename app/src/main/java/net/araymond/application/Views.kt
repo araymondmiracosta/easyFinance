@@ -82,13 +82,16 @@ object Views {
     fun mainDraw(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
             val scrollState = rememberScrollState()
-            var openDialog by remember { mutableStateOf(false) }
+            var showDialog by remember { mutableStateOf(false) }
 
-            if (openDialog) {
+            if (showDialog) {
                 Utility.setPreference("transactionSortingPreference", Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("transactionSortingPreference"),
                     label = "Sort transactions",
-                    options = Values.transactionSortingOptions
+                    options = Values.transactionSortingOptions,
+                    onDismiss = {
+                        showDialog = false
+                    }
                 ), context)
             }
             Scaffold(
@@ -103,7 +106,7 @@ object Views {
                         actions = {
                             IconButton(
                                 onClick = {
-                                    openDialog = !openDialog
+                                    showDialog = true
                                 }
                             ) {
                                 Icon(Icons.Filled.List, "Sort transactions")
@@ -155,6 +158,7 @@ object Views {
      * @param accountNameInput If not empty, then displays the information for this account and
      *                          allows editing
      */
+    // TODO: Need to fix crash if invalid balance is input
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -169,6 +173,7 @@ object Views {
             var accountBalanceIsNotNumber = true
             var fieldEnabled = true
             var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf (false) }
 
             if (accountNameInput.isNotEmpty()) {
                 accountBalance = Utility.getAccountTotal(accountName).toString()
@@ -178,11 +183,17 @@ object Views {
             }
 
             if (deleteDialog) {
-                if (Viewlets.confirmDialog("Delete Account", "Are you sure you want to delete this account? All transactions will be removed.")) {
-                    if (Utility.removeAccount(context, accountNameInput)) {
-                        navHostController.navigate("Main Activity")
-                        Utility.showSnackbar("Account successfully deleted")
-                    }
+                Viewlets.confirmDialog(
+                    "Delete Account",
+                    "Are you sure you want to delete this account? All transactions will be removed.",
+                    { deleteDialog = false },
+                    { delete = true }
+                )
+            }
+            if (delete) {
+                if (Utility.removeAccount(context, accountNameInput)) {
+                    navHostController.navigate("Main Activity")
+                    Utility.showSnackbar("Account successfully deleted")
                 }
             }
 
@@ -213,7 +224,8 @@ object Views {
                             if (accountNameInput.isNotEmpty()) {
                                 IconButton(
                                     onClick = {
-                                        deleteDialog = !deleteDialog
+                                        delete = false
+                                        deleteDialog = true
                                     }
                                 ) {
                                     Icon(Icons.Filled.Delete, "Delete Account")
@@ -353,6 +365,7 @@ object Views {
 
             var fieldEnabled by remember { mutableStateOf(false) }
             var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf(false) }
 
             if (isTransfer) {
                 transactionAccountLabel = "Transfer source account"
@@ -379,12 +392,18 @@ object Views {
                     title = "View Transaction"
                 }
                 if (deleteDialog) {     // If the user pressed the delete button, confirm
-                    if(Viewlets.confirmDialog("Delete transaction", "Are you sure you want to delete this transaction?")) {
-                        if (Utility.removeTransaction(transaction, context)) {
-                            fieldEnabled = false
-                            navHostController.navigateUp()
-                            Utility.showSnackbar("Transaction removed")
-                        }
+                    Viewlets.confirmDialog(
+                        "Delete transaction",
+                        "Are you sure you want to delete this transaction?",
+                        { deleteDialog = false },
+                        { delete = true }
+                    )
+                }
+                if (delete) {
+                    if (Utility.removeTransaction(transaction, context)) {
+                        fieldEnabled = false
+                        navHostController.navigateUp()
+                        Utility.showSnackbar("Transaction removed")
                     }
                 }
             }
@@ -426,7 +445,8 @@ object Views {
                                 if (fieldEnabled) {
                                     IconButton(
                                         onClick = {
-                                            deleteDialog = !deleteDialog    // Known bug, after first attempt, user has to press button twice
+                                            delete = false
+                                            deleteDialog = true
                                         }
                                     ) {
                                         Icon(Icons.Filled.Delete, "Remove transaction")
@@ -850,25 +870,37 @@ object Views {
             var openDialog by remember { mutableStateOf(false) }
             var currencyDialog by remember { mutableStateOf(false) }
             var accountSortingDialog by remember { mutableStateOf(false) }
+            var confirm by remember { mutableStateOf(false) }
 
             if (createDialog) {
                 Viewlets.exportCSVPathSelector()
             }
-            if (openDialog && (Viewlets.confirmDialog("Import ledger", "Existing ledger information will be deleted. Are you sure you want to continue?"))) {
+            if (openDialog) {
+                confirm = false
+                Viewlets.confirmDialog(
+                    "Import ledger",
+                    "Existing ledger information will be deleted. Are you sure you want to continue?",
+                    { openDialog = false },
+                    { confirm = true }
+                )
+            }
+            if (confirm) {
                 Viewlets.importCSVPathSelector(context)
             }
             if (currencyDialog) {
                 Utility.setPreference("currencyPreference", Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("currencyPreference"),
                     label = "Currency",
-                    options = Values.currencies
+                    options = Values.currencies,
+                    onDismiss = { currencyDialog = false }
                 ), context)
             }
             if (accountSortingDialog) {
                 Utility.setPreference("accountSortingPreference", Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("accountSortingPreference"),
                     label = "Sort accounts",
-                    options = Values.accountSortingOptions
+                    options = Values.accountSortingOptions,
+                    onDismiss = { accountSortingDialog = false }
                 ), context)
             }
             Scaffold(
@@ -907,18 +939,19 @@ object Views {
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Preferences")
                             Viewlets.settingsButton("Currency", Values.currencies[Utility.getPreference("currencyPreference")]) {
-                                currencyDialog = !currencyDialog
+                                currencyDialog = true
                             }
                             Viewlets.settingsButton("Sort accounts", Values.accountSortingOptions[Utility.getPreference("accountSortingPreference")]) {
-                                accountSortingDialog = !accountSortingDialog
+                                accountSortingDialog = true
                             }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Data")
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
-                                openDialog = !openDialog
+                                confirm = false
+                                openDialog = true
                             }
                             Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
-                                createDialog = !createDialog
+                                createDialog = true
                             }
                         }
                     }

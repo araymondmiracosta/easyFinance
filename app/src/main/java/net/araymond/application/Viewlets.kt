@@ -169,148 +169,142 @@ object Viewlets: ComponentActivity() {
      * @return If the user confirmed something
      */
     @Composable
-    fun confirmDialog(title: String, message: String): Boolean {
-        var dialogIsOpen by remember { mutableStateOf(true) }
+    fun confirmDialog(title: String, message: String, onDismiss: () -> Unit, onConfirm: () -> Unit): Boolean {
         var optionValue by remember { mutableStateOf(false) }
-        if (dialogIsOpen) {
-            Dialog(
-                onDismissRequest = {
-                    dialogIsOpen = false
-                },
-            ) {
-                Surface {
-                    Column(
+        Dialog(
+            onDismissRequest = {
+                               onDismiss
+            },
+        ) {
+            Surface {
+                Column(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clip(shape = RoundedCornerShape(10.dp))
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = title,
                         modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            modifier = Modifier
-                                .padding(top = 20.dp)
-                                .padding(horizontal = 10.dp),
-                            style = TextStyle(
-                                fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            .padding(top = 20.dp)
+                            .padding(horizontal = 10.dp),
+                        style = TextStyle(
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
-                            text = message,
-                            modifier = Modifier
-                                .padding(top = 20.dp)
-                                .padding(horizontal = 10.dp),
-                            style = TextStyle(
-                                fontSize = 16.sp,
-                            )
-                        )
-                        Row(
-                            modifier = Modifier.padding(vertical = 5.dp)
-                        ) {
-                            Spacer(Modifier.weight(1f))
-                            TextButton(
-                                onClick = {
-                                   dialogIsOpen = false
-                                }
-                            ) {
-                                Text("Cancel")
-                            }
-                            TextButton(
-                                onClick = {
-                                    optionValue = true
-                                    dialogIsOpen = false
-                                }
-                            ) {
-                                Text("OK")
-                            }
-                        }
-                    }
-                }
-           }
-        }
-        return optionValue
-    }
-
-    @Composable
-    fun dropdownDialog(currentIndex: Int, label: String, options: Array<String>): Int {
-        val value = options[currentIndex]
-        var tempValue by remember { mutableStateOf(value) }
-        var optionValue by remember { mutableStateOf(value) }
-        var dialogOpen by remember { mutableStateOf(true) }
-
-        if (dialogOpen) {
-            Dialog(
-                onDismissRequest = {
-                },
-            ) {
-                Surface {
-                    Column(
+                    )
+                    Text(                                                   // TODO: Need to make text look better (smaller font, etc)
+                        text = message,
                         modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = label,
-                            modifier = Modifier
-                                .padding(top = 24.dp)
-                                .padding(horizontal = 16.dp),
-                            style = TextStyle(
-                                fontSize = 20.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            .padding(top = 20.dp)
+                            .padding(horizontal = 10.dp),
+                        style = TextStyle(
+                            fontSize = 16.sp,
                         )
-                        options.forEach { selectedOption ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(
-                                        onClick = {
-                                            tempValue = selectedOption
-                                        }
-                                    ),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = (tempValue == selectedOption),
-                                    onClick = {
-                                        tempValue = selectedOption
-                                    },
-                                )
-                                Text(selectedOption)
+                    )
+                    Row(
+                        modifier = Modifier.padding(vertical = 5.dp)
+                    ) {
+                        Spacer(Modifier.weight(1f))
+                        TextButton(
+                            onClick = {
+                                onDismiss.invoke()
                             }
-                        }
-                        Row(
-                            modifier = Modifier.padding(vertical = 5.dp)
                         ) {
-                            Spacer(Modifier.weight(1f))
-                            TextButton(
-                                onClick = {
-                                    dialogOpen = false
-                                }
-                            ) {
-                                Text("Cancel")
+                            Text("Cancel")
+                        }
+                        TextButton(
+                            onClick = {
+                                optionValue = true
+                                onConfirm.invoke()
+                                onDismiss.invoke()
                             }
-                            TextButton(
-                                onClick = {
-                                    optionValue = tempValue
-                                    dialogOpen = false
-                                }
-                            ) {
-                                Text("OK")
-                            }
+                        ) {
+                            Text("OK")
                         }
                     }
                 }
             }
         }
-        return options.indexOf(optionValue)
+        return optionValue
+    }
+
+    @Composable
+    fun dropdownDialog(currentIndex: Int, label: String, options: Array<String>, onDismiss: () -> Unit): Int {
+        val value = options[currentIndex]
+        var tempValue by remember { mutableStateOf(value) }
+        var optionValue by remember { mutableStateOf(value) }
+
+        Dialog(
+            onDismissRequest = onDismiss
+        ) {
+            Surface {
+                Column(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clip(shape = RoundedCornerShape(10.dp))
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = label,
+                        modifier = Modifier
+                            .padding(top = 24.dp)
+                            .padding(horizontal = 16.dp),
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                    options.forEach { selectedOption ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    onClick = {
+                                        tempValue = selectedOption
+                                    }
+                                ),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (tempValue == selectedOption),
+                                onClick = {
+                                    tempValue = selectedOption
+                                },
+                            )
+                            Text(selectedOption)
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.padding(vertical = 5.dp)
+                    ) {
+                        Spacer(Modifier.weight(1f))
+//                        TextButton(
+//                            onClick = {
+//                                onDismiss.invoke()
+//                            }
+//                        ) {
+//                            Text("Cancel")
+//                        }
+                        TextButton(
+                            onClick = {
+                                optionValue = tempValue
+                                onDismiss.invoke()
+                            }
+                        ) {
+                            Text("OK")
+                        }
+                    }
+                }
+            }
+        }
+        return options.indexOf(tempValue)
     }
 
     /**
