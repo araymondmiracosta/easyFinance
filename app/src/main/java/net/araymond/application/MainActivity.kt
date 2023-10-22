@@ -70,7 +70,7 @@ class MainActivity : ComponentActivity() {
             }
             composable("Account Specific Activity/{accountName}") {
                 it.arguments?.getString("accountName")?.let { it1 ->
-                    Views.generateAccountSpecificView(navHostController, it1)
+                    Views.generateAccountSpecificView(navHostController, it1, context)
                 }
             }
         }

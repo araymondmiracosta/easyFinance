@@ -969,8 +969,21 @@ object Views {
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateAccountSpecificView(navHostController: NavHostController, accountName: String) {
+    fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
+            var showDialog by remember { mutableStateOf(false) }
+
+            if (showDialog) {
+                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+                    label = "Sort transactions",
+                    options = Values.transactionSortingOptions,
+                    onDismiss = {
+                        showDialog = false
+                    }
+                ), context)
+            }
+
             Scaffold(
                 snackbarHost = {
                                SnackbarHost(hostState = Values.snackbarHostState)
@@ -990,6 +1003,13 @@ object Views {
                             }
                         },
                         actions = {
+                            IconButton(
+                                onClick = {
+                                    showDialog = true
+                                }
+                            ) {
+                                Icon(Icons.Filled.List, "Sort transactions")
+                            }
                             IconButton(
                                 onClick = {
                                     navHostController.navigate("Edit Account Activity/$accountName")
