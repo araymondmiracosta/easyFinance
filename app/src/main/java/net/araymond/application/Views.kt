@@ -3,6 +3,8 @@ package net.araymond.application
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -58,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.LocalDate
@@ -124,10 +127,32 @@ object Views {
                 content = {
                     Surface(modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
+                        .padding(top = 65.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
                         Column(
                             modifier = Modifier.verticalScroll(scrollState),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(shape = RoundedCornerShape(10.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .padding(10.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
+                                    style = TextStyle(
+                                        fontSize = 22.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 12.dp))
                             Viewlets.generateAccountScroller(navHostController)
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(

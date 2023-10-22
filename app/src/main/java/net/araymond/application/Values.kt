@@ -44,6 +44,9 @@ object Values {
     var categories = ArrayList<String>()
     var accountNames = ArrayList<String>()
 
+    // Net value
+    var total: Double = 0.0
+
     // Variables to hold data between navigation
     lateinit var currentTransaction: Transaction
 

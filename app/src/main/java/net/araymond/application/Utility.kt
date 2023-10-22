@@ -208,6 +208,7 @@ object Utility {
     fun readAll() {
         readCategories()
         readAccounts()
+        Values.total = calculateTotal()
     }
 
     /**
@@ -694,5 +695,18 @@ object Utility {
         Values.accountNames = sortAccountListByPreference(Values.accountNames,
             getPreference("accountSortingPreference")
         )
+    }
+
+    /**
+     * Returns the net value of all transactions
+     *
+     * @return Net value
+     */
+    fun calculateTotal(): Double {
+        var total: Double = 0.0
+        Values.transactions.forEach{ transaction ->
+            total += transaction.amount
+        }
+        return total
     }
 }
