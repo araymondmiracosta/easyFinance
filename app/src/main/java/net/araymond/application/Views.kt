@@ -85,7 +85,7 @@ object Views {
             var showDialog by remember { mutableStateOf(false) }
 
             if (showDialog) {
-                Utility.setPreference("transactionSortingPreference", Viewlets.dropdownDialog(
+                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("transactionSortingPreference"),
                     label = "Sort transactions",
                     options = Values.transactionSortingOptions,

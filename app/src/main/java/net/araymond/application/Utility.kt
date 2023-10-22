@@ -662,9 +662,37 @@ object Utility {
      *
      * @param preference The preference to set
      * @param value The value to set the preference to
+     * @param context The main context of this application
      */
     fun setPreference(preference: String, value: Int, context: Context) {
         Values.preferences[preference] = value
         writePreferences(context)
+    }
+
+    /**
+     * Sets transactions sorting preference
+     * Wrapper method for setPreference; sets Values.transactions to the sorted list
+     *
+     * @param value The sorting preference
+     * @param context The main context of this application
+     */
+    fun setTransactionSortingPreference(value: Int, context: Context) {
+        setPreference("transactionSortingPreference", value, context)
+        Values.transactions = sortTransactionListByPreference(Values.transactions,
+            getPreference("transactionSortingPreference")
+        )
+    }
+
+    /**
+     * Wrapper method for setPreference; sets Values.accountNames to the sorted list
+     *
+     * @param value The sorting preference
+     * @param context The main context of this application
+     */
+    fun setAccountSortingPreference(value: Int, context: Context) {
+        setPreference("accountSortingPreference", value, context)
+        Values.accountNames = sortAccountListByPreference(Values.accountNames,
+            getPreference("accountSortingPreference")
+        )
     }
 }
