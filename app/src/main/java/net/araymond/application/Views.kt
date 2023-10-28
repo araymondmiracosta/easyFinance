@@ -895,6 +895,7 @@ object Views {
             var currencyDialog by remember { mutableStateOf(false) }
             var accountSortingDialog by remember { mutableStateOf(false) }
             var confirm by remember { mutableStateOf(false) }
+            var themeDialog by remember { mutableStateOf(false) }
 
             if (createDialog) {
                 Viewlets.exportCSVPathSelector()
@@ -925,6 +926,14 @@ object Views {
                     label = "Sort accounts",
                     options = Values.accountSortingOptions,
                     onDismiss = { accountSortingDialog = false }
+                ), context)
+            }
+            if (themeDialog) {
+                Utility.setPreference("themePreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("themePreference"),
+                    label = "Theme",
+                    options =  Values.themes,
+                    onDismiss = { themeDialog = false }
                 ), context)
             }
             Scaffold(
@@ -967,6 +976,9 @@ object Views {
                             }
                             Viewlets.settingsButton("Sort accounts", Values.accountSortingOptions[Utility.getPreference("accountSortingPreference")]) {
                                 accountSortingDialog = true
+                            }
+                            Viewlets.settingsButton("Theme", Values.themes[Utility.getPreference("themePreference")]) {
+                                themeDialog = true
                             }
                             Viewlets.settingsDivider()
                             Viewlets.settingsLabel("Data")

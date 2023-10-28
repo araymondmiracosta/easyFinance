@@ -1,5 +1,6 @@
 package net.araymond.application
 
+import android.os.Build
 import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.CoroutineScope
 import java.text.DecimalFormat
@@ -24,7 +25,23 @@ object Values {
     var preferences: MutableMap<String, Int> = mutableMapOf(
         "currencyPreference" to 0,
         "accountSortingPreference" to 0,
-        "transactionSortingPreference" to 1
+        "transactionSortingPreference" to 1,
+        "themePreference" to 0
+    )
+    var themes =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(
+                "System default", "Material You (Dark)", "Material You (Light)", "Nebula"
+            )
+        }
+        else {
+            arrayOf(
+                "Nebula"
+            )
+        }
+
+    var legacyThemes = arrayOf(
+        "Nebula"
     )
 
     // Currency options
