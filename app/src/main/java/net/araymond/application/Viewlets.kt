@@ -426,7 +426,7 @@ object Viewlets: ComponentActivity() {
         val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
         val currency = Utility.getPreference("currencyPreference")
-        Values.transactions.forEach { transaction ->
+        transactions.forEach { transaction ->
             val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
             val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
             Row(
