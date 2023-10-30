@@ -19,8 +19,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -142,6 +144,7 @@ object Viewlets: ComponentActivity() {
                     text = title,
                     style = TextStyle(
                         fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     fontWeight = FontWeight.Bold
                 )
@@ -203,6 +206,7 @@ object Viewlets: ComponentActivity() {
                             .padding(horizontal = 10.dp),
                         style = TextStyle(
                             fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     )
                     Row(
@@ -214,7 +218,10 @@ object Viewlets: ComponentActivity() {
                                 onDismiss.invoke()
                             }
                         ) {
-                            Text("Cancel")
+                            Text(
+                                text = "Cancel",
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.primary),
+                            )
                         }
                         TextButton(
                             onClick = {
@@ -223,7 +230,10 @@ object Viewlets: ComponentActivity() {
                                 onDismiss.invoke()
                             }
                         ) {
-                            Text("OK")
+                            Text(
+                                text = "OK",
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.primary),
+                            )
                         }
                     }
                 }
@@ -277,28 +287,31 @@ object Viewlets: ComponentActivity() {
                                 onClick = {
                                     tempValue = selectedOption
                                 },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.onSurface,
+                                )
                             )
-                            Text(selectedOption)
+                            Text(
+                                text = selectedOption,
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.onSurface)
+                            )
                         }
                     }
                     Row(
                         modifier = Modifier.padding(vertical = 5.dp)
                     ) {
                         Spacer(Modifier.weight(1f))
-//                        TextButton(
-//                            onClick = {
-//                                onDismiss.invoke()
-//                            }
-//                        ) {
-//                            Text("Cancel")
-//                        }
                         TextButton(
                             onClick = {
                                 optionValue = tempValue
                                 onDismiss.invoke()
                             }
                         ) {
-                            Text("OK")
+                            Text(
+                                text = "OK",
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.primary)
+                            )
                         }
                     }
                 }
@@ -398,13 +411,13 @@ object Viewlets: ComponentActivity() {
                             text = accountName,
                             style = TextStyle(
                                 fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.inverseSurface
                             )
                         )
                         Spacer(modifier = Modifier.padding(5.dp))
                         Text(
                             text = Values.currencies[currency] + Values.balanceFormat.format(accountTotal),
-                            style = TextStyle(fontSize = 19.sp)
+                            style = TextStyle(fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurface)
                         )
                     }
                 }
@@ -456,7 +469,7 @@ object Viewlets: ComponentActivity() {
                         text = transaction.accountName,     // account
                         style = TextStyle(
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.inverseSurface
                         )
                     )
                     Spacer(modifier = Modifier.padding(2.dp))

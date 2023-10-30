@@ -146,8 +146,8 @@ object Views {
                                     text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
                                     style = TextStyle(
                                         fontSize = 22.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 )
                             }
@@ -165,6 +165,7 @@ object Views {
                     if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             icon = { Icon(Icons.Default.Add, "") },
                             onClick = { navHostController.navigate("New Transaction Activity") }
                         )

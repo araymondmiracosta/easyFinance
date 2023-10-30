@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import net.araymond.application.Utility
 import net.araymond.application.Values
+import kotlin.math.atan
 
 private val DarkColorScheme = darkColorScheme(
 //    primary = Purple80,
@@ -40,12 +41,26 @@ private val LightColorScheme = lightColorScheme(
 )
 
 private val NebulaColorScheme = darkColorScheme(
-    background = Color(0xFF171717),
-    tertiary = Color(0xFFFFE8BF),
-    surfaceTint = Color(0xFF888888),
-    onSurfaceVariant = Color(0xFFDEDEDE),
-    surfaceVariant = Color(0xFF292929)
-)
+    // Main background
+    background = grey00,
+    surface = grey00,
+    // Transaction category
+    tertiary = lightBlue,
+    primary = lightBlue,
+    // Transaction date and time
+    surfaceTint = darkTan,
+    // Tile background
+    surfaceVariant = grey01,
+    // Floating button background
+    primaryContainer = darkerBlue,
+    onPrimaryContainer = Color.White,
+    // Account name
+    inverseSurface = darkerTan,
+    // Text
+    onSurface = lightTan,
+    onSurfaceVariant = lightTan,
+    outline = darkTan
+    )
 
 @Composable
 fun ApplicationTheme(isDarkTheme: Boolean = isSystemInDarkTheme(), isDynamicColor: Boolean = true, content: @Composable () -> Unit) {
