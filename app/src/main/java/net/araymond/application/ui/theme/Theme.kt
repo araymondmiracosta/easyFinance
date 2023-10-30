@@ -55,7 +55,7 @@ private val NebulaColorScheme = darkColorScheme(
     primaryContainer = darkerBlue,
     onPrimaryContainer = Color.White,
     // Account name
-    inverseSurface = darkerTan,
+    inverseSurface = alternateTan,
     // Text
     onSurface = lightTan,
     onSurfaceVariant = lightTan,

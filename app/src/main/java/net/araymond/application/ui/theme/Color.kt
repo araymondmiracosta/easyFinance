@@ -28,7 +28,7 @@ val purple = Color(0xFF8C8CFf)
 val darkBlue = Color(0xFF0096FF)
 val darkTan = Color(0xFFA69178)
 val darkerBlue = Color(0xFF005490)
-val darkerTan = Color(0xCFFFE8BF)
+val alternateTan = Color(0xFFf2cdb4)
 
 val Red = Color(0xFFf22951)
 val Green = Color(0xFF00bf00)
