@@ -327,7 +327,7 @@ object Views {
                                     snackbarMessage = "Account information saved"
                                 } else {
                                     val openingTransaction = Transaction(
-                                        "Opening deposit",
+                                        "Opening Deposit",
                                         "",
                                         accountBalance.toDouble(),
                                         ZonedDateTime.now(Values.UTCTimeZone),
@@ -898,9 +898,16 @@ object Views {
             var confirm by remember { mutableStateOf(false) }
             var themeDialog by remember { mutableStateOf(false) }
 
+            // Export ledger
             if (createDialog) {
-                Viewlets.exportCSVPathSelector()
+                Viewlets.exportCSVPathSelector(
+                    onDismiss = {
+                        createDialog = false
+                    }
+                )
             }
+
+            // Import ledger
             if (openDialog) {
                 confirm = false
                 Viewlets.confirmDialog(
@@ -913,6 +920,8 @@ object Views {
             if (confirm) {
                 Viewlets.importCSVPathSelector(context)
             }
+
+            // Currency
             if (currencyDialog) {
                 Utility.setPreference("currencyPreference", Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("currencyPreference"),
@@ -921,6 +930,8 @@ object Views {
                     onDismiss = { currencyDialog = false }
                 ), context)
             }
+
+            // Sort accounts
             if (accountSortingDialog) {
                 Utility.setPreference("accountSortingPreference", Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("accountSortingPreference"),
@@ -929,6 +940,8 @@ object Views {
                     onDismiss = { accountSortingDialog = false }
                 ), context)
             }
+
+            // Theme
             if (themeDialog) {
                 Utility.setPreference("themePreference", Viewlets.dropdownDialog(
                     currentIndex = Utility.getPreference("themePreference"),
@@ -937,6 +950,7 @@ object Views {
                     onDismiss = { themeDialog = false }
                 ), context)
             }
+
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -964,29 +978,42 @@ object Views {
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
                         ) {
+                            // Accounts
                             Viewlets.settingsLabel("Accounts")
+                            // Add new account
                             Viewlets.settingsButton(
                                  "Add new account", ""
                             ) {
                                 navHostController.navigate("New Account Activity")
                             }
+
                             Viewlets.settingsDivider()
+
+                            // Preferences
                             Viewlets.settingsLabel("Preferences")
+                            // Currency
                             Viewlets.settingsButton("Currency", Values.currencies[Utility.getPreference("currencyPreference")]) {
                                 currencyDialog = true
                             }
+                            // Sort accounts
                             Viewlets.settingsButton("Sort accounts", Values.accountSortingOptions[Utility.getPreference("accountSortingPreference")]) {
                                 accountSortingDialog = true
                             }
+                            // Theme
                             Viewlets.settingsButton("Theme", Values.themes[Utility.getPreference("themePreference")]) {
                                 themeDialog = true
                             }
+
                             Viewlets.settingsDivider()
+
+                            // Data
                             Viewlets.settingsLabel("Data")
+                            // Import ledger
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
                                 confirm = false
                                 openDialog = true
                             }
+                            // Export ledger
                             Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
                                 createDialog = true
                             }

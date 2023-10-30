@@ -79,7 +79,7 @@ object Viewlets: ComponentActivity() {
      *
      */
     @Composable
-    fun exportCSVPathSelector() {
+    fun exportCSVPathSelector(onDismiss: () -> Unit) {
         val contentResolver = LocalContext.current.contentResolver
         val filePicker =
             rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
@@ -91,6 +91,7 @@ object Viewlets: ComponentActivity() {
             }
         LaunchedEffect(Unit) {
             filePicker.launch("ledger.csv")
+            onDismiss()
         }
     }
 
@@ -176,7 +177,7 @@ object Viewlets: ComponentActivity() {
         var optionValue by remember { mutableStateOf(false) }
         Dialog(
             onDismissRequest = {
-                               onDismiss
+                               onDismiss()
             },
         ) {
             Surface {
