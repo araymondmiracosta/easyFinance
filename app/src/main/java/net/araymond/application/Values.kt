@@ -33,6 +33,10 @@ object Values {
         "Nebula", "Bright"
     )
 
+    const val name = "eel"
+
+    const val version = "10 November 2023"
+
     val themes =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(

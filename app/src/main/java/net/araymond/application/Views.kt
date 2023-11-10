@@ -103,7 +103,7 @@ object Views {
                 topBar = {
                     TopAppBar(
                         title = {
-                            Text(text = "Finance")
+                            Text(text = Values.name)
                         },
                         actions = {
                             IconButton(
