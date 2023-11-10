@@ -1,9 +1,9 @@
-ynva
+EEL - EEL Easy Ledger
 
 Mobile application to track assets, cash and liabilities with modern android design standards.
 
 TODO
-- [ ] Theme options, unify existing theme
+- [X] Theme options, unify existing theme
 - [x] Add Transactions per account
 - [x] Add and display Banking accounts
 - [ ] Assets
@@ -13,6 +13,6 @@ TODO
 - [ ] Remove and edit assets
 - [ ] About screen
 - [ ] Search functionality (scope?)
-- [ ] Improved name
-- [ ] Improved icon
+- [X] Improved name
+- [X] Improved icon
 - [ ] Rewrite README
