@@ -24,16 +24,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Reads in any saved ledger or preference data and creates the
+     * ArrayList<Account> Values.accounts, ArrayList<Transaction> Values.transactions,
+     * ArrayList<String> Values.categories lists.
+     *
+     */
     private fun initialize() {
         if (Utility.readLedgerSaveData(this)) {
             Log.d("INFO", "Ledger data read successfully")
         }
-        if (Utility.readCurrencySaveData(this)) {
-            Log.d("INFO", "Currency preference read successfully")
+        if (Utility.readPreferenceSaveData(this)) {
+            Log.d("INFO", "User preferences read successfully")
         }
         Utility.readAll()
     }
 
+    /**
+     * Holds the navHostController for the application. All navigation is done through this
+     * function and the navHostController is passed to all main screens to achieve this.
+     */
     @Composable
     fun applicationNavHost(context: Context) {
         val navHostController = rememberNavController()
@@ -47,7 +57,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             composable("New Account Activity") {
-                Views.generateAccountCreationView(navHostController, context, "");
+                Views.generateAccountCreationView(navHostController, context, "")
             }
             composable("New Transaction Activity") {
                 Views.generateNewTransactionView(navHostController, context, null)
@@ -60,7 +70,7 @@ class MainActivity : ComponentActivity() {
             }
             composable("Account Specific Activity/{accountName}") {
                 it.arguments?.getString("accountName")?.let { it1 ->
-                    Views.generateAccountSpecificView(navHostController, context, it1)
+                    Views.generateAccountSpecificView(navHostController, it1, context)
                 }
             }
         }

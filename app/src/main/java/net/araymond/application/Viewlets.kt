@@ -1,16 +1,9 @@
 package net.araymond.application
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,8 +19,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,8 +48,16 @@ import net.araymond.application.ui.theme.Red
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
 
+/**
+ * Contains functions which draw UI elements that are used in building screens (pages)
+ */
 object Viewlets: ComponentActivity() {
 
+    /**
+     * Creates a file picker dialog to select a CSV file to import transaction data from
+     *
+     * @param context The main context for this application
+     */
     @Composable
     fun importCSVPathSelector(context: Context) {
         val contentResolver = LocalContext.current.contentResolver
@@ -71,8 +74,12 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Creates a file picker dialog to select a CSV file to export transaction data to
+     *
+     */
     @Composable
-    fun exportCSVPathSelector() {
+    fun exportCSVPathSelector(onDismiss: () -> Unit) {
         val contentResolver = LocalContext.current.contentResolver
         val filePicker =
             rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
@@ -80,6 +87,7 @@ object Viewlets: ComponentActivity() {
                     contentResolver.openOutputStream(uri)?.use {
                         Utility.writeCSV(it)
                     }
+                    onDismiss()
                 }
             }
         LaunchedEffect(Unit) {
@@ -87,16 +95,20 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Draws a divider (thin line) used in the settings screen
+     */
     @Composable
     fun settingsDivider() {
         Divider(color = MaterialTheme.colorScheme.surfaceVariant, thickness = 1.dp)
     }
 
+    /**
+     * Draws a label (header) for a section, used in the settings screen
+     */
     @Composable
-    fun settingsLabel(label: String, firstLabel: Boolean) {
-//        if (!firstLabel) {
-            Spacer(modifier = Modifier.padding(vertical = 10.dp))
-//        }
+    fun settingsLabel(label: String) {
+        Spacer(modifier = Modifier.padding(vertical = 10.dp))
         Row(
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
@@ -112,6 +124,13 @@ object Viewlets: ComponentActivity() {
         Spacer(modifier = Modifier.padding(5.dp))
     }
 
+    /**
+     * Draws a function customizable button, used in the settings screen
+     *
+     * @param title The title (header) of the button
+     * @param text The small text below the title
+     * @param onClick The function to execute when the button is pressed
+     */
     @Composable
     fun settingsButton(title: String, text: String, onClick: () -> Unit) {
         Row(
@@ -126,6 +145,7 @@ object Viewlets: ComponentActivity() {
                     text = title,
                     style = TextStyle(
                         fontSize = 17.sp,
+                        color = MaterialTheme.colorScheme.onSurface
                     ),
                     fontWeight = FontWeight.Bold
                 )
@@ -144,170 +164,77 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Draws a dialog to confirm something
+     *
+     * @param title The title of the dialog
+     * @param message The message below the title
+     *
+     * @return If the user confirmed something
+     */
     @Composable
-    fun confirmDialog(title: String, message: String): Boolean {
-        var dialogIsOpen by remember { mutableStateOf(true) }
+    fun confirmDialog(title: String, message: String, onDismiss: () -> Unit, onConfirm: () -> Unit): Boolean {
         var optionValue by remember { mutableStateOf(false) }
-        if (dialogIsOpen) {
-            Dialog(
-                onDismissRequest = {
-                    dialogIsOpen = false
-                },
-            ) {
-                Surface {
-                    Column(
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = title,
-                            modifier = Modifier
-                                .padding(top = 20.dp)
-                                .padding(horizontal = 10.dp),
-                            style = TextStyle(
-                                fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        )
-                        Text(                                                   // TODO: Need to make text look better (smaller font, etc)
-                            text = message,
-                            modifier = Modifier
-                                .padding(top = 20.dp)
-                                .padding(horizontal = 10.dp),
-                            style = TextStyle(
-                                fontSize = 16.sp,
-                            )
-                        )
-                        Row(
-                            modifier = Modifier.padding(vertical = 5.dp)
-                        ) {
-                            Spacer(Modifier.weight(1f))
-                            TextButton(
-                                onClick = {
-                                   dialogIsOpen = false
-                                }
-                            ) {
-                                Text("Cancel")
-                            }
-                            TextButton(
-                                onClick = {
-                                    optionValue = true
-                                    dialogIsOpen = false
-                                }
-                            ) {
-                                Text("OK")
-                            }
-                        }
-                    }
-                }
-           }
-        }
-        return optionValue
-    }
-
-    @Composable
-    fun settingsDropdown(value: String, label: String, options: Array<String>): String {
-        var dialogIsOpen by remember { mutableStateOf(false) }
-        var tempValue by remember { mutableStateOf(value) }
-        var optionValue by remember { mutableStateOf(value) }
-        Column(
-            modifier = Modifier
-                .clickable(enabled = true,
-                    onClick = {
-                        dialogIsOpen = true
-                    }
-                )
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(top = 10.dp)
+        Dialog(
+            onDismissRequest = {
+                               onDismiss()
+            },
         ) {
-            Text(
-                text = label,
-                style = TextStyle(
-                    fontSize = 17.sp,
-                ),
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.padding(vertical = 2.dp))
-            Text(
-                text = optionValue,
-                style = TextStyle(
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.outline
-                )
-            )
-            Spacer(modifier = Modifier.padding(bottom = 15.dp))
-        }
-        if (dialogIsOpen) {
-            Dialog(
-                onDismissRequest = {
-                    dialogIsOpen = false
-                },
-            ) {
-                Surface {
-                    Column(
-                        modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(shape = RoundedCornerShape(10.dp))
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        Text(
-                            text = label,
-                            modifier = Modifier
-                                .padding(top = 24.dp)
-                                .padding(horizontal = 16.dp),
-                            style = TextStyle(
-                                fontSize = 20.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+            Surface {
+                Column(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
                         )
-                        options.forEach { selectedOption ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable(
-                                        onClick = {
-                                            tempValue = selectedOption
-                                        }
-                                    ),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = (tempValue == selectedOption),
-                                    onClick = {
-                                              tempValue = selectedOption
-                                    },
-                                )
-                                Text(selectedOption)
+                        .clip(shape = RoundedCornerShape(10.dp))
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = title,
+                        modifier = Modifier
+                            .padding(top = 20.dp)
+                            .padding(horizontal = 10.dp),
+                        style = TextStyle(
+                            fontSize = 22.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                    Text(                                                   // TODO: Need to make text look better (smaller font, etc)
+                        text = message,
+                        modifier = Modifier
+                            .padding(top = 20.dp)
+                            .padding(horizontal = 10.dp),
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                    Row(
+                        modifier = Modifier.padding(vertical = 5.dp)
+                    ) {
+                        Spacer(Modifier.weight(1f))
+                        TextButton(
+                            onClick = {
+                                onDismiss.invoke()
                             }
-                        }
-                        Row(
-                            modifier = Modifier.padding(vertical = 5.dp)
                         ) {
-                            Spacer(Modifier.weight(1f))
-                            TextButton(
-                                onClick = {
-                                    dialogIsOpen = false
-                                }
-                            ) {
-                                Text("Cancel")
+                            Text(
+                                text = "Cancel",
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.primary),
+                            )
+                        }
+                        TextButton(
+                            onClick = {
+                                optionValue = true
+                                onConfirm.invoke()
+                                onDismiss.invoke()
                             }
-                            TextButton(
-                                onClick = {
-                                    optionValue = tempValue
-                                    dialogIsOpen = false
-                                }
-                            ) {
-                                Text("OK")
-                            }
+                        ) {
+                            Text(
+                                text = "OK",
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.primary),
+                            )
                         }
                     }
                 }
@@ -316,16 +243,93 @@ object Viewlets: ComponentActivity() {
         return optionValue
     }
 
+    @Composable
+    fun dropdownDialog(currentIndex: Int, label: String, options: Array<String>, onDismiss: () -> Unit): Int {
+        val value = options[currentIndex]
+        var tempValue by remember { mutableStateOf(value) }
+        var optionValue by remember { mutableStateOf(value) }
+
+        Dialog(
+            onDismissRequest = onDismiss
+        ) {
+            Surface {
+                Column(
+                    modifier = Modifier
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clip(shape = RoundedCornerShape(10.dp))
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = label,
+                        modifier = Modifier
+                            .padding(top = 24.dp)
+                            .padding(horizontal = 16.dp),
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    )
+                    options.forEach { selectedOption ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable(
+                                    onClick = {
+                                        tempValue = selectedOption
+                                    }
+                                ),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = (tempValue == selectedOption),
+                                onClick = {
+                                    tempValue = selectedOption
+                                },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = MaterialTheme.colorScheme.primary,
+                                    unselectedColor = MaterialTheme.colorScheme.onSurface,
+                                )
+                            )
+                            Text(
+                                text = selectedOption,
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.onSurface)
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.padding(vertical = 5.dp)
+                    ) {
+                        Spacer(Modifier.weight(1f))
+                        TextButton(
+                            onClick = {
+                                optionValue = tempValue
+                                onDismiss.invoke()
+                            }
+                        ) {
+                            Text(
+                                text = "OK",
+                                style = LocalTextStyle.current.merge(color = MaterialTheme.colorScheme.primary)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        return options.indexOf(tempValue)
+    }
+
     /**
-     * TimePickerDialog is not officially implemented.
-     * https://stackoverflow.com/questions/75853449/timepickerdialog-in-jetpack-compose
+     * Time picker dialog used as it is not officially implemented at this time
+     * Used from: https://stackoverflow.com/questions/75853449/timepickerdialog-in-jetpack-compose
      */
     @Composable
     fun TimePickerDialog(
         title: String = "Select Time",
         onDismissRequest: () -> Unit,
         onConfirm: () -> Unit,
-        toggle: @Composable () -> Unit = {},
         content: @Composable () -> Unit,
     ) {
         Dialog(
@@ -375,13 +379,20 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Creates a carousel with clickable account tiles to access the account specific screen
+     *
+     * @param navHostController The main navHostController for this application
+     */
     @Composable
     fun generateAccountScroller(navHostController: NavHostController) {
         Row(
             modifier = Modifier.horizontalScroll(rememberScrollState())
         ) {
-            Values.accountNames.forEach{ accountName ->
-                var accountTotal = Utility.getAccountTotal(accountName)
+            val preference = Utility.getPreference("accountSortingPreference")
+            val currency = Utility.getPreference("currencyPreference")
+            Utility.sortAccountListByPreference(Values.accountNames, preference).forEach{ accountName ->
+                val accountTotal = Utility.getAccountTotal(accountName)
                 Row {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -401,13 +412,13 @@ object Viewlets: ComponentActivity() {
                             text = accountName,
                             style = TextStyle(
                                 fontSize = 22.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.inverseSurface
                             )
                         )
                         Spacer(modifier = Modifier.padding(5.dp))
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(accountTotal),
-                            style = TextStyle(fontSize = 19.sp)
+                            text = Values.currencies[currency] + Values.balanceFormat.format(accountTotal),
+                            style = TextStyle(fontSize = 19.sp, color = MaterialTheme.colorScheme.onSurface)
                         )
                     }
                 }
@@ -416,14 +427,22 @@ object Viewlets: ComponentActivity() {
         }
     }
 
+    /**
+     * Creates a scrollable list of the transactions in the given transaction list
+     *
+     * @param navHostController The main navHostController for this application
+     * @param transactions The transaction list to iterate through
+     * @param showRunningBalance If the running balance should be displayed for each transaction
+     */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
     fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean) {
-        var dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
-        var timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+        val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        val currency = Utility.getPreference("currencyPreference")
         transactions.forEach { transaction ->
-            var localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-            var localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+            val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+            val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
             Row(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(10.dp))
@@ -451,7 +470,7 @@ object Viewlets: ComponentActivity() {
                         text = transaction.accountName,     // account
                         style = TextStyle(
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.inverseSurface
                         )
                     )
                     Spacer(modifier = Modifier.padding(2.dp))
@@ -473,7 +492,7 @@ object Viewlets: ComponentActivity() {
                 ) {
                     if (transaction.amount < 0) {   // If amount is negative
                         Text(
-                            text = "(" + Values.currency + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -483,7 +502,7 @@ object Viewlets: ComponentActivity() {
                     }
                     else {
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(transaction.amount),
+                            text = Values.currencies[currency] + Values.balanceFormat.format(transaction.amount),
                             style = TextStyle(
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
@@ -494,7 +513,7 @@ object Viewlets: ComponentActivity() {
                     if (showRunningBalance) {
                         Spacer(modifier = Modifier.padding(15.dp))
                         Text(
-                            text = Values.currency + Values.balanceFormat.format(
+                            text = Values.currencies[currency] + Values.balanceFormat.format(
                                 Utility.calculateTransactionRunningBalance(
                                     transaction,
                                     Values.transactions

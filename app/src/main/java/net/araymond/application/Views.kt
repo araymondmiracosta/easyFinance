@@ -3,6 +3,7 @@ package net.araymond.application
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -57,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.LocalDate
@@ -66,14 +69,33 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 
+/**
+ * Contains the primary UI screen drawing functions
+ */
 object Views {
+    /**
+     * Creates the main view (account carousel and transaction list)
+     *
+     * @param navHostController The main navHostController for this application
+     */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")    // Shutup about padding warnings
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun mainDraw(navHostController: NavHostController, context: Context) {
-        val scrollState = rememberScrollState()
-
         ApplicationTheme {
+            val scrollState = rememberScrollState()
+            var showDialog by remember { mutableStateOf(false) }
+
+            if (showDialog) {
+                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+                    label = "Sort transactions",
+                    options = Values.transactionSortingOptions,
+                    onDismiss = {
+                        showDialog = false
+                    }
+                ), context)
+            }
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -81,9 +103,16 @@ object Views {
                 topBar = {
                     TopAppBar(
                         title = {
-                            Text(text = "Finance")
+                            Text(text = Values.name)
                         },
                         actions = {
+                            IconButton(
+                                onClick = {
+                                    showDialog = true
+                                }
+                            ) {
+                                Icon(Icons.Filled.List, "Sort transactions")
+                            }
                             IconButton(
                                 onClick = {
                                     navHostController.navigate("Settings Activity")
@@ -97,10 +126,32 @@ object Views {
                 content = {
                     Surface(modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
+                        .padding(top = 65.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
                         Column(
                             modifier = Modifier.verticalScroll(scrollState),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(shape = RoundedCornerShape(10.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .padding(10.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
+                                    style = TextStyle(
+                                        fontSize = 22.sp,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 12.dp))
                             Viewlets.generateAccountScroller(navHostController)
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(
@@ -114,6 +165,7 @@ object Views {
                     if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             icon = { Icon(Icons.Default.Add, "") },
                             onClick = { navHostController.navigate("New Transaction Activity") }
                         )
@@ -123,6 +175,15 @@ object Views {
         }
     }
 
+    /**
+     * Draws the account creation, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param accountNameInput If not empty, then displays the information for this account and
+     *                          allows editing
+     */
+    // TODO: Need to fix crash if invalid balance is input
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -131,12 +192,13 @@ object Views {
             var accountName by remember { mutableStateOf(accountNameInput) }
             var accountBalance by remember { mutableStateOf("")}
             var title = "New Account"
-            var accountNameLabel by remember { mutableStateOf("Account name")}
-            var accountBalanceLabel by remember { mutableStateOf("Account balance")}
+            val accountNameLabel by remember { mutableStateOf("Account name")}
+            val accountBalanceLabel by remember { mutableStateOf("Account balance")}
             var accountNameIsEmpty = true
             var accountBalanceIsNotNumber = true
             var fieldEnabled = true
             var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf (false) }
 
             if (accountNameInput.isNotEmpty()) {
                 accountBalance = Utility.getAccountTotal(accountName).toString()
@@ -146,11 +208,17 @@ object Views {
             }
 
             if (deleteDialog) {
-                if (Viewlets.confirmDialog("Delete Account", "Are you sure you want to delete this account? All transactions will be removed.")) {
-                    if (Utility.removeAccount(context, accountNameInput)) {
-                        navHostController.navigate("Main Activity")
-                        Utility.showSnackbar("Account successfully deleted")
-                    }
+                Viewlets.confirmDialog(
+                    "Delete Account",
+                    "Are you sure you want to delete this account? All transactions will be removed.",
+                    { deleteDialog = false },
+                    { delete = true }
+                )
+            }
+            if (delete) {
+                if (Utility.removeAccount(context, accountNameInput)) {
+                    navHostController.navigate("Main Activity")
+                    Utility.showSnackbar("Account successfully deleted")
                 }
             }
 
@@ -181,7 +249,8 @@ object Views {
                             if (accountNameInput.isNotEmpty()) {
                                 IconButton(
                                     onClick = {
-                                        deleteDialog = !deleteDialog
+                                        delete = false
+                                        deleteDialog = true
                                     }
                                 ) {
                                     Icon(Icons.Filled.Delete, "Delete Account")
@@ -258,7 +327,7 @@ object Views {
                                     snackbarMessage = "Account information saved"
                                 } else {
                                     val openingTransaction = Transaction(
-                                        "Opening deposit",
+                                        "Opening Deposit",
                                         "",
                                         accountBalance.toDouble(),
                                         ZonedDateTime.now(Values.UTCTimeZone),
@@ -284,6 +353,14 @@ object Views {
         }
     }
 
+    /**
+     * Draws the transaction creating, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param transaction If not null, then displays the information for this transaction and
+     *                      allows editing
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
         "CoroutineCreationDuringComposition"
@@ -313,6 +390,7 @@ object Views {
 
             var fieldEnabled by remember { mutableStateOf(false) }
             var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf(false) }
 
             if (isTransfer) {
                 transactionAccountLabel = "Transfer source account"
@@ -339,12 +417,18 @@ object Views {
                     title = "View Transaction"
                 }
                 if (deleteDialog) {     // If the user pressed the delete button, confirm
-                    if(Viewlets.confirmDialog("Delete transaction", "Are you sure you want to delete this transaction?")) {
-                        if (Utility.removeTransaction(transaction, context)) {
-                            fieldEnabled = false
-                            navHostController.navigateUp()
-                            Utility.showSnackbar("Transaction removed")
-                        }
+                    Viewlets.confirmDialog(
+                        "Delete transaction",
+                        "Are you sure you want to delete this transaction?",
+                        { deleteDialog = false },
+                        { delete = true }
+                    )
+                }
+                if (delete) {
+                    if (Utility.removeTransaction(transaction, context)) {
+                        fieldEnabled = false
+                        navHostController.navigateUp()
+                        Utility.showSnackbar("Transaction removed")
                     }
                 }
             }
@@ -386,7 +470,8 @@ object Views {
                                 if (fieldEnabled) {
                                     IconButton(
                                         onClick = {
-                                            deleteDialog = !deleteDialog    // Known bug, after first attempt, user has to press button twice
+                                            delete = false
+                                            deleteDialog = true
                                         }
                                     ) {
                                         Icon(Icons.Filled.Delete, "Remove transaction")
@@ -459,7 +544,7 @@ object Views {
                                         }
                                     },
                                     suffix = {
-                                        Text(Values.currency)
+                                        Text(Values.currencies[Utility.getPreference("currencyPreference")])
                                     },
                                     singleLine = true,
                                     isError = transactionAmountIsNotNumber,
@@ -564,7 +649,7 @@ object Views {
                             }
                             else {
                                 OutlinedTextField(
-                                    readOnly = (!fieldEnabled),
+                                    readOnly = true,
                                     value = accountName,
                                     onValueChange = {
                                         accountName = it
@@ -661,7 +746,7 @@ object Views {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onFocusChanged() {
+                                    .onFocusChanged {
                                         if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
                                             openDatePickerDialog = true
                                         }
@@ -682,7 +767,7 @@ object Views {
                                         TextButton(
                                             onClick = {
                                                 openDatePickerDialog = false
-                                                var milliseconds = datePickerState.selectedDateMillis as Long
+                                                val milliseconds = datePickerState.selectedDateMillis as Long
                                                 localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
                                                 stringDate = localDate.format(dateFormatter)
                                             },
@@ -714,7 +799,7 @@ object Views {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .onFocusChanged() {
+                                    .onFocusChanged {
                                         if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
                                             openTimePickerDialog = true
                                         }
@@ -754,8 +839,8 @@ object Views {
                                 // Check that input fields are valid
                                 if ((!transactionAmountIsNotNumber) && (accountName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
                                     fieldEnabled = false
-                                    var writeSuccess: Boolean
-                                    var localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
+                                    val writeSuccess: Boolean
+                                    val localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
                                         ZonedDateTime.of(localDate, localTime, Values.localTimeZone))
 
                                     if (!isPositiveTransaction) {
@@ -769,7 +854,11 @@ object Views {
                                     else {  // New transaction
                                         val newTransaction = Transaction(category, description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                         if (isTransfer) {
-                                            writeSuccess = Utility.newTransfer(newTransaction, context, accountNameTransfer)
+                                            writeSuccess = Utility.newTransfer(
+                                                newTransaction,
+                                                accountNameTransfer,
+                                                context
+                                            )
                                             snackbarMessage = "New transfer added"
                                         }
                                         else {
@@ -791,6 +880,12 @@ object Views {
         }
     }
 
+    /**
+     * Draws the settings screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
@@ -798,12 +893,64 @@ object Views {
         ApplicationTheme {
             var createDialog by remember { mutableStateOf(false) }
             var openDialog by remember { mutableStateOf(false) }
+            var currencyDialog by remember { mutableStateOf(false) }
+            var accountSortingDialog by remember { mutableStateOf(false) }
+            var confirm by remember { mutableStateOf(false) }
+            var themeDialog by remember { mutableStateOf(false) }
+
+            // Export ledger
             if (createDialog) {
-                Viewlets.exportCSVPathSelector()
+                Viewlets.exportCSVPathSelector(
+                    onDismiss = {
+                        createDialog = false
+                    }
+                )
             }
-            if (openDialog && (Viewlets.confirmDialog("Import ledger", "Existing ledger information will be deleted. Are you sure you want to continue?"))) {
+
+            // Import ledger
+            if (openDialog) {
+                confirm = false
+                Viewlets.confirmDialog(
+                    "Import ledger",
+                    "Existing ledger information will be deleted. Are you sure you want to continue?",
+                    { openDialog = false },
+                    { confirm = true }
+                )
+            }
+            if (confirm) {
                 Viewlets.importCSVPathSelector(context)
             }
+
+            // Currency
+            if (currencyDialog) {
+                Utility.setPreference("currencyPreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("currencyPreference"),
+                    label = "Currency",
+                    options = Values.currencies,
+                    onDismiss = { currencyDialog = false }
+                ), context)
+            }
+
+            // Sort accounts
+            if (accountSortingDialog) {
+                Utility.setPreference("accountSortingPreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("accountSortingPreference"),
+                    label = "Sort accounts",
+                    options = Values.accountSortingOptions,
+                    onDismiss = { accountSortingDialog = false }
+                ), context)
+            }
+
+            // Theme
+            if (themeDialog) {
+                Utility.setPreference("themePreference", Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("themePreference"),
+                    label = "Theme",
+                    options =  Values.themes,
+                    onDismiss = { themeDialog = false }
+                ), context)
+            }
+
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -831,26 +978,44 @@ object Views {
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
                         ) {
-                            Viewlets.settingsLabel("Accounts", true)
+                            // Accounts
+                            Viewlets.settingsLabel("Accounts")
+                            // Add new account
                             Viewlets.settingsButton(
                                  "Add new account", ""
                             ) {
                                 navHostController.navigate("New Account Activity")
                             }
+
                             Viewlets.settingsDivider()
-                            Viewlets.settingsLabel("Preferences", false)
-                            val newCurrency = Viewlets.settingsDropdown(Values.currency, "Currency", Values.currencies)
-                            if (newCurrency != Values.currency && newCurrency != "-1") {
-                                Values.currency = newCurrency
-                                Utility.writeCurrencyData(context)
+
+                            // Preferences
+                            Viewlets.settingsLabel("Preferences")
+                            // Currency
+                            Viewlets.settingsButton("Currency", Values.currencies[Utility.getPreference("currencyPreference")]) {
+                                currencyDialog = true
                             }
+                            // Sort accounts
+                            Viewlets.settingsButton("Sort accounts", Values.accountSortingOptions[Utility.getPreference("accountSortingPreference")]) {
+                                accountSortingDialog = true
+                            }
+                            // Theme
+                            Viewlets.settingsButton("Theme", Values.themes[Utility.getPreference("themePreference")]) {
+                                themeDialog = true
+                            }
+
                             Viewlets.settingsDivider()
-                            Viewlets.settingsLabel("Data", false)
+
+                            // Data
+                            Viewlets.settingsLabel("Data")
+                            // Import ledger
                             Viewlets.settingsButton("Import ledger", "Import account and transaction data from a CSV file") {
-                                openDialog = !openDialog
+                                confirm = false
+                                openDialog = true
                             }
+                            // Export ledger
                             Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
-                                createDialog = !createDialog
+                                createDialog = true
                             }
                         }
                     }
@@ -859,11 +1024,30 @@ object Views {
         }
     }
 
+    /**
+     * Draws the account specific screen to show transactions specific to this account
+     *
+     * @param navHostController The main navHostController for this application
+     * @param accountName The account to show information of
+     */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateAccountSpecificView(navHostController: NavHostController, context: Context, accountName: String) {
+    fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
+            var showDialog by remember { mutableStateOf(false) }
+
+            if (showDialog) {
+                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+                    label = "Sort transactions",
+                    options = Values.transactionSortingOptions,
+                    onDismiss = {
+                        showDialog = false
+                    }
+                ), context)
+            }
+
             Scaffold(
                 snackbarHost = {
                                SnackbarHost(hostState = Values.snackbarHostState)
@@ -883,6 +1067,13 @@ object Views {
                             }
                         },
                         actions = {
+                            IconButton(
+                                onClick = {
+                                    showDialog = true
+                                }
+                            ) {
+                                Icon(Icons.Filled.List, "Sort transactions")
+                            }
                             IconButton(
                                 onClick = {
                                     navHostController.navigate("Edit Account Activity/$accountName")
@@ -926,13 +1117,13 @@ object Views {
                                     )
                                     Spacer(modifier = Modifier.padding(5.dp))
                                     Text(
-                                        text = Values.currency + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
                                         style = TextStyle(fontSize = 19.sp)
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateTransactionScroller(navHostController, Utility.getAccountTransactions(accountName), true)
+                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName), Utility.getPreference("transactionSortingPreference")), true)
                         }
                     }
                 }

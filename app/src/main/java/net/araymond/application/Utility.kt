@@ -1,7 +1,6 @@
 package net.araymond.application
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.material3.SnackbarDuration
 import kotlinx.coroutines.launch
 import java.io.InputStream
@@ -11,8 +10,14 @@ import java.io.OutputStream
 import java.time.ZonedDateTime
 import java.util.Scanner
 
+/**
+ * Contains various functions used to modify, write read data, etc
+ */
 object Utility {
 
+    /**
+     * Populates Values.accountNames with the account names found in transactions
+     */
     private fun readAccounts() {
         Values.accountNames = ArrayList()
         var duplicate = false
@@ -31,6 +36,13 @@ object Utility {
         }
     }
 
+    /**
+     * Returns the balance of the given account
+     *
+     * @param accountName The account name
+     *
+     * @return Balance of the account
+     */
     fun getAccountTotal(accountName: String): Double {
         var accountTotal = 0.0
         Values.transactions.forEach{ transaction ->
@@ -42,10 +54,9 @@ object Utility {
         return accountTotal
     }
 
-    private fun readTransactions() {
-        Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
-    }
-
+    /**
+     * Populates Values.categories with the categories found in transactions
+     */
     private fun readCategories() {
         Values.transactions.forEach{ transaction ->
             Values.categories.add(transaction.category)
@@ -55,10 +66,18 @@ object Utility {
         Values.categories = ArrayList(duplicatesRemoved)
     }
 
+    /**
+     * Reads in saved ledger data from private app storage
+     *
+     * @param context The main context for this application
+     *
+     * @return If reading the transaction list succeeded
+     */
     fun readLedgerSaveData(context: Context): Boolean {
         return try {
             val inputLedgerStream = context.openFileInput("ledger")
             val objectInputLedgerStream = ObjectInputStream(inputLedgerStream)
+            // Need to resolve
             Values.transactions = objectInputLedgerStream.readObject() as ArrayList<Transaction>
             objectInputLedgerStream.close()
             inputLedgerStream.close()
@@ -69,13 +88,21 @@ object Utility {
         }
     }
 
-    fun readCurrencySaveData(context: Context): Boolean {
+    /**
+     * Reads in saved preferences
+     *
+     * @param context The main context for this application
+     *
+     * @return If reading preferences succeeded
+     */
+    fun readPreferenceSaveData(context: Context): Boolean {
         return try {
-            val inputCurrencyStream = context.openFileInput("currency")
-            val objectInputCurrencyStream = ObjectInputStream(inputCurrencyStream)
-            Values.currency = objectInputCurrencyStream.readObject() as String
-            objectInputCurrencyStream.close()
-            inputCurrencyStream.close()
+            val inputStream = context.openFileInput("preferences")
+            val objectInputStream = ObjectInputStream(inputStream)
+            // Need to resolve
+            Values.preferences = objectInputStream.readObject() as MutableMap<String, Int>
+            objectInputStream.close()
+            inputStream.close()
 
             true
         } catch (exception: Exception) {
@@ -83,6 +110,15 @@ object Utility {
         }
     }
 
+    /**
+     * Writes the given data object to the given file name
+     *
+     * @param data The data object to write out
+     * @param file The file name to write to
+     * @param context The main context for this application
+     *
+     * @return If writing the data succeeded
+     */
     private fun writeSaveData(data: Any, file: String, context: Context): Boolean {
         return try {
             val outputStream = context.openFileOutput(file, Context.MODE_PRIVATE)
@@ -98,26 +134,63 @@ object Utility {
         }
     }
 
+    /**
+     * Writes the ledger data to private app storage
+     *
+     * @param context The main context for this application
+     *
+     * @return If writing the transaction list succeeded
+     */
     private fun writeLedgerData(context: Context): Boolean {
         return (writeSaveData(Values.transactions, "ledger", context))
     }
 
-    fun writeCurrencyData(context: Context): Boolean {
-        return (writeSaveData(Values.currency, "currency", context))
+    /**
+     * Writes the user's preferences to private app storage
+     *
+     * @param context The main context for this application
+     *
+     * @return If writing preferences succeeded
+     */
+    fun writePreferences(context: Context): Boolean {
+        return (writeSaveData(Values.preferences, "preferences", context))
     }
 
-    private fun sortTransactionListByRecentDateFirst(list: ArrayList<Transaction>): ArrayList<Transaction> {
+    /**
+     * Sorts the given transaction list in descending order (recent date first [0])
+     *
+     * @param list The transaction list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListDescendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
     }
 
-    private fun sortTransactionListByRecentDateLast(list: ArrayList<Transaction>): ArrayList<Transaction> {
+    /**
+     * Sorts the given transaction list in ascending order (recent date last [size - 1])
+     *
+     * @param list The transaction list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListAscendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
         return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
     }
 
+    /**
+     * Returns the running balance (balance of the account if no other transactions occurred after
+     * the given one) of the transactions in transactionList on a per account basis.
+     *
+     * @param transaction The transaction to calculate the balance to
+     * @param transactionList The transaction list to iterate through
+     *
+     * @return The running balance
+     */
     fun calculateTransactionRunningBalance(transaction: Transaction, transactionList: ArrayList<Transaction>): Double {
         var currentRunningBalance = 0.0
 
-        sortTransactionListByRecentDateLast(transactionList).forEach {  // Have the oldest one first, so we can count from there
+        sortTransactionListAscendingOrder(transactionList).forEach {  // Have the oldest one first, so we can count from there
             if (transaction.accountName == it.accountName) {
                 currentRunningBalance += it.amount
                 if (it == transaction) {
@@ -129,20 +202,41 @@ object Utility {
         return -1.0
     }
 
+    /**
+     * Function to call list populating functions
+     */
     fun readAll() {
-        readTransactions()
         readCategories()
         readAccounts()
+        Values.total = calculateTotal()
     }
 
+    /**
+     * Adds the given transaction to the main transaction list.
+     *
+     * @param transaction The transaction to add
+     * @param context The main context for this application
+     *
+     * @return If writing the transaction list succeeded
+     */
     fun newTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.add(transaction)
-        Values.transactions = sortTransactionListByRecentDateFirst(Values.transactions)
+        Values.transactions = sortTransactionListDescendingOrder(Values.transactions)
         readAll()
         return (writeLedgerData(context))
     }
 
-    fun newTransfer(transaction: Transaction, context: Context, destinationAccount: String) : Boolean {
+    /**
+     * Transfers the amount in the given transaction from its associated account to the given
+     * destinationAccount.
+     *
+     * @param transaction The source transaction
+     * @param destinationAccount The destination account to transfer to
+     * @param context The main context for this application
+     *
+     * @return If writing the transaction list succeeded
+     */
+    fun newTransfer(transaction: Transaction, destinationAccount: String, context: Context) : Boolean {
         transaction.amount = (-1) * (kotlin.math.abs(transaction.amount))
         val destinationTransaction = newTransaction(Transaction(transaction.category,
             transaction.description, kotlin.math.abs(transaction.amount), transaction.utcDateTime,
@@ -150,12 +244,33 @@ object Utility {
         return (destinationTransaction && newTransaction(transaction, context))
     }
 
+    /**
+     * Removes the given transaction from the main transaction list
+     *
+     * @param transaction The transaction to remove
+     * @param context The main context for this application
+     *
+     * @return If writing the transaction list succeeded
+     */
     fun removeTransaction(transaction: Transaction, context: Context): Boolean {
         Values.transactions.remove(transaction)
         readAll()
         return (writeLedgerData(context))
     }
 
+    /**
+     * Assigns the given transaction's data to the given data
+     *
+     * @param transaction The transaction to edit
+     * @param context The main context for this application
+     * @param category The category
+     * @param description The description
+     * @param amount The amount
+     * @param utcDateTime The utc time of this transaction
+     * @param accountName The account associated with this transaction
+     *
+     * @return If writing the transaction list succeeded
+     */
     fun editTransaction(transaction: Transaction, context: Context, category: String,
                         description: String, amount: Double, utcDateTime: ZonedDateTime,
                         accountName: String): Boolean {
@@ -164,16 +279,37 @@ object Utility {
         return (writeLedgerData(context))
     }
 
+    /**
+     * Converts the UTC time in the given ZonedDateTime object to the local time of this device
+     *
+     * @param utcDateTime The ZonedDateTime object
+     *
+     * @return A new ZonedDateTime object containing the same time in the local time zone
+     */
     fun convertUtcTimeToLocalDateTime(utcDateTime: ZonedDateTime): ZonedDateTime {
         return (utcDateTime.withZoneSameInstant(Values.localTimeZone))
     }
 
+    /**
+     * Converts the local time in the given ZonedDateTime object to UTC time
+     *
+     * @param localDateTime The ZonedDateTime object containing the local time of this device
+     *
+     * @return A new ZonedDateTime object containing the same time, but in UTC
+     */
     fun convertLocalDateTimeToUTC(localDateTime: ZonedDateTime): ZonedDateTime {
         return (localDateTime.withZoneSameInstant(Values.UTCTimeZone))
     }
 
+    /**
+     * Returns a transaction list containing all transaction associated with a given account
+     *
+     * @param accountName The account
+     *
+     * @return A transaction list
+     */
     fun getAccountTransactions(accountName: String): ArrayList<Transaction> {
-        var accountTransactions = ArrayList<Transaction>()
+        val accountTransactions = ArrayList<Transaction>()
         Values.transactions.forEach{ transaction->
             if (transaction.accountName == accountName) {
                 accountTransactions.add(transaction)
@@ -182,8 +318,17 @@ object Utility {
         return accountTransactions
     }
 
+    /**
+     * Changes the account name on all transactions with oldAccountName to newAccountName
+     *
+     * @param context The main context for this application
+     * @param oldAccountName The old account name to change
+     * @param newAccountName The new account name to use
+     *
+     * @return If writing the transaction list succeeded
+     */
     fun changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean {
-        var accountTransactions = getAccountTransactions(oldAccountName)
+        val accountTransactions = getAccountTransactions(oldAccountName)
         accountTransactions.forEach{ transaction ->
             transaction.editTransaction(transaction.category, transaction.description,
                 transaction.amount, transaction.utcDateTime, newAccountName)
@@ -192,9 +337,17 @@ object Utility {
         return (writeLedgerData(context))
     }
 
+    /**
+     * Removes all transactions from the given account (effectively deleting the account)
+     *
+     * @param context The main context for this account
+     * @param accountName The account to be removed
+     *
+     * @return If writing the transaction list succeeded
+     */
     fun removeAccount(context: Context, accountName: String): Boolean {
         var writeSucceed = true
-        var accountTransactions = getAccountTransactions(accountName)
+        val accountTransactions = getAccountTransactions(accountName)
         accountTransactions.forEach{ transaction ->
             if (!(removeTransaction(transaction, context))) {
                 writeSucceed = false
@@ -203,9 +356,12 @@ object Utility {
         return (writeSucceed)
     }
 
+    /**
+     * Shows a snackbar popup with the given message
+     *
+     * @param message The message to show on the snackbar
+     */
     fun showSnackbar(message: String) {
-        Log.d("Snackbar", Values.lastSnackbarMessage)
-        Log.d("Snackbar", message)
         if (message.compareTo(Values.lastSnackbarMessage) != 0) {
             Values.lastSnackbarMessage = message
             Values.scope.launch {
@@ -216,15 +372,27 @@ object Utility {
         }
     }
 
-    fun clearTransactions(context: Context) {
+    /**
+     * Removes all transactions from the main transaction list
+     *
+     * @param context The main context of this application
+     *
+     * @return If writing the transaction list succeeded
+     */
+    fun clearTransactions(context: Context): Boolean {
         Values.transactions.clear()
-        writeLedgerData(context)
+        return (writeLedgerData(context))
     }
 
+    /**
+     * Writes a CSV formatted representation of the main transaction list
+     *
+     * @param outputStream An output stream to write to
+     */
     fun writeCSV(outputStream: OutputStream) {
         val header = "date,category,description,amount,account\n"
         outputStream.write(header.toByteArray())
-        Values.transactions.forEach{ transaction ->
+        sortTransactionListAscendingOrder(Values.transactions).forEach{ transaction ->
             val date = transaction.utcDateTime.toString()
             val category = transaction.category
             val description = transaction.description
@@ -236,9 +404,15 @@ object Utility {
             outputStream.write(line.toByteArray())
         }
 
-        showSnackbar("Ledger data sucessfully exported")
+        showSnackbar("Ledger data successfully exported")
     }
 
+    /**
+     * Populates the main transaction list from a CSV formatted representation
+     *
+     * @param context The main context of this application
+     * @param inputStream The input stream to read from
+     */
     fun readCSV(context: Context, inputStream: InputStream) {
         val scannerInput = Scanner(inputStream)
         var line = scannerInput.nextLine().split(",")
@@ -265,7 +439,7 @@ object Utility {
             amountIndex = 3
             accountIndex = 4
         }
-        else {
+        else {  // Foreign CSV import
             dateIndex = 8
             categoryIndex = 3
             descriptionIndex = 4
@@ -273,7 +447,9 @@ object Utility {
             accountIndex = 9
         }
 
-        // Need to handle initial amount field from other apps
+        // Handle initial amount field from other apps
+
+        val initialTransactionList = ArrayList<Transaction>()
 
         try {
             while (scannerInput.hasNext()) {
@@ -284,13 +460,253 @@ object Utility {
                 val date = ZonedDateTime.parse(line[dateIndex])
                 val account = line[accountIndex]
                 val newTransaction = Transaction(category, description, amount, date, account)
+                var transactionFound = false
 
-                newTransaction(newTransaction, context)
+                // Handle foreign import
+                if (otherFormat) {
+                    // Handle initial amount
+                    // If the account name is not in temp accounts
+                    initialTransactionList.forEach {
+                        if (account == it.accountName) {
+                            transactionFound = true
+                        }
+                    }
+                    if (!transactionFound) {
+                        // Mark that the initial amount for this account has been recorded
+                        initialTransactionList.add(
+                            Transaction(
+                                "Opening Deposit", "", line[10].toDouble(),
+                                ZonedDateTime.now(), account
+                            )
+                        )
+                    }
+
+                    // Handle transfers, line[11] equals destination account
+                    if (line[11] != "null") {
+                        // Use Utility.newTransfer to create a new transaction object
+                        newTransfer(newTransaction, line[11], context)
+                    }
+                    else {
+                        newTransaction(newTransaction, context)
+                    }
+                }
+                else {
+                    newTransaction(newTransaction, context)
+                }
             }
-            showSnackbar("Ledger data sucessfully imported")
+
+            // Iterate through all accounts for initial transactions
+            initialTransactionList.forEach { transaction ->
+                // Oldest transaction of tempTransactionList is index 0
+                val tempTransactionList = sortTransactionListAscendingOrder(
+                    getAccountTransactions(transaction.accountName)
+                )
+                val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
+                    .minusMinutes(5)    // So running balance is correct
+
+                transaction.utcDateTime = openingDepositTransactionDate
+
+                newTransaction(transaction, context)
+            }
+
+            showSnackbar("Ledger data successfully imported")
         } catch (exception: Exception) {
             Values.transactions = backup
             showSnackbar("File corrupted, unable to import ledger data")
         }
+
+        readAll()
+        writeLedgerData(context)
+    }
+
+    /**
+     * Sorts the given transaction list in amount size order
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListByAmount(list: ArrayList<Transaction>, ascending: Boolean): ArrayList<Transaction> {
+        if (ascending) {
+            return (list.sortedBy { it.amount }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { it.amount }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given transaction list by date
+     *
+     * @param list The list to sort
+     * @param ascending if the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListByDate(list: ArrayList<Transaction>, ascending: Boolean): ArrayList<Transaction> {
+        if (ascending) {
+            return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given account names list in alphabetical order
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByName(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
+        if (ascending) {
+            return (list.sortedBy { it }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { it }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given account names list by balance size
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByAmount(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
+        if (ascending) {
+            return (list.sortedBy { getAccountTotal(it) }.toCollection(ArrayList()))
+        }
+        else {
+            return (list.sortedByDescending { getAccountTotal(it) }.toCollection(ArrayList()))
+        }
+    }
+
+    /**
+     * Sorts the given account names list by transaction date
+     *
+     * @param list The list to sort
+     * @param ascending If the list should be sorted in ascending order
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByTransactionDate(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
+        val sortedList = ArrayList<String>()
+        val sortedTransactionsList = sortTransactionListByDate(Values.transactions, ascending)
+        /* Get the smallest (or largest) transactions and find out which accounts the smallest
+           (or largest) transactions belong to
+        */
+        sortedTransactionsList.forEach { transaction ->
+            if (!(sortedList.contains(transaction.accountName))) {
+                sortedList.add(transaction.accountName)
+            }
+        }
+        return sortedList
+    }
+
+    /**
+     * Sorts the given account names list by the given preference
+     *
+     * @param list The list to sort
+     * @param preference The sorting preference
+     *
+     * @return The sorted list
+     */
+    fun sortAccountListByPreference(list: ArrayList<String>, preference: Int): ArrayList<String> {
+        when (preference) {
+            0 -> return (sortAccountListByName(list, ascending = true))
+            1 -> return (sortAccountListByName(list, ascending = false))
+            2 -> return (sortAccountListByAmount(list, ascending = true))
+            3 -> return (sortAccountListByAmount(list, ascending = false))
+            4 -> return (sortAccountListByTransactionDate(list, ascending = true))
+            5 -> return (sortAccountListByTransactionDate(list, ascending = false))
+            else -> return list
+        }
+    }
+
+    /**
+     * Sorts the given transaction list by the given preference
+     *
+     * @param list The list to sort
+     * @param preference The sorting preference
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListByPreference(list: ArrayList<Transaction>, preference: Int): ArrayList<Transaction> {
+        when (preference) {
+            0 -> return (sortTransactionListByDate(list, ascending = true))
+            1 -> return (sortTransactionListByDate(list, ascending = false))
+            2 -> return (sortTransactionListByAmount(list, ascending = true))
+            3 -> return (sortTransactionListByAmount(list, ascending = false))
+            else -> return list
+        }
+    }
+
+    /**
+     * Returns the value of the given preference from the preference store
+     *
+     * @param preference The preference to get
+     *
+     * @return The value of the preference
+     */
+    fun getPreference(preference: String): Int {
+        return (Values.preferences[preference]?: 0)
+    }
+
+    /**
+     * Sets the value of the given preference to the given value
+     *
+     * @param preference The preference to set
+     * @param value The value to set the preference to
+     * @param context The main context of this application
+     */
+    fun setPreference(preference: String, value: Int, context: Context) {
+        Values.preferences[preference] = value
+        writePreferences(context)
+    }
+
+    /**
+     * Sets transactions sorting preference
+     * Wrapper method for setPreference; sets Values.transactions to the sorted list
+     *
+     * @param value The sorting preference
+     * @param context The main context of this application
+     */
+    fun setTransactionSortingPreference(value: Int, context: Context) {
+        setPreference("transactionSortingPreference", value, context)
+        Values.transactions = sortTransactionListByPreference(Values.transactions,
+            getPreference("transactionSortingPreference")
+        )
+    }
+
+    /**
+     * Wrapper method for setPreference; sets Values.accountNames to the sorted list
+     *
+     * @param value The sorting preference
+     * @param context The main context of this application
+     */
+    fun setAccountSortingPreference(value: Int, context: Context) {
+        setPreference("accountSortingPreference", value, context)
+        Values.accountNames = sortAccountListByPreference(Values.accountNames,
+            getPreference("accountSortingPreference")
+        )
+    }
+
+    /**
+     * Returns the net value of all transactions
+     *
+     * @return Net value
+     */
+    fun calculateTotal(): Double {
+        var total: Double = 0.0
+        Values.transactions.forEach{ transaction ->
+            total += transaction.amount
+        }
+        return total
     }
 }
