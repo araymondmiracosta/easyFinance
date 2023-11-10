@@ -87,11 +87,11 @@ object Viewlets: ComponentActivity() {
                     contentResolver.openOutputStream(uri)?.use {
                         Utility.writeCSV(it)
                     }
+                    onDismiss()
                 }
             }
         LaunchedEffect(Unit) {
             filePicker.launch("ledger.csv")
-            onDismiss()
         }
     }
 
