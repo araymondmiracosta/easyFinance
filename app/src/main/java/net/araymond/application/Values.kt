@@ -28,21 +28,20 @@ object Values {
         "transactionSortingPreference" to 1,
         "themePreference" to 0
     )
-    var themes =
+
+    val legacyThemes = arrayOf(
+        "Nebula", "Bright"
+    )
+
+    val themes =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             arrayOf(
-                "System default", "Material You (Dark)", "Material You (Light)", "Nebula"
+                "System default", "Material You (Dark)", "Material You (Light)", "Nebula", "Bright"
             )
         }
         else {
-            arrayOf(
-                "Nebula"
-            )
+            legacyThemes
         }
-
-    var legacyThemes = arrayOf(
-        "Nebula"
-    )
 
     // Currency options
     val currencies = arrayOf("$", "€", "¥", "£")

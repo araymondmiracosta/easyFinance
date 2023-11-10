@@ -30,5 +30,7 @@ val darkTan = Color(0xFFA69178)
 val darkerBlue = Color(0xFF005490)
 val alternateTan = Color(0xFFf2cdb4)
 
+val dimWhite = Color(0xFFDEDEDE)
+
 val Red = Color(0xFFf22951)
 val Green = Color(0xFF00bf00)

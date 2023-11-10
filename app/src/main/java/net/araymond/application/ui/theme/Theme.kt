@@ -60,7 +60,29 @@ private val NebulaColorScheme = darkColorScheme(
     onSurface = lightTan,
     onSurfaceVariant = lightTan,
     outline = darkTan
-    )
+)
+
+private val brightColorScheme = lightColorScheme(
+    // Main background
+    background = dimWhite,
+    surface = dimWhite,
+    // Transaction category
+    tertiary = lightBlue,
+    primary = lightBlue,
+    // Transaction date and time
+    surfaceTint = grey00,
+    // Tile background
+    surfaceVariant = lightTan,
+    // Floating button background
+    primaryContainer = lightBlue,
+    onPrimaryContainer = Color.Black,
+    // Account name
+    inverseSurface = Color.Black,
+    // Text
+    onSurface = Color.Black,
+    onSurfaceVariant = Color.Black,
+    outline = Color.Black
+)
 
 @Composable
 fun ApplicationTheme(isDarkTheme: Boolean = isSystemInDarkTheme(), isDynamicColor: Boolean = true, content: @Composable () -> Unit) {
@@ -86,6 +108,8 @@ fun ApplicationTheme(isDarkTheme: Boolean = isSystemInDarkTheme(), isDynamicColo
             dynamicLightColorScheme(LocalContext.current)
         "Nebula" ->
             NebulaColorScheme
+        "Bright" ->
+            brightColorScheme
 
         else ->
             NebulaColorScheme
