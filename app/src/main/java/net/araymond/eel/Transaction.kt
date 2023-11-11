@@ -1,4 +1,4 @@
-package net.araymond.application
+package net.araymond.eel
 
 import java.io.Serializable
 import java.time.ZonedDateTime

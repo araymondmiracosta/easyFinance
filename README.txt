@@ -11,7 +11,7 @@ TODO
 - [X] Remove and edit banking accounts
 - [X] Remove and edit transactions
 - [ ] Remove and edit assets
-- [ ] About screen
+- [X] About screen
 - [ ] Search functionality (scope?)
 - [X] Improved name
 - [X] Improved icon

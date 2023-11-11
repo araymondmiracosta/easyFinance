@@ -1,4 +1,4 @@
-package net.araymond.application
+package net.araymond.eel
 
 import android.os.Build
 import androidx.compose.material3.SnackbarHostState

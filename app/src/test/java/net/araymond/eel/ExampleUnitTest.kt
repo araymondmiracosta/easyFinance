@@ -1,4 +1,4 @@
-package net.araymond.application
+package net.araymond.eel
 
 import org.junit.Test
 

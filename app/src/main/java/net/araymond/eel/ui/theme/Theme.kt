@@ -1,4 +1,4 @@
-package net.araymond.application.ui.theme
+package net.araymond.eel.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -14,9 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import net.araymond.application.Utility
-import net.araymond.application.Values
-import kotlin.math.atan
+import net.araymond.eel.Utility
+import net.araymond.eel.Values
 
 private val DarkColorScheme = darkColorScheme(
 //    primary = Purple80,

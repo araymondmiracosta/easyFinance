@@ -1,4 +1,4 @@
-package net.araymond.application
+package net.araymond.eel
 
 import android.content.Context
 import androidx.compose.material3.SnackbarDuration
