@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace 'net.araymond.application'
+    namespace 'net.araymond.eel'
     compileSdk 34
 
     defaultConfig {
-        applicationId "net.araymond.application"
+        applicationId "net.araymond.eel"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2023-11-11
+        versionName "11 November 2023"
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

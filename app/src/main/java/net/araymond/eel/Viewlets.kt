@@ -1,4 +1,4 @@
-package net.araymond.application
+package net.araymond.eel
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -43,8 +43,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
-import net.araymond.application.ui.theme.Green
-import net.araymond.application.ui.theme.Red
+import net.araymond.eel.ui.theme.Green
+import net.araymond.eel.ui.theme.Red
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
 

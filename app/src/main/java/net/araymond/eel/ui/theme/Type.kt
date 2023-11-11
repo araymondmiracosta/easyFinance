@@ -1,4 +1,4 @@
-package net.araymond.application.ui.theme
+package net.araymond.eel.ui.theme
 
 import androidx.compose.material3.Typography
 

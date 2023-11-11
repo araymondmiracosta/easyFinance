@@ -1,4 +1,4 @@
-package net.araymond.application
+package net.araymond.eel
 
 import android.content.Context
 import android.os.Bundle
@@ -72,6 +72,9 @@ class MainActivity : ComponentActivity() {
                 it.arguments?.getString("accountName")?.let { it1 ->
                     Views.generateAccountSpecificView(navHostController, it1, context)
                 }
+            }
+            composable("About Activity") {
+                Views.generateAboutView(navHostController, context)
             }
         }
     }
