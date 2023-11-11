@@ -2,6 +2,7 @@ package net.araymond.application
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
@@ -881,6 +884,93 @@ object Views {
     }
 
     /**
+     * Draws the about screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     */
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @Composable
+    fun generateAboutView(navHostController: NavHostController, context: Context) {
+        ApplicationTheme {
+            var browserOpen by remember { mutableStateOf(false) }
+            if (browserOpen) {
+                LocalUriHandler.current.openUri(Values.sourceCodeLink)
+                browserOpen = false
+            }
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "About")
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    navHostController.navigateUp()
+                                }
+                            ) {
+                                Icon(Icons.Filled.ArrowBack, "")
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(top = 50.dp)) {
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_launcher_new_foreground),
+                                contentDescription = "Application icon"
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            Viewlets.settingsButton(
+                                title = "eel",
+                                text = "EEL Easy Ledger",
+                                onClick = {}
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 5.dp))
+                            Viewlets.settingsButton(
+                                title = "Version",
+                                text = Values.version,
+                                onClick = {}
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 5.dp))
+                            Viewlets.settingsButton(
+                                title = "Source Code",
+                                text = Values.sourceCodeLink,
+                                onClick = {
+                                    browserOpen = true
+                                }
+                            )
+
+//                            Text(
+//                                text = "eel (EEL Easy Ledger)",
+//                                style = TextStyle(
+//                                    fontSize = 22.sp,
+//                                    color = MaterialTheme.colorScheme.onSurface
+//                                )
+//                            )
+//                            Spacer(modifier = Modifier.padding(vertical = 5.dp))
+//                            Text(
+//                                text = Values.version,
+//                                style = TextStyle(
+//                                    fontSize = 18.sp,
+//                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+//                                )
+//                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    /**
      * Draws the settings screen
      *
      * @param navHostController The main navHostController for this application
@@ -1016,6 +1106,15 @@ object Views {
                             // Export ledger
                             Viewlets.settingsButton("Export ledger", "Export account and transaction data to a CSV file") {
                                 createDialog = true
+                            }
+
+                            Viewlets.settingsDivider()
+
+                            // Miscellaneous
+                            Viewlets.settingsLabel("Miscellaneous")
+                            // About
+                            Viewlets.settingsButton("About", "View information about this application") {
+                                navHostController.navigate("About Activity")
                             }
                         }
                     }

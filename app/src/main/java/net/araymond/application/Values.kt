@@ -34,8 +34,8 @@ object Values {
     )
 
     const val name = "eel"
-
-    const val version = "10 November 2023"
+    const val version = "11 November 2023"
+    const val sourceCodeLink = "https://www.nebulacentre.net/projects/eel.git"
 
     val themes =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

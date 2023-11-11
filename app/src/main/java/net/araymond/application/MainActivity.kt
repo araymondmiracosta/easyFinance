@@ -73,6 +73,9 @@ class MainActivity : ComponentActivity() {
                     Views.generateAccountSpecificView(navHostController, it1, context)
                 }
             }
+            composable("About Activity") {
+                Views.generateAboutView(navHostController, context)
+            }
         }
     }
 }
