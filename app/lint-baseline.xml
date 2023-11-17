@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.1.1" type="baseline" client="gradle" dependencies="false" name="AGP (8.1.1)" variant="fatal" version="8.1.1">
+
+    <issue
+        id="Instantiatable"
+        message="The default constructor must be public in `net.araymond.eel.Views`"
+        errorLine1="        &lt;activity android:name=&quot;.Views&quot;>&lt;/activity>"
+        errorLine2="                                ~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="26"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="Instantiatable"
+        message="`Views` must extend android.app.Activity"
+        errorLine1="        &lt;activity android:name=&quot;.Views&quot;>&lt;/activity>"
+        errorLine2="                                ~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="26"
+            column="33"/>
+    </issue>
+
+</issues>
