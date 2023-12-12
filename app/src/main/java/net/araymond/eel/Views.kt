@@ -132,7 +132,7 @@ object Views {
                             ) {
                                 IconButton(
                                     onClick = {
-
+                                        navHostController.navigate("Asset Activity")
                                     },
                                     modifier = Modifier.tooltipAnchor()
                                 ) {
@@ -1210,6 +1210,7 @@ object Views {
      *
      * @param navHostController The main navHostController for this application
      * @param accountName The account to show information of
+     * @param context The main context for this application
      */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")

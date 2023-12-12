@@ -43,6 +43,8 @@ class MainActivity : ComponentActivity() {
     /**
      * Holds the navHostController for the application. All navigation is done through this
      * function and the navHostController is passed to all main screens to achieve this.
+     *
+     * @param context The main context for this application
      */
     @Composable
     fun applicationNavHost(context: Context) {
@@ -75,6 +77,9 @@ class MainActivity : ComponentActivity() {
             }
             composable("About Activity") {
                 Views.generateAboutView(navHostController, context)
+            }
+            composable("Asset Activity") {
+//                Views.generateAssetView(navHostController, context)
             }
         }
     }
