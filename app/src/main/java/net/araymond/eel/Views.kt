@@ -233,7 +233,7 @@ object Views {
             var delete by remember { mutableStateOf (false) }
 
             if (accountNameInput.isNotEmpty()) {
-                accountBalance = Utility.getAccountTotal(accountName).toString()
+                accountBalance = Utility.getAccountTotal(accountName, Values.transactions).toString()
                 accountNameIsEmpty = false
                 accountBalanceIsNotNumber = false
                 title = "Edit Account"
@@ -248,7 +248,7 @@ object Views {
                 )
             }
             if (delete) {
-                if (Utility.removeAccount(context, accountNameInput)) {
+                if (Utility.removeAccount(accountNameInput, Values.transactions, context)) {
                     navHostController.navigate("Main Activity")
                     Utility.showSnackbar("Account successfully deleted")
                 }
@@ -369,9 +369,10 @@ object Views {
 
                                 if (accountNameInput.isNotEmpty()) {
                                     writeSuccess = Utility.changeAccountName(
-                                        context,
                                         accountNameInput,
-                                        accountName
+                                        accountName,
+                                        Values.transactions,
+                                        context
                                     )
                                     snackbarMessage = "Account information saved"
                                 } else {
@@ -383,7 +384,7 @@ object Views {
                                         accountName
                                     )
                                     writeSuccess =
-                                        Utility.newTransaction(openingTransaction, context)
+                                        Utility.newTransaction(openingTransaction, Values.transactions, context)
                                     snackbarMessage = "New account saved"
                                 }
                                 if (writeSuccess) {
@@ -474,7 +475,7 @@ object Views {
                     )
                 }
                 if (delete) {
-                    if (Utility.removeTransaction(transaction, context)) {
+                    if (Utility.removeTransaction(transaction, Values.transactions, context)) {
                         fieldEnabled = false
                         navHostController.navigateUp()
                         Utility.showSnackbar("Transaction removed")
@@ -931,13 +932,14 @@ object Views {
                                             writeSuccess = Utility.newTransfer(
                                                 newTransaction,
                                                 accountNameTransfer,
+                                                Values.transactions,
                                                 context
                                             )
                                             snackbarMessage = "New transfer added"
                                         }
                                         else {
                                             writeSuccess =
-                                                Utility.newTransaction(newTransaction, context)
+                                                Utility.newTransaction(newTransaction, Values.transactions, context)
                                             snackbarMessage = "New transaction added"
                                         }
                                     }
@@ -1323,13 +1325,13 @@ object Views {
                                     )
                                     Spacer(modifier = Modifier.padding(5.dp))
                                     Text(
-                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName, Values.transactions)),
                                         style = TextStyle(fontSize = 19.sp)
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName), Utility.getPreference("transactionSortingPreference")), true)
+                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
                     }
                 }

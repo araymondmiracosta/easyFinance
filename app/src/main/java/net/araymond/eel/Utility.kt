@@ -40,10 +40,11 @@ object Utility {
      * Returns the balance of the given account
      *
      * @param accountName The account name
+     * @param transactionList The list of transactions to search through
      *
      * @return Balance of the account
      */
-    fun getAccountTotal(accountName: String): Double {
+    fun getAccountTotal(accountName: String, transactionList: ArrayList<Transaction>): Double {
         var accountTotal = 0.0
         Values.transactions.forEach{ transaction ->
             if (transaction.accountName == accountName) {
@@ -55,7 +56,7 @@ object Utility {
     }
 
     /**
-     * Populates Values.categories with the categories found in transactions
+     * Populates Values.categories with the categories found in the main transaction list
      */
     private fun readCategories() {
         Values.transactions.forEach{ transaction ->
@@ -208,20 +209,25 @@ object Utility {
     fun readAll() {
         readCategories()
         readAccounts()
-        Values.total = calculateTotal()
+        Values.total = calculateTotal(Values.transactions)
     }
 
     /**
-     * Adds the given transaction to the main transaction list.
+     * Adds the given transaction to the given transaction list
      *
      * @param transaction The transaction to add
+     * @param transactionList The transaction list to add to
      * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun newTransaction(transaction: Transaction, context: Context): Boolean {
-        Values.transactions.add(transaction)
-        Values.transactions = sortTransactionListDescendingOrder(Values.transactions)
+    fun newTransaction(transaction: Transaction, transactionList:ArrayList<Transaction>, context: Context): Boolean {
+        transactionList.add(transaction)
+        val sortedTransactionList = sortTransactionListDescendingOrder(transactionList)
+        transactionList.clear()
+        sortedTransactionList.forEach {
+            transactionList.add(it)
+        }
         readAll()
         return (writeLedgerData(context))
     }
@@ -232,28 +238,30 @@ object Utility {
      *
      * @param transaction The source transaction
      * @param destinationAccount The destination account to transfer to
+     * @param transactionList The transaction list to use
      * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun newTransfer(transaction: Transaction, destinationAccount: String, context: Context) : Boolean {
+    fun newTransfer(transaction: Transaction, destinationAccount: String, transactionList: ArrayList<Transaction>, context: Context) : Boolean {
         transaction.amount = (-1) * (kotlin.math.abs(transaction.amount))
         val destinationTransaction = newTransaction(Transaction(transaction.category,
             transaction.description, kotlin.math.abs(transaction.amount), transaction.utcDateTime,
-            destinationAccount), context)
-        return (destinationTransaction && newTransaction(transaction, context))
+            destinationAccount), transactionList, context)
+        return (destinationTransaction && newTransaction(transaction, transactionList, context))
     }
 
     /**
-     * Removes the given transaction from the main transaction list
+     * Removes the given transaction from the given transaction list
      *
      * @param transaction The transaction to remove
+     * @param transactionList The transaction list to use
      * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun removeTransaction(transaction: Transaction, context: Context): Boolean {
-        Values.transactions.remove(transaction)
+    fun removeTransaction(transaction: Transaction, transactionList: ArrayList<Transaction>, context: Context): Boolean {
+        transactionList.remove(transaction)
         readAll()
         return (writeLedgerData(context))
     }
@@ -305,12 +313,13 @@ object Utility {
      * Returns a transaction list containing all transaction associated with a given account
      *
      * @param accountName The account
+     * @param transactionList The transaction list to use
      *
      * @return A transaction list
      */
-    fun getAccountTransactions(accountName: String): ArrayList<Transaction> {
+    fun getAccountTransactions(accountName: String, transactionList: ArrayList<Transaction>): ArrayList<Transaction> {
         val accountTransactions = ArrayList<Transaction>()
-        Values.transactions.forEach{ transaction->
+        transactionList.forEach{ transaction->
             if (transaction.accountName == accountName) {
                 accountTransactions.add(transaction)
             }
@@ -321,14 +330,15 @@ object Utility {
     /**
      * Changes the account name on all transactions with oldAccountName to newAccountName
      *
-     * @param context The main context for this application
      * @param oldAccountName The old account name to change
      * @param newAccountName The new account name to use
+     * @param transactionList The transaction list to use
+     * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean {
-        val accountTransactions = getAccountTransactions(oldAccountName)
+    fun changeAccountName(oldAccountName: String, newAccountName: String, transactionList: ArrayList<Transaction>, context: Context): Boolean {
+        val accountTransactions = getAccountTransactions(oldAccountName, transactionList)
         accountTransactions.forEach{ transaction ->
             transaction.editTransaction(transaction.category, transaction.description,
                 transaction.amount, transaction.utcDateTime, newAccountName)
@@ -340,16 +350,17 @@ object Utility {
     /**
      * Removes all transactions from the given account (effectively deleting the account)
      *
-     * @param context The main context for this account
      * @param accountName The account to be removed
+     * @param transactionList The transaction list to use
+     * @param context The context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun removeAccount(context: Context, accountName: String): Boolean {
+    fun removeAccount(accountName: String, transactionList: ArrayList<Transaction>, context: Context): Boolean {
         var writeSucceed = true
-        val accountTransactions = getAccountTransactions(accountName)
+        val accountTransactions = getAccountTransactions(accountName, transactionList)
         accountTransactions.forEach{ transaction ->
-            if (!(removeTransaction(transaction, context))) {
+            if (!(removeTransaction(transaction, transactionList, context))) {
                 writeSucceed = false
             }
         }
@@ -373,14 +384,15 @@ object Utility {
     }
 
     /**
-     * Removes all transactions from the main transaction list
+     * Removes all transactions from the given transaction list
      *
+     * @param transactionList The transaction list to clear
      * @param context The main context of this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun clearTransactions(context: Context): Boolean {
-        Values.transactions.clear()
+    fun clearTransactions(transactionList: ArrayList<Transaction>, context: Context): Boolean {
+        transactionList.clear()
         return (writeLedgerData(context))
     }
 
@@ -423,7 +435,7 @@ object Utility {
         }
 
         if (scannerInput.hasNext()) {   // Clear transactions if the file checks out
-            clearTransactions(context)
+            clearTransactions(Values.transactions, context)
         }
 
         val dateIndex: Int
@@ -484,14 +496,14 @@ object Utility {
                     // Handle transfers, line[11] equals destination account
                     if (line[11] != "null") {
                         // Use Utility.newTransfer to create a new transaction object
-                        newTransfer(newTransaction, line[11], context)
+                        newTransfer(newTransaction, line[11], Values.transactions, context)
                     }
                     else {
-                        newTransaction(newTransaction, context)
+                        newTransaction(newTransaction, Values.transactions, context)
                     }
                 }
                 else {
-                    newTransaction(newTransaction, context)
+                    newTransaction(newTransaction, Values.transactions, context)
                 }
             }
 
@@ -499,14 +511,14 @@ object Utility {
             initialTransactionList.forEach { transaction ->
                 // Oldest transaction of tempTransactionList is index 0
                 val tempTransactionList = sortTransactionListAscendingOrder(
-                    getAccountTransactions(transaction.accountName)
+                    getAccountTransactions(transaction.accountName, Values.transactions)
                 )
                 val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
                     .minusMinutes(5)    // So running balance is correct
 
                 transaction.utcDateTime = openingDepositTransactionDate
 
-                newTransaction(transaction, context)
+                newTransaction(transaction, Values.transactions, context)
             }
 
             showSnackbar("Ledger data successfully imported")
@@ -580,10 +592,10 @@ object Utility {
      */
     fun sortAccountListByAmount(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
         if (ascending) {
-            return (list.sortedBy { getAccountTotal(it) }.toCollection(ArrayList()))
+            return (list.sortedBy { getAccountTotal(it, Values.transactions) }.toCollection(ArrayList()))
         }
         else {
-            return (list.sortedByDescending { getAccountTotal(it) }.toCollection(ArrayList()))
+            return (list.sortedByDescending { getAccountTotal(it, Values.transactions) }.toCollection(ArrayList()))
         }
     }
 
@@ -700,11 +712,13 @@ object Utility {
     /**
      * Returns the net value of all transactions
      *
+     * @param transactionList The transaction list to use
+     *
      * @return Net value
      */
-    fun calculateTotal(): Double {
+    fun calculateTotal(transactionList: ArrayList<Transaction>): Double {
         var total: Double = 0.0
-        Values.transactions.forEach{ transaction ->
+        transactionList.forEach{ transaction ->
             total += transaction.amount
         }
         return total

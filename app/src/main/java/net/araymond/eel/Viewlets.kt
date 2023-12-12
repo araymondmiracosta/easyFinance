@@ -392,7 +392,7 @@ object Viewlets: ComponentActivity() {
             val preference = Utility.getPreference("accountSortingPreference")
             val currency = Utility.getPreference("currencyPreference")
             Utility.sortAccountListByPreference(Values.accountNames, preference).forEach{ accountName ->
-                val accountTotal = Utility.getAccountTotal(accountName)
+                val accountTotal = Utility.getAccountTotal(accountName, Values.transactions)
                 Row {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
