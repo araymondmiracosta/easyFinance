@@ -2,6 +2,8 @@ package net.araymond.eel
 
 import android.os.Build
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import java.text.DecimalFormat
 import java.time.ZoneId
@@ -33,8 +35,12 @@ object Values {
         "Nebula", "Bright"
     )
 
+    val tooltipStyle = TextStyle(
+        fontSize = 15.sp
+    )
+
     const val name = "eel"
-    const val version = "11 November 2023"
+    const val version = "12 December 2023 (beta)"
     const val sourceCodeLink = "https://www.nebulacentre.net/projects/eel.git"
 
     val themes =

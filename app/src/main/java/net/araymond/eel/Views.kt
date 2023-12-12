@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -36,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PlainTooltipBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
@@ -109,19 +111,47 @@ object Views {
                             Text(text = Values.name)
                         },
                         actions = {
-                            IconButton(
-                                onClick = {
-                                    showDialog = true
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
                                 }
                             ) {
-                                Icon(Icons.Filled.List, "Sort transactions")
+                                IconButton(
+                                    onClick = {
+                                        showDialog = true
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.List, "Sort transactions")
+                                }
                             }
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigate("Settings Activity")
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "View asset ledger")
                                 }
                             ) {
-                                Icon(Icons.Filled.Settings, "Settings")
+                                IconButton(
+                                    onClick = {
+
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.SwapHoriz, "View asset ledger")
+                                }
+                            }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Settings")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Settings Activity")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.Settings, "Settings")
+                                }
                             }
                         }
                     )
@@ -235,28 +265,41 @@ object Views {
                             Text(title)
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    if (!fieldEnabled) {
-                                        navHostController.navigate("Main Activity")
-                                    }
-                                    else {
-                                        navHostController.navigateUp()
-                                    }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        if (!fieldEnabled) {
+                                            navHostController.navigate("Main Activity")
+                                        } else {
+                                            navHostController.navigateUp()
+                                        }
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         },
                         actions = {
                             if (accountNameInput.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        delete = false
-                                        deleteDialog = true
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        Text(style = Values.tooltipStyle, text = "Delete account")
                                     }
                                 ) {
-                                    Icon(Icons.Filled.Delete, "Delete Account")
+                                    IconButton(
+                                        onClick = {
+                                            delete = false
+                                            deleteDialog = true
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        Icon(Icons.Filled.Delete, "Delete account")
+                                    }
                                 }
                             }
                         }
@@ -460,36 +503,61 @@ object Views {
                                 Text(title)
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         },
                         actions = {
                             if (transaction != null) {
                                 if (fieldEnabled) {
-                                    IconButton(
-                                        onClick = {
-                                            delete = false
-                                            deleteDialog = true
+                                    PlainTooltipBox(
+                                        tooltip = {
+                                            Text(style = Values.tooltipStyle, text = "Remove transaction")
                                         }
                                     ) {
-                                        Icon(Icons.Filled.Delete, "Remove transaction")
+                                        IconButton(
+                                            onClick = {
+                                                delete = false
+                                                deleteDialog = true
+                                            },
+                                            modifier = Modifier.tooltipAnchor()
+                                        ) {
+                                            Icon(Icons.Filled.Delete, "Remove transaction")
+                                        }
                                     }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        fieldEnabled = !fieldEnabled
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        if (fieldEnabled) {
+                                            Text(style = Values.tooltipStyle, text = "View transaction")
+                                        }
+                                        else {
+                                            Text(style = Values.tooltipStyle, text = "Edit transaction")
+                                        }
                                     }
                                 ) {
-                                    if (fieldEnabled) {
-                                        Icon(Icons.Filled.Info, "View transaction")
-                                    }
-                                    else {
-                                        Icon(Icons.Filled.Create, "Edit transaction")
+                                    IconButton(
+                                        onClick = {
+                                            fieldEnabled = !fieldEnabled
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        if (fieldEnabled) {
+                                            Icon(Icons.Filled.Info, "View transaction")
+                                        } else {
+                                            Icon(Icons.Filled.Create, "Edit transaction")
+                                        }
                                     }
                                 }
                             }
@@ -907,12 +975,19 @@ object Views {
                             Text(text = "About")
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         }
                     )
@@ -1051,12 +1126,19 @@ object Views {
                             Text(text = "Settings")
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         }
                     )
@@ -1157,28 +1239,49 @@ object Views {
                             Text(text = "View Account")
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         },
                         actions = {
-                            IconButton(
-                                onClick = {
-                                    showDialog = true
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
                                 }
                             ) {
-                                Icon(Icons.Filled.List, "Sort transactions")
+                                IconButton(
+                                    onClick = {
+                                        showDialog = true
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.List, "Sort transactions")
+                                }
                             }
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigate("Edit Account Activity/$accountName")
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Edit account")
                                 }
                             ) {
-                                Icon(Icons.Filled.Create, "Edit Account")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Edit Account Activity/$accountName")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.Create, "Edit account")
+                                }
                             }
                         }
                     )
