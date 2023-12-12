@@ -216,7 +216,6 @@ object Views {
      * @param accountNameInput If not empty, then displays the information for this account and
      *                          allows editing
      */
-    // TODO: Need to fix crash if invalid balance is input
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -346,19 +345,23 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    var nameCheck = true
-                    if (accountName.isNotEmpty() && (!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
-                        Values.accountNames.forEach {
-                            if (it.replace(" ", "") == accountName.replace(" ", "")) {
-                                nameCheck = false
+                    ExtendedFloatingActionButton(
+                        text = { Text(text = "Apply") },
+                        icon = { Icon(Icons.Default.Check, "") },
+                        onClick = {
+                            var nameCheck = false
+                            if (accountName.isNotEmpty() && (!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
+                                nameCheck = true
+                                // Search through all existing account names and verify the
+                                // new account name does not match any of them (strip whitespace)
+                                Values.accountNames.forEach {
+                                    if (it.replace(" ", "") == accountName.replace(" ", "")) {
+                                        nameCheck = false
+                                    }
+                                }
                             }
-                        }
-                    }
-                    if (nameCheck) {
-                        ExtendedFloatingActionButton(
-                            text = { Text(text = "Apply") },
-                            icon = { Icon(Icons.Default.Check, "") },
-                            onClick = {
+
+                            if (nameCheck) {
                                 val writeSuccess: Boolean
                                 val snackbarMessage: String
 
@@ -392,8 +395,8 @@ object Views {
                                     Utility.showSnackbar(snackbarMessage)
                                 }
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             )
         }
