@@ -176,7 +176,7 @@ object Views {
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
+                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateTotal(Values.transactions))}"),
                                     style = TextStyle(
                                         fontSize = 22.sp,
                                         textAlign = TextAlign.Center,
@@ -1166,6 +1166,17 @@ object Views {
 
                             Viewlets.settingsDivider()
 
+                            // Assets
+                            Viewlets.settingsLabel("Assets")
+                            // Add new asset
+                            Viewlets.settingsButton(
+                                "Add new asset", ""
+                            ) {
+                                navHostController.navigate("New asset Activity")
+                            }
+
+                            Viewlets.settingsDivider()
+
                             // Preferences
                             Viewlets.settingsLabel("Preferences")
                             // Currency
@@ -1336,6 +1347,277 @@ object Views {
                     }
                 }
             )
+        }
+    }
+
+    /**
+     * Draws the asset creation, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param assetNameInput If not empty, then displays the information for this asset and
+     *                          allows editing
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAssetCreationView(navHostController: NavHostController, context: Context, assetNameInput: String) {
+        ApplicationTheme {
+            var assetName by remember { mutableStateOf(assetNameInput) }
+            var assetValue by remember { mutableStateOf("")}
+            var title = "New Asset"
+            val assetNameLabel by remember { mutableStateOf("Asset name")}
+            val assetValueLabel by remember { mutableStateOf("Asset value")}
+            var assetNameIsEmpty = true
+            var assetValueIsNotNumber = true
+            var fieldEnabled = true
+            var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf (false) }
+
+            if (assetNameInput.isNotEmpty()) {
+                assetValue = Utility.getAccountTotal(assetName, Values.assetTransactions).toString()
+                assetNameIsEmpty = false
+                assetValueIsNotNumber = false
+                title = "Edit Asset"
+            }
+
+            if (deleteDialog) {
+                Viewlets.confirmDialog(
+                    "Delete Asset",
+                    "Are you sure you want to delete this asset?",
+                    { deleteDialog = false },
+                    { delete = true }
+                )
+            }
+            if (delete) {
+                if (Utility.removeAccount(assetNameInput, Values.assetTransactions, context)) {
+                    navHostController.navigate("Main Activity")
+                    Utility.showSnackbar("Asset successfully deleted")
+                }
+            }
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(title)
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        if (!fieldEnabled) {
+                                            navHostController.navigate("Main Activity")
+                                        } else {
+                                            navHostController.navigateUp()
+                                        }
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+                            if (assetNameInput.isNotEmpty()) {
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        Text(style = Values.tooltipStyle, text = "Delete asset")
+                                    }
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            delete = false
+                                            deleteDialog = true
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        Icon(Icons.Filled.Delete, "Delete asset")
+                                    }
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 70.dp, horizontal = 16.dp)) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            OutlinedTextField(
+                                readOnly = !fieldEnabled,
+                                modifier = Modifier.fillMaxWidth(),
+                                value = assetName,
+                                singleLine = true,
+                                isError = assetNameIsEmpty,
+                                onValueChange = {
+                                    assetName = it
+                                    assetNameIsEmpty = it.isEmpty()
+                                },
+                                label = {
+                                    Text(assetNameLabel)
+                                }
+                            )
+                            if (assetNameInput.isEmpty()) {
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                OutlinedTextField(
+                                    readOnly = !fieldEnabled,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    value = assetValue,
+                                    singleLine = true,
+                                    isError = assetValueIsNotNumber,
+                                    onValueChange = {
+                                        assetValue = it
+                                        assetValueIsNotNumber =
+                                            !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                    },
+                                    label = {
+                                        Text(assetValueLabel)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    ExtendedFloatingActionButton(
+                        text = { Text(text = "Apply") },
+                        icon = { Icon(Icons.Default.Check, "") },
+                        onClick = {
+                            var nameCheck = false
+                            if (assetName.isNotEmpty() && (!assetNameIsEmpty) && (!assetValueIsNotNumber)) {
+                                nameCheck = true
+                                // Search through all existing asset names and verify the
+                                // new asset name does not match any of them (strip whitespace)
+                                Values.assetNames.forEach {
+                                    if (it.replace(" ", "") == assetName.replace(" ", "")) {
+                                        nameCheck = false
+                                    }
+                                }
+                            }
+
+                            if (nameCheck) {
+                                val writeSuccess: Boolean
+                                val snackbarMessage: String
+
+                                fieldEnabled = false
+
+                                if (assetNameInput.isNotEmpty()) {
+                                    writeSuccess = Utility.changeAccountName(
+                                        assetNameInput,
+                                        assetName,
+                                        Values.assetTransactions,
+                                        context
+                                    )
+                                    snackbarMessage = "Asset information saved"
+                                } else {
+                                    val openingTransaction = Transaction(
+                                        "",
+                                        "",
+                                        assetValue.toDouble(),
+                                        ZonedDateTime.now(Values.UTCTimeZone),
+                                        assetName
+                                    )
+                                    writeSuccess =
+                                        Utility.newTransaction(openingTransaction, Values.assetTransactions, context)
+                                    snackbarMessage = "New asset saved"
+                                }
+                                if (writeSuccess) {
+                                    if (assetNameInput.isNotEmpty()) {
+                                        navHostController.navigate("Main Activity")
+                                    } else {
+                                        navHostController.navigateUp()
+                                    }
+                                    Utility.showSnackbar(snackbarMessage)
+                                }
+                            }
+                        }
+                    )
+                }
+            )
+        }
+    }
+
+    /**
+     * Draws the main asset view
+     *
+     * @param navHostController The NavHostController for this application
+     * @param context The context for this application
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAssetView(navHostController: NavHostController, context: Context) {
+        ApplicationTheme {
+            val scrollState = rememberScrollState()
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "Assets")
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ){
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    }
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "Navigate up")
+                                }
+                            }
+                        }
+                    )
+                }
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 65.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .clip(shape = RoundedCornerShape(10.dp))
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .padding(10.dp)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateTotal(Values.assetTransactions))}"),
+                                style = TextStyle(
+                                    fontSize = 22.sp,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                        Spacer(modifier = Modifier.padding(vertical = 12.dp))
+                        Viewlets.generateAssetScroller(navHostController)
+                    }
+                }
+            }
         }
     }
 }

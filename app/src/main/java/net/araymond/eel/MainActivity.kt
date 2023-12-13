@@ -26,13 +26,17 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Reads in any saved ledger or preference data and creates the
-     * ArrayList<Account> Values.accounts, ArrayList<Transaction> Values.transactions,
-     * ArrayList<String> Values.categories lists.
+     * ArrayList<Transaction> Values.transactions, ArrayList<Transaction> Values.assetTransactions,
+     * ArrayList<String> Values.categories, ArrayList<String> Values.accountNames,
+     * ArrayList<String> Values.assetNames lists.
      *
      */
     private fun initialize() {
         if (Utility.readLedgerSaveData(this)) {
             Log.d("INFO", "Ledger data read successfully")
+        }
+        if (Utility.readAssetSaveData(this)) {
+            Log.d("INFO", "Asset data read successfully")
         }
         if (Utility.readPreferenceSaveData(this)) {
             Log.d("INFO", "User preferences read successfully")
@@ -78,8 +82,11 @@ class MainActivity : ComponentActivity() {
             composable("About Activity") {
                 Views.generateAboutView(navHostController, context)
             }
+            composable("New Asset Activity") {
+                Views.generateAssetCreationView(navHostController, context, "")
+            }
             composable("Asset Activity") {
-//                Views.generateAssetView(navHostController, context)
+                Views.generateAssetView(navHostController, context)
             }
         }
     }

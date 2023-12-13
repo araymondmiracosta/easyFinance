@@ -37,25 +37,6 @@ object Utility {
     }
 
     /**
-     * Returns the balance of the given account
-     *
-     * @param accountName The account name
-     * @param transactionList The list of transactions to search through
-     *
-     * @return Balance of the account
-     */
-    fun getAccountTotal(accountName: String, transactionList: ArrayList<Transaction>): Double {
-        var accountTotal = 0.0
-        Values.transactions.forEach{ transaction ->
-            if (transaction.accountName == accountName) {
-                accountTotal += transaction.amount
-            }
-        }
-
-        return accountTotal
-    }
-
-    /**
      * Populates Values.categories with the categories found in the main transaction list
      */
     private fun readCategories() {
@@ -65,6 +46,37 @@ object Utility {
 
         val duplicatesRemoved: HashSet<String> = HashSet(Values.categories)
         Values.categories = ArrayList(duplicatesRemoved)
+    }
+
+    /**
+     * Populates Values.assetNames with the asset names found in asset transactions
+     */
+    private fun readAssets() {
+        Values.assetNames = ArrayList()
+        var duplicate = false
+        Values.assetTransactions.forEach { transaction ->
+            Values.assetNames.forEach { assetName ->
+                if (assetName == transaction.accountName) {
+                    duplicate = true
+                }
+            }
+            if (duplicate) {
+                duplicate = false
+            }
+            else {
+                Values.assetNames.add(transaction.accountName)
+            }
+        }
+    }
+
+    /**
+     * Function to call list populating functions
+     */
+    fun readAll() {
+        readCategories()
+        readAccounts()
+        readAssets()
+        Values.total = calculateTotal(Values.transactions)
     }
 
     /**
@@ -112,6 +124,28 @@ object Utility {
     }
 
     /**
+     * Reads in saved asset data from private app storage
+     *
+     * @param context The main context for this application
+     *
+     * @return If reading the transaction list succeeded
+     */
+    fun readAssetSaveData(context: Context): Boolean {
+        return try {
+            val inputLedgerStream = context.openFileInput("assets")
+            val objectInputLedgerStream = ObjectInputStream(inputLedgerStream)
+            // Need to resolve
+            Values.assetTransactions = objectInputLedgerStream.readObject() as ArrayList<Transaction>
+            objectInputLedgerStream.close()
+            inputLedgerStream.close()
+
+            true
+        } catch (exception: Exception) {
+            false
+        }
+    }
+
+    /**
      * Writes the given data object to the given file name
      *
      * @param data The data object to write out
@@ -136,14 +170,25 @@ object Utility {
     }
 
     /**
+     * Writes account transactions to private app storage
+     *
+     * @param context The context for this application
+     *
+     * @return If writing the transaction list succeeded
+     */
+    private fun writeAccountData(context: Context): Boolean {
+        return (writeSaveData(Values.transactions, "ledger", context))
+    }
+
+    /**
      * Writes the ledger data to private app storage
      *
      * @param context The main context for this application
      *
-     * @return If writing the transaction list succeeded
+     * @return If writing the transaction lists succeeded
      */
     private fun writeLedgerData(context: Context): Boolean {
-        return (writeSaveData(Values.transactions, "ledger", context))
+        return (writeAccountData(context) && writeAssetData(context))
     }
 
     /**
@@ -158,25 +203,14 @@ object Utility {
     }
 
     /**
-     * Sorts the given transaction list in descending order (recent date first [0])
+     * Writes the asset data to private app storage
      *
-     * @param list The transaction list to sort
+     * @param context The context for this application
      *
-     * @return The sorted list
+     * @return If writing the asset transaction list succeeded
      */
-    fun sortTransactionListDescendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
-    }
-
-    /**
-     * Sorts the given transaction list in ascending order (recent date last [size - 1])
-     *
-     * @param list The transaction list to sort
-     *
-     * @return The sorted list
-     */
-    fun sortTransactionListAscendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
+    fun writeAssetData(context: Context): Boolean {
+        return (writeSaveData(Values.assetTransactions, "assets", context))
     }
 
     /**
@@ -201,15 +235,6 @@ object Utility {
         }
 
         return -1.0
-    }
-
-    /**
-     * Function to call list populating functions
-     */
-    fun readAll() {
-        readCategories()
-        readAccounts()
-        Values.total = calculateTotal(Values.transactions)
     }
 
     /**
@@ -532,6 +557,28 @@ object Utility {
     }
 
     /**
+     * Sorts the given transaction list in descending order (recent date first [0])
+     *
+     * @param list The transaction list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListDescendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
+        return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
+    }
+
+    /**
+     * Sorts the given transaction list in ascending order (recent date last [size - 1])
+     *
+     * @param list The transaction list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListAscendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
+        return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
+    }
+
+    /**
      * Sorts the given transaction list in amount size order
      *
      * @param list The list to sort
@@ -722,5 +769,24 @@ object Utility {
             total += transaction.amount
         }
         return total
+    }
+
+    /**
+     * Returns the balance of the given account
+     *
+     * @param accountName The account name
+     * @param transactionList The list of transactions to search through
+     *
+     * @return Balance of the account
+     */
+    fun getAccountTotal(accountName: String, transactionList: ArrayList<Transaction>): Double {
+        var accountTotal = 0.0
+        transactionList.forEach{ transaction ->
+            if (transaction.accountName == accountName) {
+                accountTotal += transaction.amount
+            }
+        }
+
+        return accountTotal
     }
 }

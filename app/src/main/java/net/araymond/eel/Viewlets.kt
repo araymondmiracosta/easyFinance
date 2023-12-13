@@ -529,4 +529,68 @@ object Viewlets: ComponentActivity() {
             Spacer(modifier = Modifier.padding(10.dp))
         }
    }
+    /**
+     * Creates a scrollable list of held assets
+     *
+     * @param navHostController The main navHostController for this application
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @Composable
+    fun generateAssetScroller(navHostController: NavHostController) {
+        val preference = Utility.getPreference("assetSortingPreference")
+        val currency = Utility.getPreference("currencyPreference")
+        Utility.sortAccountListByPreference(Values.assetNames, preference).forEach { assetName ->
+            val assetValue = Utility.getAccountTotal(assetName, Values.assetTransactions)
+            Row {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clip(shape = RoundedCornerShape(10.dp))
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clickable(enabled = true, onClick = {
+//                            navHostController.navigate("Asset Specific Activity/$assetName")
+                        })
+                        .padding(10.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = assetName,  // asset name
+                        style = TextStyle(
+                            fontSize = 20.sp,
+                            color = MaterialTheme.colorScheme.inverseSurface
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    if (assetValue < 0) {   // If amount is negative
+                        Text(
+                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
+                                assetValue.absoluteValue
+                            ) + ")",
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Red
+                            )
+                        )
+                    } else {
+                        Text(
+                            text = Values.currencies[currency] + Values.balanceFormat.format(
+                                assetValue
+                            ),
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Green
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.padding(2.dp))
+                }
+            }
+            Spacer(modifier = Modifier.padding(10.dp))
+        }
+    }
 }

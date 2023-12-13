@@ -28,7 +28,8 @@ object Values {
         "currencyPreference" to 0,
         "accountSortingPreference" to 0,
         "transactionSortingPreference" to 1,
-        "themePreference" to 0
+        "themePreference" to 0,
+        "assetSortingPreference" to 0
     )
 
     val legacyThemes = arrayOf(
@@ -40,7 +41,7 @@ object Values {
     )
 
     const val name = "eel"
-    const val version = "12 December 2023 (beta)"
+    const val version = "12 December 2023 (alpha)"
     const val sourceCodeLink = "https://www.nebulacentre.net/projects/eel.git"
 
     val themes =
@@ -69,6 +70,8 @@ object Values {
     var transactions = ArrayList<Transaction>()     // Main transaction list
     var categories = ArrayList<String>()
     var accountNames = ArrayList<String>()
+    var assetTransactions = ArrayList<Transaction>()
+    var assetNames = ArrayList<String>()
 
     // Net value
     var total: Double = 0.0
