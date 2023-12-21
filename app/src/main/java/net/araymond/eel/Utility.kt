@@ -427,7 +427,7 @@ object Utility {
      * @param outputStream An output stream to write to
      */
     fun writeCSV(outputStream: OutputStream) {
-        val header = "date,category,description,amount,account\n"
+        var header = "Accounts\ndate,category,description,amount,account\n"
         outputStream.write(header.toByteArray())
         sortTransactionListAscendingOrder(Values.transactions).forEach{ transaction ->
             val date = transaction.utcDateTime.toString()
@@ -437,6 +437,20 @@ object Utility {
             val account = transaction.accountName
 
             val line = "$date,$category,$description,$amount,$account\n"
+
+            outputStream.write(line.toByteArray())
+        }
+
+        // Write assets
+        header = "\nAssets\ndate,description,amount,asset\n"
+        outputStream.write(header.toByteArray())
+        sortTransactionListAscendingOrder(Values.assetTransactions).forEach { transaction ->
+            val date = transaction.utcDateTime.toString()
+            val description = transaction.description
+            val amount = transaction.amount.toString()
+            val asset = transaction.accountName
+
+            val line = "$date,$description,$amount,$asset\n"
 
             outputStream.write(line.toByteArray())
         }
@@ -452,103 +466,155 @@ object Utility {
      */
     fun readCSV(context: Context, inputStream: InputStream) {
         val scannerInput = Scanner(inputStream)
-        var line = scannerInput.nextLine().split(",")
-        val otherFormat = (line[0] == "id")     // Check for import format from another app
-        val backup = ArrayList<Transaction>()    // Make backup in case
-        Values.transactions.forEach {transaction ->
-            backup.add(transaction)
+        // Make backups in case
+        val accountsBackup = ArrayList<Transaction>()
+        val assetsBackup = ArrayList<Transaction>()
+
+        Values.transactions.forEach { transaction ->
+            accountsBackup.add(transaction)
+        }
+        Values.assetTransactions.forEach { transaction ->
+            assetsBackup.add(transaction)
         }
 
         if (scannerInput.hasNext()) {   // Clear transactions if the file checks out
             clearTransactions(Values.transactions, context)
-        }
-
-        val dateIndex: Int
-        val categoryIndex: Int
-        val descriptionIndex: Int
-        val amountIndex: Int
-        val accountIndex: Int
-
-        if (!otherFormat) {
-            dateIndex = 0
-            categoryIndex = 1
-            descriptionIndex = 2
-            amountIndex = 3
-            accountIndex = 4
-        }
-        else {  // Foreign CSV import
-            dateIndex = 8
-            categoryIndex = 3
-            descriptionIndex = 4
-            amountIndex = 5
-            accountIndex = 9
+            clearTransactions(Values.assetTransactions, context)
         }
 
         // Handle initial amount field from other apps
-
         val initialTransactionList = ArrayList<Transaction>()
 
         try {
+            var line: List<String>
+            var otherFormat = false
+            var isAccounts = false
+
             while (scannerInput.hasNext()) {
-                line = scannerInput.nextLine().split(",")
-                val category = line[categoryIndex]
-                val description = line[descriptionIndex]
-                val amount = line[amountIndex].toDouble()
-                val date = ZonedDateTime.parse(line[dateIndex])
-                val account = line[accountIndex]
-                val newTransaction = Transaction(category, description, amount, date, account)
-                var transactionFound = false
+                val dateIndex: Int
+                val categoryIndex: Int
+                val descriptionIndex: Int
+                val amountIndex: Int
+                val accountIndex: Int
 
-                // Handle foreign import
-                if (otherFormat) {
-                    // Handle initial amount
-                    // If the account name is not in temp accounts
-                    initialTransactionList.forEach {
-                        if (account == it.accountName) {
-                            transactionFound = true
+                val currentLine = scannerInput.nextLine()
+
+                if (currentLine == "Accounts") {
+                    isAccounts = true
+                    continue
+                }
+                if (currentLine == "Assets") {
+                    isAccounts = false
+                    // Move ahead one line since we found the label
+                    continue
+                }
+                if (currentLine.split(",")[0] == "id") {
+                    otherFormat = true
+                    isAccounts = true
+                    continue
+                }
+                // Skip this line if it is empty, or the asset header
+                if (currentLine.isEmpty()) {
+                    continue
+                }
+                // Skip this line if its a CSV header
+                line = currentLine.split(",")
+                if (line[0] == "date") {
+                    continue
+                }
+
+                if (isAccounts) {
+                    if (!otherFormat) {
+                        dateIndex = 0
+                        categoryIndex = 1
+                        descriptionIndex = 2
+                        amountIndex = 3
+                        accountIndex = 4
+                    } else {  // Foreign CSV import
+                        dateIndex = 8
+                        categoryIndex = 3
+                        descriptionIndex = 4
+                        amountIndex = 5
+                        accountIndex = 9
+                    }
+
+                    val category = line[categoryIndex]
+                    val description = line[descriptionIndex]
+                    val amount = line[amountIndex].toDouble()
+                    val date = ZonedDateTime.parse(line[dateIndex])
+                    val account = line[accountIndex]
+                    val newTransaction = Transaction(category, description, amount, date, account)
+                    var transactionFound = false
+
+                    // Handle foreign import
+                    if (otherFormat) {
+                        // Handle initial amount
+                        // If the account name is not in temp accounts
+                        initialTransactionList.forEach {
+                            if (account == it.accountName) {
+                                transactionFound = true
+                            }
                         }
-                    }
-                    if (!transactionFound) {
-                        // Mark that the initial amount for this account has been recorded
-                        initialTransactionList.add(
-                            Transaction(
-                                "Opening Deposit", "", line[10].toDouble(),
-                                ZonedDateTime.now(), account
+                        if (!transactionFound) {
+                            // Mark that the initial amount for this account has been recorded
+                            initialTransactionList.add(
+                                Transaction(
+                                    "Opening Deposit", "", line[10].toDouble(),
+                                    ZonedDateTime.now(), account
+                                )
                             )
-                        )
-                    }
+                        }
 
-                    // Handle transfers, line[11] equals destination account
-                    if (line[11] != "null") {
-                        // Use Utility.newTransfer to create a new transaction object
-                        newTransfer(newTransaction, line[11], Values.transactions, context)
+                        // Handle transfers, line[11] equals destination account
+                        if (line[11] != "null") {
+                            // Use Utility.newTransfer to create a new transaction object
+                            newTransfer(newTransaction, line[11], Values.transactions, context)
+                        } else {
+                            newTransaction(newTransaction, Values.transactions, context)
+                        }
                     }
                     else {
                         newTransaction(newTransaction, Values.transactions, context)
                     }
                 }
+                // Assets
                 else {
-                    newTransaction(newTransaction, Values.transactions, context)
+                    dateIndex = 0
+                    descriptionIndex = 1
+                    amountIndex = 2
+                    accountIndex = 3
+
+                    line = currentLine.split(",")
+                    val category = ""
+                    val description = line[descriptionIndex]
+                    val amount = line[amountIndex].toDouble()
+                    val date = ZonedDateTime.parse(line[dateIndex])
+                    val account = line[accountIndex]
+                    val newTransaction = Transaction(category, description, amount, date, account)
+
+                    newTransaction(newTransaction, Values.assetTransactions, context)
                 }
             }
 
-            // Iterate through all accounts for initial transactions
-            initialTransactionList.forEach { transaction ->
-                // Oldest transaction of tempTransactionList is index 0
-                val tempTransactionList = sortTransactionListAscendingOrder(
-                    getAccountTransactions(transaction.accountName, Values.transactions)
-                )
-                val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
-                    .minusMinutes(5)    // So running balance is correct
+        // Iterate through all accounts for initial transactions
+        initialTransactionList.forEach { transaction ->
+            // Oldest transaction of tempTransactionList is index 0
+            val tempTransactionList = sortTransactionListAscendingOrder(
+                getAccountTransactions(transaction.accountName, Values.transactions)
+            )
+            val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
+                .minusMinutes(5)    // So running balance is correct
 
-                transaction.utcDateTime = openingDepositTransactionDate
+            transaction.utcDateTime = openingDepositTransactionDate
 
-                newTransaction(transaction, Values.transactions, context)
-            }
+            newTransaction(transaction, Values.transactions, context)
+        }
 
-            showSnackbar("Ledger data successfully imported")
+        showSnackbar("Ledger data successfully imported")
+
         } catch (exception: Exception) {
-            Values.transactions = backup
+            Values.transactions = accountsBackup
+            Values.assetTransactions = assetsBackup
             showSnackbar("File corrupted, unable to import ledger data")
         }
 
