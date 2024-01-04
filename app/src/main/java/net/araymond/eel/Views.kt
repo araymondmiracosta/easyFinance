@@ -1531,7 +1531,7 @@ object Views {
                                 }
                                 if (writeSuccess) {
                                     if (assetNameInput.isNotEmpty()) {
-                                        navHostController.navigate("Main Activity")
+                                        navHostController.navigate("Asset Activity")
                                     } else {
                                         navHostController.navigateUp()
                                     }
@@ -1539,6 +1539,145 @@ object Views {
                                 }
                             }
                         }
+                    )
+                }
+            )
+        }
+    }
+
+    /**
+     * Draws the asset specific view
+     *
+     * @param navHostController The NavHostController for this application
+     * @param context The context for this application
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAssetSpecificView(navHostController: NavHostController, context: Context, assetName: String) {
+        ApplicationTheme {
+            // Sort transactions
+//            var showDialog by remember { mutableStateOf(false) }
+//
+//            if (showDialog) {
+//                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
+//                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+//                    label = "Sort transactions",
+//                    options = Values.transactionSortingOptions,
+//                    onDismiss = {
+//                        showDialog = false
+//                    }
+//                ), context)
+//            }
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "View Asset")
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+                            // Sort transactions
+//                            PlainTooltipBox(
+//                                tooltip = {
+//                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
+//                                }
+//                            ) {
+//                                IconButton(
+//                                    onClick = {
+//                                        showDialog = true
+//                                    },
+//                                    modifier = Modifier.tooltipAnchor()
+//                                ) {
+//                                    Icon(Icons.Filled.List, "Sort transactions")
+//                                }
+//                            }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Edit asset")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Edit Asset Activity/$assetName")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.Create, "Edit asset")
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
+                        .fillMaxHeight()) {
+                        Column(
+                            modifier = Modifier
+                                .verticalScroll(rememberScrollState())
+                                .fillMaxHeight()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        .clip(shape = RoundedCornerShape(10.dp))
+                                        .padding(15.dp)
+                                        .fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        text = assetName,
+                                        style = TextStyle(
+                                            fontSize = 22.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.padding(5.dp))
+                                    Text(
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(assetName, Values.assetTransactions)),
+                                        style = TextStyle(fontSize = 19.sp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+//                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(assetName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
+                            Viewlets.generateAssetGraph(assetName)
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    ExtendedFloatingActionButton(
+                        text = { Text(text = "New Change") },
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        icon = { Icon(Icons.Default.Add, "") },
+                        onClick = { navHostController.navigate("New Asset Change Activity") }
                     )
                 }
             )

@@ -35,6 +35,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -551,7 +554,7 @@ object Viewlets: ComponentActivity() {
                             shape = RoundedCornerShape(10.dp)
                         )
                         .clickable(enabled = true, onClick = {
-//                            navHostController.navigate("Asset Specific Activity/$assetName")
+                            navHostController.navigate("Asset Specific Activity/$assetName")
                         })
                         .padding(10.dp)
                         .fillMaxWidth()
@@ -592,5 +595,53 @@ object Viewlets: ComponentActivity() {
             }
             Spacer(modifier = Modifier.padding(10.dp))
         }
+    }
+
+    /**
+     * Graph drawing function
+     *
+     */
+    @Composable
+    fun drawGraph(width: Int, height: Int, points: ArrayList<Array<Int>>) {
+        val xScale: Int = ((points[0][0] - points[points.size - 1][0]) / (width))
+        var smallestY: Int = points[0][1]
+        var largestY: Int = points[0][1]
+        points.forEach { point ->
+            if (point[1] < smallestY) {
+                smallestY = point[1]
+            }
+            if (point[1] > largestY) {
+                largestY = point[1]
+            }
+        }
+        val yScale: Int = ((largestY - smallestY) / (height))
+        Canvas(modifier = Modifier.size(width.dp, height.dp)) {
+            points.forEach { point ->
+                val xPosition: Int
+                val yPosition: Int
+                if (xScale == 0) {  // There is only one point
+                    xPosition = 14
+                    yPosition = (height / 2)
+                }
+                else {
+                    xPosition = point[0] / xScale
+                    yPosition = point[1] / yScale
+                }
+                drawCircle(
+                    color = net.araymond.eel.ui.theme.lightBlue,
+                    radius = 7.0f,
+                    center = Offset(xPosition.toFloat(), yPosition.toFloat())
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun generateAssetGraph(assetName: String) {
+        val points: ArrayList<Array<Int>> = ArrayList<Array<Int>>()
+        Utility.sortTransactionListAscendingOrder(Utility.getAccountTransactions(assetName, Values.assetTransactions)).forEach { transaction ->
+            points.add(arrayOf(transaction.utcDateTime.toInstant().epochSecond.toInt(), transaction.amount.toInt()))
+        }
+        drawGraph(100, 50, points)
     }
 }

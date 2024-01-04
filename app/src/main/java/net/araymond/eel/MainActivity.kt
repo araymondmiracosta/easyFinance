@@ -85,6 +85,16 @@ class MainActivity : ComponentActivity() {
             composable("New Asset Activity") {
                 Views.generateAssetCreationView(navHostController, context, "")
             }
+            composable("Edit Asset Activity/{assetName}") {
+                it.arguments?.getString("assetName")?.let{ it1 ->
+                    Views.generateAssetCreationView(navHostController, context, it1)
+                }
+            }
+            composable("Asset Specific Activity/{assetName}") {
+                it.arguments?.getString("assetName")?.let { it1 ->
+                    Views.generateAssetSpecificView(navHostController, context, it1)
+                }
+            }
             composable("Asset Activity") {
                 Views.generateAssetView(navHostController, context)
             }
