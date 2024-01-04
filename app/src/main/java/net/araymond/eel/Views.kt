@@ -37,12 +37,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.PlainTooltipBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDatePickerState
@@ -1661,7 +1664,7 @@ object Views {
                                     )
                                     Spacer(modifier = Modifier.padding(5.dp))
                                     Text(
-                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(assetName, Values.assetTransactions)),
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getMostRecentTransaction(assetName, Values.assetTransactions).amount),
                                         style = TextStyle(fontSize = 19.sp)
                                     )
                                 }
@@ -1677,7 +1680,7 @@ object Views {
                         text = { Text(text = "New Change") },
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                         icon = { Icon(Icons.Default.Add, "") },
-                        onClick = { navHostController.navigate("New Asset Change Activity") }
+                        onClick = { navHostController.navigate("New Asset Change Point Activity/$assetName") }
                     )
                 }
             )
@@ -1744,7 +1747,7 @@ object Views {
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateTotal(Values.assetTransactions))}"),
+                                text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateAssetTotal())}"),
                                 style = TextStyle(
                                     fontSize = 22.sp,
                                     textAlign = TextAlign.Center,
@@ -1757,6 +1760,344 @@ object Views {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Draws the asset change creating, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param transaction If not null, then displays the information for this asset change and
+     *                      allows editing
+     * @param assetName The name of the asset to add the change point to
+     */
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
+        "CoroutineCreationDuringComposition"
+    )
+    @Composable
+    fun generateNewAssetChangePointView(navHostController: NavHostController, context: Context, transaction: Transaction?, assetName: String) {
+        val scrollState = rememberScrollState()
+
+        ApplicationTheme {
+            var isPositiveTransaction by remember { mutableStateOf(true) }
+            var transactionAmount by remember { mutableStateOf("") }
+            var transactionAmountIsNotNumber = true
+            val transactionAmountLabel by remember { mutableStateOf("Current value") }
+            var description by remember { mutableStateOf("") }
+            var title by remember { mutableStateOf("New Asset Change Point") }
+
+            var localDate = LocalDate.now() // Must initialize
+            var localTime = LocalTime.now() // Must initialize
+
+            var fieldEnabled by remember { mutableStateOf(false) }
+            var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf(false) }
+
+            if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
+                if (transaction.amount > 0) {
+                    isPositiveTransaction = true
+                }
+                transactionAmount = "" + abs(transaction.amount)
+                transactionAmountIsNotNumber = false
+                description = transaction.description
+                localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+                localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+                if (fieldEnabled) {
+                    title = "Edit change point"
+                }
+                else {
+                    title = "View change point"
+                }
+                if (deleteDialog) {     // If the user pressed the delete button, confirm
+                    Viewlets.confirmDialog(
+                        "Delete change",
+                        "Are you sure you want to delete this change point?",
+                        { deleteDialog = false },
+                        { delete = true }
+                    )
+                }
+                if (delete) {
+                    if (Utility.removeTransaction(transaction, Values.assetTransactions, context)) {
+                        fieldEnabled = false
+                        navHostController.navigateUp()
+                        Utility.showSnackbar("Change point removed")
+                    }
+                }
+            }
+            else {
+                fieldEnabled = true
+            }
+
+            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+
+            var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
+            var openDatePickerDialog by remember { mutableStateOf(false) }
+
+            var openTimePickerDialog by remember { mutableStateOf(false) }
+            var hour : Int
+            var minute : Int
+            var stringTime = localTime.format(timeFormatter)
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(title)
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+                            if (transaction != null) {
+                                if (fieldEnabled) {
+                                    PlainTooltipBox(
+                                        tooltip = {
+                                            Text(style = Values.tooltipStyle, text = "Remove change point")
+                                        }
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                delete = false
+                                                deleteDialog = true
+                                            },
+                                            modifier = Modifier.tooltipAnchor()
+                                        ) {
+                                            Icon(Icons.Filled.Delete, "Remove change point")
+                                        }
+                                    }
+                                }
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        if (fieldEnabled) {
+                                            Text(style = Values.tooltipStyle, text = "View change point")
+                                        }
+                                        else {
+                                            Text(style = Values.tooltipStyle, text = "Edit change point")
+                                        }
+                                    }
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            fieldEnabled = !fieldEnabled
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        if (fieldEnabled) {
+                                            Icon(Icons.Filled.Info, "View change point")
+                                        } else {
+                                            Icon(Icons.Filled.Create, "Edit change point")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
+                        Column(modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        // Deposit or withdrawal
+                                        Text("Positive ")
+                                        Checkbox(
+                                            checked = isPositiveTransaction,
+                                            onCheckedChange = {
+                                                isPositiveTransaction = it
+                                            },
+                                            enabled = fieldEnabled
+                                        )
+                                    }
+//                                    Spacer(modifier = Modifier.padding(vertical = 3.dp))
+                                }
+                                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                // Amount
+                                OutlinedTextField(
+                                    readOnly = !fieldEnabled,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    value = transactionAmount,
+                                    suffix = {
+                                        Text(Values.currencies[Utility.getPreference("currencyPreference")])
+                                    },
+                                    singleLine = true,
+                                    isError = transactionAmountIsNotNumber,
+                                    onValueChange = {
+                                        transactionAmount = it
+                                        transactionAmountIsNotNumber =
+                                            !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                    },
+                                    label = {
+                                        Text(transactionAmountLabel)
+                                    },
+                                    colors = if (isPositiveTransaction) OutlinedTextFieldDefaults.colors(Color.Green) else OutlinedTextFieldDefaults.colors(Color.Red)
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 8.dp))
+                            // Description
+                            OutlinedTextField(
+                                readOnly = (!fieldEnabled),
+                                modifier = Modifier.fillMaxWidth(),
+                                value = description,
+                                label = {
+                                    Text("Transaction description")
+                                },
+                                onValueChange = {
+                                    description = it
+                                }
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Date
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = stringDate,
+                                onValueChange = {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged {
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
+                                            openDatePickerDialog = true
+                                        }
+                                    },
+                                label = {
+                                    Text("Transaction date")
+                                },
+                                isError = stringDate.isEmpty(),
+                            )
+                            if (openDatePickerDialog) {
+                                val datePickerState = rememberDatePickerState()
+                                val confirmEnabled = derivedStateOf { datePickerState.selectedDateMillis != null }
+                                DatePickerDialog(
+                                    onDismissRequest = {
+                                        openDatePickerDialog = false
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                openDatePickerDialog = false
+                                                val milliseconds = datePickerState.selectedDateMillis as Long
+                                                localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
+                                                stringDate = localDate.format(dateFormatter)
+                                            },
+                                            content = {
+                                                Text("OK")
+                                            },
+                                            enabled = confirmEnabled.value
+                                        )
+                                    },
+                                    dismissButton = {
+                                        TextButton(
+                                            onClick = {
+                                                openDatePickerDialog = false
+                                            }
+                                        ) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                ) {
+                                    DatePicker(state = datePickerState)
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Time
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = stringTime,
+                                onValueChange = {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged {
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
+                                            openTimePickerDialog = true
+                                        }
+                                    },
+                                label = {
+                                    Text("Transaction time")
+                                },
+                                isError = stringTime.isEmpty(),
+                            )
+                            if (openTimePickerDialog) {
+                                val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
+                                Viewlets.TimePickerDialog(
+                                    onDismissRequest = {
+                                        openTimePickerDialog = false
+                                    },
+                                    onConfirm = {
+                                        openTimePickerDialog = false
+                                        hour = timePickerState.hour
+                                        minute = timePickerState.minute
+                                        localTime = LocalTime.of(hour, minute)
+                                        stringTime = localTime.format(timeFormatter)
+                                    },
+                                ) {
+                                    TimePicker(state = timePickerState)
+                                }
+                            }
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    if (!scrollState.isScrollInProgress && fieldEnabled) {
+                        var snackbarMessage: String
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "Apply") },
+                            icon = { Icon(Icons.Default.Check, "") },
+                            onClick = {
+                                // Check that input fields are valid
+                                if ((!transactionAmountIsNotNumber) && (assetName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
+                                    fieldEnabled = false
+                                    val writeSuccess: Boolean
+                                    val localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
+                                        ZonedDateTime.of(localDate, localTime, Values.localTimeZone))
+
+                                    if (!isPositiveTransaction) {
+                                        transactionAmount = "-$transactionAmount"
+                                    }
+                                    if (transaction != null) {
+                                        writeSuccess = Utility.editTransaction(transaction, context, "", description,
+                                            transactionAmount.toDouble(), localTimeCorrectedToUTCTime, assetName)
+                                        snackbarMessage = "Change point modifications saved"
+                                    }
+                                    else {  // New transaction
+                                        val newTransaction = Transaction("", description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, assetName)
+                                        writeSuccess =
+                                            Utility.newTransaction(newTransaction, Values.assetTransactions, context)
+                                        snackbarMessage = "New change point added"
+                                    }
+                                    if (writeSuccess) {
+                                        navHostController.navigateUp()
+                                        Utility.showSnackbar(snackbarMessage)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            )
         }
     }
 }

@@ -98,6 +98,11 @@ class MainActivity : ComponentActivity() {
             composable("Asset Activity") {
                 Views.generateAssetView(navHostController, context)
             }
+            composable("New Asset Change Point Activity/{assetName}") {
+                it.arguments?.getString("assetName")?.let { it1 ->
+                    Views.generateNewAssetChangePointView(navHostController, context, null, it1)
+                }
+            }
         }
     }
 }

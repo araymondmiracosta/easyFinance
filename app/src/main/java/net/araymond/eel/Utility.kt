@@ -10,6 +10,8 @@ import java.io.OutputStream
 import java.time.ZonedDateTime
 import java.util.Scanner
 
+
+// TODO: Remove redundant sorting functions
 /**
  * Contains various functions used to modify, write read data, etc
  */
@@ -854,5 +856,30 @@ object Utility {
         }
 
         return accountTotal
+    }
+
+    /**
+     * Returns the most recent transaction for the given account
+     *
+     * @param accountName The account name
+     * @param transactionList The list of transactions to search through
+     *
+     * @return The transaction
+     */
+    fun getMostRecentTransaction(accountName: String, transactionList: ArrayList<Transaction>): Transaction {
+        return sortTransactionListByDate(getAccountTransactions(accountName, transactionList), false)[0]
+    }
+
+    /**
+     * Returns the total value of assets
+     *
+     * @return The total
+     */
+    fun calculateAssetTotal(): Double {
+        var total = 0.0
+        Values.assetNames.forEach { assetName ->
+            total += getMostRecentTransaction(assetName, Values.assetTransactions).amount
+        }
+        return total
     }
 }

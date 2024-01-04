@@ -2,6 +2,7 @@ package net.araymond.eel
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -543,7 +545,7 @@ object Viewlets: ComponentActivity() {
         val preference = Utility.getPreference("assetSortingPreference")
         val currency = Utility.getPreference("currencyPreference")
         Utility.sortAccountListByPreference(Values.assetNames, preference).forEach { assetName ->
-            val assetValue = Utility.getAccountTotal(assetName, Values.assetTransactions)
+            val assetValue = Utility.getMostRecentTransaction(assetName, Values.assetTransactions).amount
             Row {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -602,10 +604,9 @@ object Viewlets: ComponentActivity() {
      *
      */
     @Composable
-    fun drawGraph(width: Int, height: Int, points: ArrayList<Array<Int>>) {
-        val xScale: Int = ((points[0][0] - points[points.size - 1][0]) / (width))
-        var smallestY: Int = points[0][1]
-        var largestY: Int = points[0][1]
+    fun drawGraph(width: Int, height: Int, points: ArrayList<Array<Double>>) {
+        var smallestY: Double = points[0][1]
+        var largestY: Double = points[0][1]
         points.forEach { point ->
             if (point[1] < smallestY) {
                 smallestY = point[1]
@@ -614,34 +615,45 @@ object Viewlets: ComponentActivity() {
                 largestY = point[1]
             }
         }
-        val yScale: Int = ((largestY - smallestY) / (height))
         Canvas(modifier = Modifier.size(width.dp, height.dp)) {
+            var lastPoint = points[0]
             points.forEach { point ->
-                val xPosition: Int
-                val yPosition: Int
-                if (xScale == 0) {  // There is only one point
-                    xPosition = 14
-                    yPosition = (height / 2)
+                val xPosition: Double
+                val yPosition: Double
+                if (points.size == 1) {  // There is only one point
+                    xPosition = 14.0
+                    yPosition = ((height / 2).toDouble())
                 }
                 else {
-                    xPosition = point[0] / xScale
-                    yPosition = point[1] / yScale
+                    xPosition = 15 + (((point[0] - points[0][0]) / (points[points.size - 1][0] - points[0][0])) * width)
+                    yPosition = height - (((point[1] - smallestY) / (largestY - smallestY)) * height)
                 }
                 drawCircle(
                     color = net.araymond.eel.ui.theme.lightBlue,
-                    radius = 7.0f,
+                    radius = 15.0f,
                     center = Offset(xPosition.toFloat(), yPosition.toFloat())
                 )
+                if (!lastPoint.contentEquals(point)) {
+                    drawLine(
+                        color = net.araymond.eel.ui.theme.lightBlue,
+                        start = Offset(xPosition.toFloat(), yPosition.toFloat()),
+                        end = Offset(lastPoint[0].toFloat(), lastPoint[1].toFloat()),
+                        strokeWidth = 7.0f
+                    )
+                }
+                Log.d("draw", "Drawing point at $xPosition, $yPosition")
+                Log.d("draw", "Drawing line from (${lastPoint[0].toFloat()}, ${lastPoint[1].toFloat()}) to (${xPosition.toFloat()}, ${yPosition.toFloat()})")
+                lastPoint = arrayOf(xPosition, yPosition)
             }
         }
     }
 
     @Composable
     fun generateAssetGraph(assetName: String) {
-        val points: ArrayList<Array<Int>> = ArrayList<Array<Int>>()
+        val points: ArrayList<Array<Double>> = ArrayList<Array<Double>>()
         Utility.sortTransactionListAscendingOrder(Utility.getAccountTransactions(assetName, Values.assetTransactions)).forEach { transaction ->
-            points.add(arrayOf(transaction.utcDateTime.toInstant().epochSecond.toInt(), transaction.amount.toInt()))
+            points.add(arrayOf(transaction.utcDateTime.toInstant().epochSecond.toDouble(), transaction.amount))
         }
-        drawGraph(100, 50, points)
+        drawGraph(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp / 2 , points)
     }
 }
