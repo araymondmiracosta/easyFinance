@@ -2,7 +2,6 @@ package net.araymond.eel
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,12 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -50,6 +50,8 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import net.araymond.eel.ui.theme.Green
 import net.araymond.eel.ui.theme.Red
+import java.time.Instant
+import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.absoluteValue
 
@@ -602,9 +604,13 @@ object Viewlets: ComponentActivity() {
     /**
      * Graph drawing function
      *
+     * @param points A list of cartesian coordinates
+     *
      */
+    // TODO: Fix colours so they reflect theme changes; centering axis labels over respective points
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun drawGraph(width: Int, height: Int, points: ArrayList<Array<Double>>) {
+    fun drawGraph(points: ArrayList<Array<Double>>) {
         var smallestY: Double = points[0][1]
         var largestY: Double = points[0][1]
         points.forEach { point ->
@@ -615,34 +621,130 @@ object Viewlets: ComponentActivity() {
                 largestY = point[1]
             }
         }
-        Canvas(modifier = Modifier.size(width.dp, height.dp)) {
+        val textMeasurer = rememberTextMeasurer()
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val trendLineColour = net.araymond.eel.ui.theme.lightBlue
+            val labelColour = net.araymond.eel.ui.theme.purple
+            val borderLines = net.araymond.eel.ui.theme.darkTan
+
+            val width: Double = (size.width - 55).toDouble()
+            val height: Double = (width * 0.7)
+            val currency = Utility.getPreference("currencyPreference")
+
+            // Draw y-axis labels
+            // Middle number
+            drawText(
+                textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format((smallestY + ((largestY - smallestY) / 2)))}", TextStyle(fontSize = 12.sp)),
+                labelColour,
+                Offset(0f, height.toFloat() / 2)
+            )
+            // Do not draw top and bottom numbers if there is only one data point
+            if (points.size > 1) {
+                // Top number
+                drawText(
+                    textMeasurer.measure(
+                        "${Values.currencies[currency]} ${
+                            Values.balanceFormat.format(
+                                largestY
+                            )
+                        }", TextStyle(fontSize = 12.sp)
+                    ),
+                    labelColour,
+                    Offset(0f, 0f)
+                )
+                // Bottom number
+                drawText(
+                    textMeasurer.measure(
+                        "${Values.currencies[currency]} ${
+                            Values.balanceFormat.format(
+                                smallestY
+                            )
+                        }", TextStyle(fontSize = 12.sp)
+                    ),
+                    labelColour,
+                    Offset(0f, height.toFloat())
+                )
+            }
+            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = 12.sp)).size
+            val labelWidth = labelSize.width + 25
+            val labelHeight = labelSize.height
+            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            val initialDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[0][0].toLong()), Values.UTCTimeZone))
+            val middleDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size / 2][0].toLong()), Values.UTCTimeZone))
+            val finalDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size - 1][0].toLong()), Values.UTCTimeZone))
+
+            val xAxisLabelHeight = height.toFloat() + labelHeight + 27
+            val xAxisLabelLength = (10 + (textMeasurer.measure(middleDate, TextStyle(fontSize = 12.sp)).size.width / 2.5))
+            // Draw x-axis labels
+            // Middle number
+            drawText(
+                textMeasurer.measure(
+                    middleDate,
+                    TextStyle(fontSize = 12.sp)
+                ),
+                labelColour,
+                Offset((((width / 2)).toFloat()), xAxisLabelHeight)
+            )
+            if (points.size > 1) {
+                // Left number
+                drawText(
+                    textMeasurer.measure(
+                        initialDate,
+                        TextStyle(fontSize = 12.sp)
+                    ),
+                    labelColour,
+                    Offset((((labelWidth + 10) - xAxisLabelLength).toFloat()), xAxisLabelHeight)
+                )
+                // Right number
+                drawText(
+                    textMeasurer.measure(
+                        finalDate,
+                        TextStyle(fontSize = 12.sp)
+                    ),
+                    labelColour,
+                    Offset(((width - xAxisLabelLength - (xAxisLabelLength / 2)).toFloat()), xAxisLabelHeight)
+                )
+            }
+            // Draw vertical line
+            drawLine(
+                color = borderLines,
+                start = Offset(labelWidth.toFloat(), 0f),
+                end = Offset(labelWidth.toFloat(), height.toFloat() + labelHeight),
+                strokeWidth = 3f
+            )
+            // Draw horizontal line
+            drawLine(
+                color = borderLines,
+                start = Offset(labelWidth.toFloat(), (height).toFloat() + labelHeight),
+                end = Offset(width.toFloat() + labelWidth, (height).toFloat() + labelHeight),
+                strokeWidth = 3f
+            )
             var lastPoint = points[0]
             points.forEach { point ->
                 val xPosition: Double
                 val yPosition: Double
                 if (points.size == 1) {  // There is only one point
-                    xPosition = 14.0
-                    yPosition = ((height / 2).toDouble())
-                }
-                else {
-                    xPosition = 15 + (((point[0] - points[0][0]) / (points[points.size - 1][0] - points[0][0])) * width)
-                    yPosition = height - (((point[1] - smallestY) / (largestY - smallestY)) * height)
+                    xPosition = (6 + labelWidth) + ((width - labelWidth) / 2)
+                    yPosition = (height / 2)
+                } else {
+                    xPosition =
+                        (10 + labelWidth) + (((point[0] - points[0][0]) / (points[points.size - 1][0] - points[0][0])) * (width - labelWidth))
+                    yPosition =
+                        (height + (labelHeight / 3)) - (((point[1] - smallestY) / (largestY - smallestY)) * (height - (labelHeight / 3)))
                 }
                 drawCircle(
                     color = net.araymond.eel.ui.theme.lightBlue,
-                    radius = 15.0f,
+                    radius = 9f,
                     center = Offset(xPosition.toFloat(), yPosition.toFloat())
                 )
                 if (!lastPoint.contentEquals(point)) {
                     drawLine(
-                        color = net.araymond.eel.ui.theme.lightBlue,
+                        color = trendLineColour,
                         start = Offset(xPosition.toFloat(), yPosition.toFloat()),
                         end = Offset(lastPoint[0].toFloat(), lastPoint[1].toFloat()),
                         strokeWidth = 7.0f
                     )
                 }
-                Log.d("draw", "Drawing point at $xPosition, $yPosition")
-                Log.d("draw", "Drawing line from (${lastPoint[0].toFloat()}, ${lastPoint[1].toFloat()}) to (${xPosition.toFloat()}, ${yPosition.toFloat()})")
                 lastPoint = arrayOf(xPosition, yPosition)
             }
         }
@@ -654,6 +756,15 @@ object Viewlets: ComponentActivity() {
         Utility.sortTransactionListAscendingOrder(Utility.getAccountTransactions(assetName, Values.assetTransactions)).forEach { transaction ->
             points.add(arrayOf(transaction.utcDateTime.toInstant().epochSecond.toDouble(), transaction.amount))
         }
-        drawGraph(LocalConfiguration.current.screenWidthDp, LocalConfiguration.current.screenHeightDp / 2 , points)
+        drawGraph(points)
+    }
+
+    @Composable
+    fun generateAccountGraph(accountName: String) {
+        val points: ArrayList<Array<Double>> = ArrayList<Array<Double>>()
+        Utility.sortTransactionListAscendingOrder(Utility.getAccountTransactions(accountName, Values.transactions)).forEach { transaction ->
+            points.add(arrayOf(transaction.utcDateTime.toInstant().epochSecond.toDouble(), Utility.calculateTransactionRunningBalance(transaction, Values.transactions)))
+        }
+        drawGraph(points)
     }
 }
