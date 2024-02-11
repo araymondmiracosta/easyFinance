@@ -78,7 +78,7 @@ object Utility {
         readCategories()
         readAccounts()
         readAssets()
-        Values.total = calculateTotal(Values.transactions)
+        Values.total = calculateTransactionTotal(Values.transactions) + calculateAssetTotal()
     }
 
     /**
@@ -834,7 +834,7 @@ object Utility {
      *
      * @return Net value
      */
-    fun calculateTotal(transactionList: ArrayList<Transaction>): Double {
+    fun calculateTransactionTotal(transactionList: ArrayList<Transaction>): Double {
         var total: Double = 0.0
         transactionList.forEach{ transaction ->
             total += transaction.amount
@@ -896,7 +896,12 @@ object Utility {
      */
     fun getTransactionByHashCode(hashCode: Int, transactionList: ArrayList<Transaction>): Transaction? {
         transactionList.forEach { transaction ->
-            if (transaction.hashCode() == hashCode || transaction.hashCode() == Values.lastTransactionID) {
+            if (transaction.hashCode() == hashCode) {
+                return transaction
+            }
+        }
+        transactionList.forEach { transaction ->
+            if (transaction.hashCode() == Values.lastTransactionID) {
                 return transaction
             }
         }

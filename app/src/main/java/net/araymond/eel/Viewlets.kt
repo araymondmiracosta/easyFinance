@@ -773,71 +773,81 @@ object Viewlets: ComponentActivity() {
      *
      * @param navHostController The main navHostController for this application
      * @param transactions The transaction list to iterate through
+     * @param assetName The asset to show the change points for
      */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateAssetChangePointList(navHostController: NavHostController, transactions: ArrayList<Transaction>) {
+    fun generateAssetChangePointList(navHostController: NavHostController, transactions: ArrayList<Transaction>, assetName: String) {
         val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
         val currency = Utility.getPreference("currencyPreference")
         transactions.forEach { transaction ->
-            val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-            val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
-            Row(
-                modifier = Modifier
-                    .clip(shape = RoundedCornerShape(10.dp))
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .clickable(enabled = true, onClick = {
-                        navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}/${transaction.hashCode()}")
-                    })
-                    .padding(10.dp)
-                    .fillMaxWidth()
-            ) {
-                Column {
-                    Spacer(modifier = Modifier.padding(2.dp))
-                    Text(
-                        text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.surfaceTint
+            if (transaction.accountName.compareTo(assetName) == 0) {
+                val localDate =
+                    Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+                val localTime =
+                    Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+                Row(
+                    modifier = Modifier
+                        .clip(shape = RoundedCornerShape(10.dp))
+                        .background(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(10.dp)
                         )
-                    )
-                    Spacer(modifier = Modifier.padding(2.dp))
-                }
-                Spacer(
-                    Modifier
-                        .weight(1f)
+                        .clickable(enabled = true, onClick = {
+                            navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}/${transaction.hashCode()}")
+                        })
+                        .padding(10.dp)
                         .fillMaxWidth()
-                )
-                Column(
-                    horizontalAlignment = Alignment.End
                 ) {
-                    if (transaction.amount < 0) {   // If amount is negative
+                    Column {
+                        Spacer(modifier = Modifier.padding(2.dp))
                         Text(
-                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            text = localDate.format(dateFormatter) + " @ " + localTime.format(
+                                timeFormatter
+                            ),     // date and time
                             style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Red
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.surfaceTint
                             )
                         )
+                        Spacer(modifier = Modifier.padding(2.dp))
                     }
-                    else {
-                        Text(
-                            text = Values.currencies[currency] + Values.balanceFormat.format(transaction.amount),
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Green
+                    Spacer(
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    )
+                    Column(
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        if (transaction.amount < 0) {   // If amount is negative
+                            Text(
+                                text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
+                                    transaction.amount.absoluteValue
+                                ) + ")",
+                                style = TextStyle(
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Red
+                                )
                             )
-                        )
+                        } else {
+                            Text(
+                                text = Values.currencies[currency] + Values.balanceFormat.format(
+                                    transaction.amount
+                                ),
+                                style = TextStyle(
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Green
+                                )
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.padding(10.dp))
             }
-            Spacer(modifier = Modifier.padding(10.dp))
         }
     }
 }

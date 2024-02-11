@@ -177,7 +177,7 @@ object Views {
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateTotal(Values.transactions))}"),
+                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
                                     style = TextStyle(
                                         fontSize = 22.sp,
                                         textAlign = TextAlign.Center,
@@ -1678,7 +1678,7 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateAssetGraph(assetName)
                             Spacer(modifier = Modifier.padding(vertical = 110.dp))
-                            Viewlets.generateAssetChangePointList(navHostController, Values.assetTransactions)
+                            Viewlets.generateAssetChangePointList(navHostController, Values.assetTransactions, assetName)
                         }
                     }
                 },
