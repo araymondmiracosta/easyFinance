@@ -896,7 +896,7 @@ object Utility {
      */
     fun getTransactionByHashCode(hashCode: Int, transactionList: ArrayList<Transaction>): Transaction? {
         transactionList.forEach { transaction ->
-            if (transaction.hashCode() == hashCode) {
+            if (transaction.hashCode() == hashCode || transaction.hashCode() == Values.lastTransactionID) {
                 return transaction
             }
         }
