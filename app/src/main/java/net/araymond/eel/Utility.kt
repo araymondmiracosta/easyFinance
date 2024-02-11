@@ -809,6 +809,9 @@ object Utility {
         Values.transactions = sortTransactionListByPreference(Values.transactions,
             getPreference("transactionSortingPreference")
         )
+        Values.assetTransactions = sortTransactionListByPreference(Values.assetTransactions,
+            getPreference("transactionSortingPreference")
+        )
     }
 
     /**

@@ -628,7 +628,7 @@ object Viewlets: ComponentActivity() {
             val borderLines = net.araymond.eel.ui.theme.darkTan
 
             val width: Double = (size.width - 55).toDouble()
-            val height: Double = (width * 0.7)
+            val height: Double = (width * 0.4)
             val currency = Utility.getPreference("currencyPreference")
 
             // Draw y-axis labels
@@ -766,5 +766,79 @@ object Viewlets: ComponentActivity() {
             points.add(arrayOf(transaction.utcDateTime.toInstant().epochSecond.toDouble(), Utility.calculateTransactionRunningBalance(transaction, Values.transactions)))
         }
         drawGraph(points)
+    }
+
+    /**
+     * Creates a list of the transactions in the given transaction list
+     *
+     * @param navHostController The main navHostController for this application
+     * @param transactions The transaction list to iterate through
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @Composable
+    fun generateAssetChangePointList(navHostController: NavHostController, transactions: ArrayList<Transaction>) {
+        val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+        val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+        val currency = Utility.getPreference("currencyPreference")
+        transactions.forEach { transaction ->
+            val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+            val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+            Row(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(10.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable(enabled = true, onClick = {
+                        Values.currentTransaction = transaction
+                        navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}")
+                    })
+                    .padding(10.dp)
+                    .fillMaxWidth()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.surfaceTint
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                }
+                Spacer(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                )
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    if (transaction.amount < 0) {   // If amount is negative
+                        Text(
+                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Red
+                            )
+                        )
+                    }
+                    else {
+                        Text(
+                            text = Values.currencies[currency] + Values.balanceFormat.format(transaction.amount),
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Green
+                            )
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.padding(10.dp))
+        }
     }
 }

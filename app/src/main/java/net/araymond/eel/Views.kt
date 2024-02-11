@@ -1557,19 +1557,20 @@ object Views {
     @Composable
     fun generateAssetSpecificView(navHostController: NavHostController, context: Context, assetName: String) {
         ApplicationTheme {
+            val scrollState = rememberScrollState()
             // Sort transactions
-//            var showDialog by remember { mutableStateOf(false) }
-//
-//            if (showDialog) {
-//                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
-//                    currentIndex = Utility.getPreference("transactionSortingPreference"),
-//                    label = "Sort transactions",
-//                    options = Values.transactionSortingOptions,
-//                    onDismiss = {
-//                        showDialog = false
-//                    }
-//                ), context)
-//            }
+            var showDialog by remember { mutableStateOf(false) }
+
+            if (showDialog) {
+                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+                    label = "Sort transactions",
+                    options = Values.transactionSortingOptions,
+                    onDismiss = {
+                        showDialog = false
+                    }
+                ), context)
+            }
 
             Scaffold(
                 snackbarHost = {
@@ -1598,20 +1599,20 @@ object Views {
                         },
                         actions = {
                             // Sort transactions
-//                            PlainTooltipBox(
-//                                tooltip = {
-//                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
-//                                }
-//                            ) {
-//                                IconButton(
-//                                    onClick = {
-//                                        showDialog = true
-//                                    },
-//                                    modifier = Modifier.tooltipAnchor()
-//                                ) {
-//                                    Icon(Icons.Filled.List, "Sort transactions")
-//                                }
-//                            }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        showDialog = true
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.List, "Sort transactions")
+                                }
+                            }
                             PlainTooltipBox(
                                 tooltip = {
                                     Text(style = Values.tooltipStyle, text = "Edit asset")
@@ -1636,7 +1637,7 @@ object Views {
                         .fillMaxHeight()) {
                         Column(
                             modifier = Modifier
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(scrollState)
                                 .fillMaxHeight()
                         ) {
                             Row(
@@ -1668,18 +1669,21 @@ object Views {
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-//                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(assetName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                             Viewlets.generateAssetGraph(assetName)
+                            Spacer(modifier = Modifier.padding(vertical = 110.dp))
+                            Viewlets.generateAssetChangePointList(navHostController, Values.assetTransactions)
                         }
                     }
                 },
                 floatingActionButton = {
-                    ExtendedFloatingActionButton(
-                        text = { Text(text = "New Change") },
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        icon = { Icon(Icons.Default.Add, "") },
-                        onClick = { navHostController.navigate("New Asset Change Point Activity/$assetName") }
-                    )
+                    if (!scrollState.isScrollInProgress) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "New Change") },
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            icon = { Icon(Icons.Default.Add, "") },
+                            onClick = { navHostController.navigate("New Asset Change Point Activity/$assetName") }
+                        )
+                    }
                 }
             )
         }
@@ -1960,7 +1964,7 @@ object Views {
                                 modifier = Modifier.fillMaxWidth(),
                                 value = description,
                                 label = {
-                                    Text("Transaction description")
+                                    Text("Change point description")
                                 },
                                 onValueChange = {
                                     description = it
@@ -1981,7 +1985,7 @@ object Views {
                                         }
                                     },
                                 label = {
-                                    Text("Transaction date")
+                                    Text("Change point date")
                                 },
                                 isError = stringDate.isEmpty(),
                             )
@@ -2034,7 +2038,7 @@ object Views {
                                         }
                                     },
                                 label = {
-                                    Text("Transaction time")
+                                    Text("Change point time")
                                 },
                                 isError = stringTime.isEmpty(),
                             )
