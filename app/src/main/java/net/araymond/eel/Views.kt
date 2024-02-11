@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -36,6 +37,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.PlainTooltipBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
@@ -109,19 +112,47 @@ object Views {
                             Text(text = Values.name)
                         },
                         actions = {
-                            IconButton(
-                                onClick = {
-                                    showDialog = true
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
                                 }
                             ) {
-                                Icon(Icons.Filled.List, "Sort transactions")
+                                IconButton(
+                                    onClick = {
+                                        showDialog = true
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.List, "Sort transactions")
+                                }
                             }
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigate("Settings Activity")
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "View asset ledger")
                                 }
                             ) {
-                                Icon(Icons.Filled.Settings, "Settings")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Asset Activity")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.SwapHoriz, "View asset ledger")
+                                }
+                            }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Settings")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Settings Activity")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.Settings, "Settings")
+                                }
                             }
                         }
                     )
@@ -146,7 +177,7 @@ object Views {
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
+                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateTotal(Values.transactions))}"),
                                     style = TextStyle(
                                         fontSize = 22.sp,
                                         textAlign = TextAlign.Center,
@@ -186,7 +217,6 @@ object Views {
      * @param accountNameInput If not empty, then displays the information for this account and
      *                          allows editing
      */
-    // TODO: Need to fix crash if invalid balance is input
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -204,7 +234,7 @@ object Views {
             var delete by remember { mutableStateOf (false) }
 
             if (accountNameInput.isNotEmpty()) {
-                accountBalance = Utility.getAccountTotal(accountName).toString()
+                accountBalance = Utility.getAccountTotal(accountName, Values.transactions).toString()
                 accountNameIsEmpty = false
                 accountBalanceIsNotNumber = false
                 title = "Edit Account"
@@ -219,7 +249,7 @@ object Views {
                 )
             }
             if (delete) {
-                if (Utility.removeAccount(context, accountNameInput)) {
+                if (Utility.removeAccount(accountNameInput, Values.transactions, context)) {
                     navHostController.navigate("Main Activity")
                     Utility.showSnackbar("Account successfully deleted")
                 }
@@ -235,28 +265,41 @@ object Views {
                             Text(title)
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    if (!fieldEnabled) {
-                                        navHostController.navigate("Main Activity")
-                                    }
-                                    else {
-                                        navHostController.navigateUp()
-                                    }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        if (!fieldEnabled) {
+                                            navHostController.navigate("Main Activity")
+                                        } else {
+                                            navHostController.navigateUp()
+                                        }
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         },
                         actions = {
                             if (accountNameInput.isNotEmpty()) {
-                                IconButton(
-                                    onClick = {
-                                        delete = false
-                                        deleteDialog = true
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        Text(style = Values.tooltipStyle, text = "Delete account")
                                     }
                                 ) {
-                                    Icon(Icons.Filled.Delete, "Delete Account")
+                                    IconButton(
+                                        onClick = {
+                                            delete = false
+                                            deleteDialog = true
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        Icon(Icons.Filled.Delete, "Delete account")
+                                    }
                                 }
                             }
                         }
@@ -303,19 +346,23 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    var nameCheck = true
-                    if (accountName.isNotEmpty() && (!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
-                        Values.accountNames.forEach {
-                            if (it.replace(" ", "") == accountName.replace(" ", "")) {
-                                nameCheck = false
+                    ExtendedFloatingActionButton(
+                        text = { Text(text = "Apply") },
+                        icon = { Icon(Icons.Default.Check, "") },
+                        onClick = {
+                            var nameCheck = false
+                            if (accountName.isNotEmpty() && (!accountNameIsEmpty) && (!accountBalanceIsNotNumber)) {
+                                nameCheck = true
+                                // Search through all existing account names and verify the
+                                // new account name does not match any of them (strip whitespace)
+                                Values.accountNames.forEach {
+                                    if (it.replace(" ", "") == accountName.replace(" ", "")) {
+                                        nameCheck = false
+                                    }
+                                }
                             }
-                        }
-                    }
-                    if (nameCheck) {
-                        ExtendedFloatingActionButton(
-                            text = { Text(text = "Apply") },
-                            icon = { Icon(Icons.Default.Check, "") },
-                            onClick = {
+
+                            if (nameCheck) {
                                 val writeSuccess: Boolean
                                 val snackbarMessage: String
 
@@ -323,9 +370,10 @@ object Views {
 
                                 if (accountNameInput.isNotEmpty()) {
                                     writeSuccess = Utility.changeAccountName(
-                                        context,
                                         accountNameInput,
-                                        accountName
+                                        accountName,
+                                        Values.transactions,
+                                        context
                                     )
                                     snackbarMessage = "Account information saved"
                                 } else {
@@ -337,7 +385,7 @@ object Views {
                                         accountName
                                     )
                                     writeSuccess =
-                                        Utility.newTransaction(openingTransaction, context)
+                                        Utility.newTransaction(openingTransaction, Values.transactions, context)
                                     snackbarMessage = "New account saved"
                                 }
                                 if (writeSuccess) {
@@ -349,8 +397,8 @@ object Views {
                                     Utility.showSnackbar(snackbarMessage)
                                 }
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             )
         }
@@ -361,15 +409,16 @@ object Views {
      *
      * @param navHostController The main navHostController for this application
      * @param context The main context for this application
-     * @param transaction If not null, then displays the information for this transaction and
-     *                      allows editing
+     * @param transactionID If viewing set to true, then specifies the transaction to view, as
+     *                      given by its id
+     * @param viewTransaction If this transaction should be opened in viewing mode
      */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
         "CoroutineCreationDuringComposition"
     )
     @Composable
-    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
+    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transactionID: Int, viewTransaction: Boolean) {
         val scrollState = rememberScrollState()
 
         ApplicationTheme {
@@ -402,7 +451,14 @@ object Views {
                 transactionAccountLabel = "Transaction account"
             }
 
-            if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
+            val transaction: Transaction = if (viewTransaction) {
+                Utility.getTransactionByHashCode(transactionID, Values.transactions)!!
+            } else {
+                // Avoid null error, should not be used if initialized here
+                Transaction("", "", 0.0, ZonedDateTime.now(), "")
+            }
+
+            if (viewTransaction) {  // Actual transaction object given as parameter, need to fill in vars
                 if (transaction.amount > 0) {
                     isPositiveTransaction = true
                 }
@@ -428,7 +484,7 @@ object Views {
                     )
                 }
                 if (delete) {
-                    if (Utility.removeTransaction(transaction, context)) {
+                    if (Utility.removeTransaction(transaction, Values.transactions, context)) {
                         fieldEnabled = false
                         navHostController.navigateUp()
                         Utility.showSnackbar("Transaction removed")
@@ -460,36 +516,61 @@ object Views {
                                 Text(title)
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         },
                         actions = {
-                            if (transaction != null) {
+                            if (viewTransaction) {
                                 if (fieldEnabled) {
-                                    IconButton(
-                                        onClick = {
-                                            delete = false
-                                            deleteDialog = true
+                                    PlainTooltipBox(
+                                        tooltip = {
+                                            Text(style = Values.tooltipStyle, text = "Remove transaction")
                                         }
                                     ) {
-                                        Icon(Icons.Filled.Delete, "Remove transaction")
+                                        IconButton(
+                                            onClick = {
+                                                delete = false
+                                                deleteDialog = true
+                                            },
+                                            modifier = Modifier.tooltipAnchor()
+                                        ) {
+                                            Icon(Icons.Filled.Delete, "Remove transaction")
+                                        }
                                     }
                                 }
-                                IconButton(
-                                    onClick = {
-                                        fieldEnabled = !fieldEnabled
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        if (fieldEnabled) {
+                                            Text(style = Values.tooltipStyle, text = "View transaction")
+                                        }
+                                        else {
+                                            Text(style = Values.tooltipStyle, text = "Edit transaction")
+                                        }
                                     }
                                 ) {
-                                    if (fieldEnabled) {
-                                        Icon(Icons.Filled.Info, "View transaction")
-                                    }
-                                    else {
-                                        Icon(Icons.Filled.Create, "Edit transaction")
+                                    IconButton(
+                                        onClick = {
+                                            fieldEnabled = !fieldEnabled
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        if (fieldEnabled) {
+                                            Icon(Icons.Filled.Info, "View transaction")
+                                        } else {
+                                            Icon(Icons.Filled.Create, "Edit transaction")
+                                        }
                                     }
                                 }
                             }
@@ -518,7 +599,7 @@ object Views {
                                         }
                                     }
 //                                    Spacer(modifier = Modifier.padding(vertical = 3.dp))
-                                    if (transaction == null) {
+                                    if (!viewTransaction) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text("Transfer")
                                             Checkbox(
@@ -849,7 +930,7 @@ object Views {
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
-                                    if (transaction != null) {
+                                    if (viewTransaction) {
                                         writeSuccess = Utility.editTransaction(transaction, context, category, description,
                                             transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                         snackbarMessage = "Transaction changes saved"
@@ -860,13 +941,14 @@ object Views {
                                             writeSuccess = Utility.newTransfer(
                                                 newTransaction,
                                                 accountNameTransfer,
+                                                Values.transactions,
                                                 context
                                             )
                                             snackbarMessage = "New transfer added"
                                         }
                                         else {
                                             writeSuccess =
-                                                Utility.newTransaction(newTransaction, context)
+                                                Utility.newTransaction(newTransaction, Values.transactions, context)
                                             snackbarMessage = "New transaction added"
                                         }
                                     }
@@ -889,7 +971,6 @@ object Views {
      * @param navHostController The main navHostController for this application
      * @param context The main context for this application
      */
-
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
@@ -907,12 +988,19 @@ object Views {
                             Text(text = "About")
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         }
                     )
@@ -1051,12 +1139,19 @@ object Views {
                             Text(text = "Settings")
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         }
                     )
@@ -1075,6 +1170,17 @@ object Views {
                                  "Add new account", ""
                             ) {
                                 navHostController.navigate("New Account Activity")
+                            }
+
+                            Viewlets.settingsDivider()
+
+                            // Assets
+                            Viewlets.settingsLabel("Assets")
+                            // Add new asset
+                            Viewlets.settingsButton(
+                                "Add new asset", ""
+                            ) {
+                                navHostController.navigate("New asset Activity")
                             }
 
                             Viewlets.settingsDivider()
@@ -1128,6 +1234,7 @@ object Views {
      *
      * @param navHostController The main navHostController for this application
      * @param accountName The account to show information of
+     * @param context The main context for this application
      */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -1157,28 +1264,49 @@ object Views {
                             Text(text = "View Account")
                         },
                         navigationIcon = {
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigateUp()
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
                                 }
                             ) {
-                                Icon(Icons.Filled.ArrowBack, "")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
                             }
                         },
                         actions = {
-                            IconButton(
-                                onClick = {
-                                    showDialog = true
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
                                 }
                             ) {
-                                Icon(Icons.Filled.List, "Sort transactions")
+                                IconButton(
+                                    onClick = {
+                                        showDialog = true
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.List, "Sort transactions")
+                                }
                             }
-                            IconButton(
-                                onClick = {
-                                    navHostController.navigate("Edit Account Activity/$accountName")
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Edit account")
                                 }
                             ) {
-                                Icon(Icons.Filled.Create, "Edit Account")
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Edit Account Activity/$accountName")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.Create, "Edit account")
+                                }
                             }
                         }
                     )
@@ -1216,14 +1344,773 @@ object Views {
                                     )
                                     Spacer(modifier = Modifier.padding(5.dp))
                                     Text(
-                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName)),
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName, Values.transactions)),
                                         style = TextStyle(fontSize = 19.sp)
                                     )
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName), Utility.getPreference("transactionSortingPreference")), true)
+                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
+                    }
+                }
+            )
+        }
+    }
+
+    /**
+     * Draws the asset creation, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param assetNameInput If not empty, then displays the information for this asset and
+     *                          allows editing
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "CoroutineCreationDuringComposition")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAssetCreationView(navHostController: NavHostController, context: Context, assetNameInput: String) {
+        ApplicationTheme {
+            var assetName by remember { mutableStateOf(assetNameInput) }
+            var assetValue by remember { mutableStateOf("")}
+            var title = "New Asset"
+            val assetNameLabel by remember { mutableStateOf("Asset name")}
+            val assetValueLabel by remember { mutableStateOf("Asset value")}
+            var assetNameIsEmpty = true
+            var assetValueIsNotNumber = true
+            var fieldEnabled = true
+            var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf (false) }
+
+            if (assetNameInput.isNotEmpty()) {
+                assetValue = Utility.getAccountTotal(assetName, Values.assetTransactions).toString()
+                assetNameIsEmpty = false
+                assetValueIsNotNumber = false
+                title = "Edit Asset"
+            }
+
+            if (deleteDialog) {
+                Viewlets.confirmDialog(
+                    "Delete Asset",
+                    "Are you sure you want to delete this asset?",
+                    { deleteDialog = false },
+                    { delete = true }
+                )
+            }
+            if (delete) {
+                if (Utility.removeAccount(assetNameInput, Values.assetTransactions, context)) {
+                    navHostController.navigate("Main Activity")
+                    Utility.showSnackbar("Asset successfully deleted")
+                }
+            }
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(title)
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        if (!fieldEnabled) {
+                                            navHostController.navigate("Main Activity")
+                                        } else {
+                                            navHostController.navigateUp()
+                                        }
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+                            if (assetNameInput.isNotEmpty()) {
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        Text(style = Values.tooltipStyle, text = "Delete asset")
+                                    }
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            delete = false
+                                            deleteDialog = true
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        Icon(Icons.Filled.Delete, "Delete asset")
+                                    }
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(vertical = 70.dp, horizontal = 16.dp)) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            OutlinedTextField(
+                                readOnly = !fieldEnabled,
+                                modifier = Modifier.fillMaxWidth(),
+                                value = assetName,
+                                singleLine = true,
+                                isError = assetNameIsEmpty,
+                                onValueChange = {
+                                    assetName = it
+                                    assetNameIsEmpty = it.isEmpty()
+                                },
+                                label = {
+                                    Text(assetNameLabel)
+                                }
+                            )
+                            if (assetNameInput.isEmpty()) {
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                OutlinedTextField(
+                                    readOnly = !fieldEnabled,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    value = assetValue,
+                                    singleLine = true,
+                                    isError = assetValueIsNotNumber,
+                                    onValueChange = {
+                                        assetValue = it
+                                        assetValueIsNotNumber =
+                                            !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                    },
+                                    label = {
+                                        Text(assetValueLabel)
+                                    }
+                                )
+                            }
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    ExtendedFloatingActionButton(
+                        text = { Text(text = "Apply") },
+                        icon = { Icon(Icons.Default.Check, "") },
+                        onClick = {
+                            var nameCheck = false
+                            if (assetName.isNotEmpty() && (!assetNameIsEmpty) && (!assetValueIsNotNumber)) {
+                                nameCheck = true
+                                // Search through all existing asset names and verify the
+                                // new asset name does not match any of them (strip whitespace)
+                                Values.assetNames.forEach {
+                                    if (it.replace(" ", "") == assetName.replace(" ", "")) {
+                                        nameCheck = false
+                                    }
+                                }
+                            }
+
+                            if (nameCheck) {
+                                val writeSuccess: Boolean
+                                val snackbarMessage: String
+
+                                fieldEnabled = false
+
+                                if (assetNameInput.isNotEmpty()) {
+                                    writeSuccess = Utility.changeAccountName(
+                                        assetNameInput,
+                                        assetName,
+                                        Values.assetTransactions,
+                                        context
+                                    )
+                                    snackbarMessage = "Asset information saved"
+                                } else {
+                                    val openingTransaction = Transaction(
+                                        "",
+                                        "",
+                                        assetValue.toDouble(),
+                                        ZonedDateTime.now(Values.UTCTimeZone),
+                                        assetName
+                                    )
+                                    writeSuccess =
+                                        Utility.newTransaction(openingTransaction, Values.assetTransactions, context)
+                                    snackbarMessage = "New asset saved"
+                                }
+                                if (writeSuccess) {
+                                    if (assetNameInput.isNotEmpty()) {
+                                        navHostController.navigate("Asset Activity")
+                                    } else {
+                                        navHostController.navigateUp()
+                                    }
+                                    Utility.showSnackbar(snackbarMessage)
+                                }
+                            }
+                        }
+                    )
+                }
+            )
+        }
+    }
+
+    /**
+     * Draws the asset specific view
+     *
+     * @param navHostController The NavHostController for this application
+     * @param context The context for this application
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAssetSpecificView(navHostController: NavHostController, context: Context, assetName: String) {
+        ApplicationTheme {
+            val scrollState = rememberScrollState()
+            // Sort transactions
+            var showDialog by remember { mutableStateOf(false) }
+
+            if (showDialog) {
+                Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
+                    currentIndex = Utility.getPreference("transactionSortingPreference"),
+                    label = "Sort transactions",
+                    options = Values.transactionSortingOptions,
+                    onDismiss = {
+                        showDialog = false
+                    }
+                ), context)
+            }
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "View Asset")
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+                            // Sort transactions
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        showDialog = true
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.List, "Sort transactions")
+                                }
+                            }
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Edit asset")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigate("Edit Asset Activity/$assetName")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.Create, "Edit asset")
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
+                        .fillMaxHeight()) {
+                        Column(
+                            modifier = Modifier
+                                .verticalScroll(scrollState)
+                                .fillMaxHeight()
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        .clip(shape = RoundedCornerShape(10.dp))
+                                        .padding(15.dp)
+                                        .fillMaxWidth(),
+                                ) {
+                                    Text(
+                                        text = assetName,
+                                        style = TextStyle(
+                                            fontSize = 22.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.padding(5.dp))
+                                    Text(
+                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getMostRecentTransaction(assetName, Values.assetTransactions).amount),
+                                        style = TextStyle(fontSize = 19.sp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            Viewlets.generateAssetGraph(assetName)
+                            Spacer(modifier = Modifier.padding(vertical = 110.dp))
+                            Viewlets.generateAssetChangePointList(navHostController, Values.assetTransactions)
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    if (!scrollState.isScrollInProgress) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "New Change") },
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            icon = { Icon(Icons.Default.Add, "") },
+                            onClick = { navHostController.navigate("New Asset Change Point Activity/$assetName") }
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    /**
+     * Draws the main asset view
+     *
+     * @param navHostController The NavHostController for this application
+     * @param context The context for this application
+     */
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun generateAssetView(navHostController: NavHostController, context: Context) {
+        ApplicationTheme {
+            val scrollState = rememberScrollState()
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(text = "Assets")
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ){
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    }
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "Navigate up")
+                                }
+                            }
+                        }
+                    )
+                }
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 65.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .clip(shape = RoundedCornerShape(10.dp))
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .padding(10.dp)
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateAssetTotal())}"),
+                                style = TextStyle(
+                                    fontSize = 22.sp,
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            )
+                        }
+                        Spacer(modifier = Modifier.padding(vertical = 12.dp))
+                        Viewlets.generateAssetScroller(navHostController)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Draws the asset change creating, viewing and editing screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     * @param transactionID The ID of the asset change point to view and/ or edit
+     * @param assetName The name of the asset to add the change point to
+     * @param viewChangePoint If the selected change point should be opened in viewing mode
+     */
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
+        "CoroutineCreationDuringComposition"
+    )
+    @Composable
+    fun generateNewAssetChangePointView(navHostController: NavHostController, context: Context, transactionID: Int, assetName: String, viewChangePoint: Boolean) {
+        val scrollState = rememberScrollState()
+
+        ApplicationTheme {
+            var isPositiveTransaction by remember { mutableStateOf(true) }
+            var transactionAmount by remember { mutableStateOf("") }
+            var transactionAmountIsNotNumber = true
+            val transactionAmountLabel by remember { mutableStateOf("Current value") }
+            var description by remember { mutableStateOf("") }
+            var title by remember { mutableStateOf("New Asset Change Point") }
+
+            var localDate = LocalDate.now() // Must initialize
+            var localTime = LocalTime.now() // Must initialize
+
+            var fieldEnabled by remember { mutableStateOf(false) }
+            var deleteDialog by remember { mutableStateOf(false) }
+            var delete by remember { mutableStateOf(false) }
+
+            val transaction: Transaction = if (viewChangePoint) {
+                Utility.getTransactionByHashCode(transactionID, Values.assetTransactions)!!
+            } else {
+                // Avoid null error, should not be used if initialized here
+                Transaction("", "", 0.0, ZonedDateTime.now(), "")
+            }
+
+            if (viewChangePoint) {  // Actual transaction object given as parameter, need to fill in vars
+                if (transaction.amount > 0) {
+                    isPositiveTransaction = true
+                }
+                transactionAmount = "" + abs(transaction.amount)
+                transactionAmountIsNotNumber = false
+                description = transaction.description
+                localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+                localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+                if (fieldEnabled) {
+                    title = "Edit change point"
+                }
+                else {
+                    title = "View change point"
+                }
+                if (deleteDialog) {     // If the user pressed the delete button, confirm
+                    Viewlets.confirmDialog(
+                        "Delete change",
+                        "Are you sure you want to delete this change point?",
+                        { deleteDialog = false },
+                        { delete = true }
+                    )
+                }
+                if (delete) {
+                    if (Utility.removeTransaction(transaction, Values.assetTransactions, context)) {
+                        fieldEnabled = false
+                        navHostController.navigateUp()
+                        Utility.showSnackbar("Change point removed")
+                    }
+                }
+            }
+            else {
+                fieldEnabled = true
+            }
+
+            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+
+            var stringDate by remember { mutableStateOf(localDate.format(dateFormatter)) }
+            var openDatePickerDialog by remember { mutableStateOf(false) }
+
+            var openTimePickerDialog by remember { mutableStateOf(false) }
+            var hour : Int
+            var minute : Int
+            var stringTime = localTime.format(timeFormatter)
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(title)
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+                            if (viewChangePoint) {
+                                if (fieldEnabled) {
+                                    PlainTooltipBox(
+                                        tooltip = {
+                                            Text(style = Values.tooltipStyle, text = "Remove change point")
+                                        }
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                delete = false
+                                                deleteDialog = true
+                                            },
+                                            modifier = Modifier.tooltipAnchor()
+                                        ) {
+                                            Icon(Icons.Filled.Delete, "Remove change point")
+                                        }
+                                    }
+                                }
+                                PlainTooltipBox(
+                                    tooltip = {
+                                        if (fieldEnabled) {
+                                            Text(style = Values.tooltipStyle, text = "View change point")
+                                        }
+                                        else {
+                                            Text(style = Values.tooltipStyle, text = "Edit change point")
+                                        }
+                                    }
+                                ) {
+                                    IconButton(
+                                        onClick = {
+                                            fieldEnabled = !fieldEnabled
+                                        },
+                                        modifier = Modifier.tooltipAnchor()
+                                    ) {
+                                        if (fieldEnabled) {
+                                            Icon(Icons.Filled.Info, "View change point")
+                                        } else {
+                                            Icon(Icons.Filled.Create, "Edit change point")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
+                        Column(modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(scrollState)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        // Deposit or withdrawal
+                                        Text("Positive ")
+                                        Checkbox(
+                                            checked = isPositiveTransaction,
+                                            onCheckedChange = {
+                                                isPositiveTransaction = it
+                                            },
+                                            enabled = fieldEnabled
+                                        )
+                                    }
+//                                    Spacer(modifier = Modifier.padding(vertical = 3.dp))
+                                }
+                                Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                // Amount
+                                OutlinedTextField(
+                                    readOnly = !fieldEnabled,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    value = transactionAmount,
+                                    suffix = {
+                                        Text(Values.currencies[Utility.getPreference("currencyPreference")])
+                                    },
+                                    singleLine = true,
+                                    isError = transactionAmountIsNotNumber,
+                                    onValueChange = {
+                                        transactionAmount = it
+                                        transactionAmountIsNotNumber =
+                                            !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                    },
+                                    label = {
+                                        Text(transactionAmountLabel)
+                                    },
+                                    colors = if (isPositiveTransaction) OutlinedTextFieldDefaults.colors(Color.Green) else OutlinedTextFieldDefaults.colors(Color.Red)
+                                )
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 8.dp))
+                            // Description
+                            OutlinedTextField(
+                                readOnly = (!fieldEnabled),
+                                modifier = Modifier.fillMaxWidth(),
+                                value = description,
+                                label = {
+                                    Text("Change point description")
+                                },
+                                onValueChange = {
+                                    description = it
+                                }
+                            )
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Date
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = stringDate,
+                                onValueChange = {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged {
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
+                                            openDatePickerDialog = true
+                                        }
+                                    },
+                                label = {
+                                    Text("Change point date")
+                                },
+                                isError = stringDate.isEmpty(),
+                            )
+                            if (openDatePickerDialog) {
+                                val datePickerState = rememberDatePickerState()
+                                val confirmEnabled = derivedStateOf { datePickerState.selectedDateMillis != null }
+                                DatePickerDialog(
+                                    onDismissRequest = {
+                                        openDatePickerDialog = false
+                                    },
+                                    confirmButton = {
+                                        TextButton(
+                                            onClick = {
+                                                openDatePickerDialog = false
+                                                val milliseconds = datePickerState.selectedDateMillis as Long
+                                                localDate = Instant.ofEpochMilli(milliseconds).atZone(ZoneId.systemDefault()).toLocalDate().plusDays(1) // Add one day to fix android bug
+                                                stringDate = localDate.format(dateFormatter)
+                                            },
+                                            content = {
+                                                Text("OK")
+                                            },
+                                            enabled = confirmEnabled.value
+                                        )
+                                    },
+                                    dismissButton = {
+                                        TextButton(
+                                            onClick = {
+                                                openDatePickerDialog = false
+                                            }
+                                        ) {
+                                            Text("Cancel")
+                                        }
+                                    }
+                                ) {
+                                    DatePicker(state = datePickerState)
+                                }
+                            }
+                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            // Time
+                            OutlinedTextField(
+                                readOnly = true,
+                                value = stringTime,
+                                onValueChange = {
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged {
+                                        if (it.isFocused && fieldEnabled) {             // onClick does not work, jerryrigged solution
+                                            openTimePickerDialog = true
+                                        }
+                                    },
+                                label = {
+                                    Text("Change point time")
+                                },
+                                isError = stringTime.isEmpty(),
+                            )
+                            if (openTimePickerDialog) {
+                                val timePickerState = rememberTimePickerState(localTime.hour, localTime.minute)     // Need to set initial params here for hour of day in locale non-specific form
+                                Viewlets.TimePickerDialog(
+                                    onDismissRequest = {
+                                        openTimePickerDialog = false
+                                    },
+                                    onConfirm = {
+                                        openTimePickerDialog = false
+                                        hour = timePickerState.hour
+                                        minute = timePickerState.minute
+                                        localTime = LocalTime.of(hour, minute)
+                                        stringTime = localTime.format(timeFormatter)
+                                    },
+                                ) {
+                                    TimePicker(state = timePickerState)
+                                }
+                            }
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    if (!scrollState.isScrollInProgress && fieldEnabled) {
+                        var snackbarMessage: String
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "Apply") },
+                            icon = { Icon(Icons.Default.Check, "") },
+                            onClick = {
+                                // Check that input fields are valid
+                                if ((!transactionAmountIsNotNumber) && (assetName.isNotEmpty()) && (stringDate.isNotEmpty()) && (stringTime.isNotEmpty())) {
+                                    fieldEnabled = false
+                                    val writeSuccess: Boolean
+                                    val localTimeCorrectedToUTCTime = Utility.convertLocalDateTimeToUTC(    // Transactions store date and time in UTC
+                                        ZonedDateTime.of(localDate, localTime, Values.localTimeZone))
+
+                                    if (!isPositiveTransaction) {
+                                        transactionAmount = "-$transactionAmount"
+                                    }
+                                    if (viewChangePoint) {
+                                        writeSuccess = Utility.editTransaction(transaction, context, "", description,
+                                            transactionAmount.toDouble(), localTimeCorrectedToUTCTime, assetName)
+                                        snackbarMessage = "Change point modifications saved"
+                                    }
+                                    else {  // New transaction
+                                        val newTransaction = Transaction("", description, transactionAmount.toDouble(), localTimeCorrectedToUTCTime, assetName)
+                                        writeSuccess =
+                                            Utility.newTransaction(newTransaction, Values.assetTransactions, context)
+                                        snackbarMessage = "New change point added"
+                                    }
+                                    if (writeSuccess) {
+                                        navHostController.navigateUp()
+                                        Utility.showSnackbar(snackbarMessage)
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             )

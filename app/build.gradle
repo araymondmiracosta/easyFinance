@@ -7,12 +7,16 @@ android {
     namespace 'net.araymond.eel'
     compileSdk 34
 
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
+
     defaultConfig {
         applicationId "net.araymond.eel"
         minSdk 24
         targetSdk 34
-        versionCode 2023-11-11
-        versionName "11 November 2023"
+        versionCode 1
+        versionName "11 February 2024"
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -24,7 +28,9 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
         }
     }
     compileOptions {
@@ -71,4 +77,5 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
 
     implementation 'androidx.datastore:datastore-preferences:1.0.0'
+    implementation 'androidx.compose.material:material-icons-extended:1.5.4'
 }

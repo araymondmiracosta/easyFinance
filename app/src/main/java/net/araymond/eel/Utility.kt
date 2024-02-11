@@ -10,6 +10,8 @@ import java.io.OutputStream
 import java.time.ZonedDateTime
 import java.util.Scanner
 
+
+// TODO: Remove redundant sorting functions
 /**
  * Contains various functions used to modify, write read data, etc
  */
@@ -37,25 +39,7 @@ object Utility {
     }
 
     /**
-     * Returns the balance of the given account
-     *
-     * @param accountName The account name
-     *
-     * @return Balance of the account
-     */
-    fun getAccountTotal(accountName: String): Double {
-        var accountTotal = 0.0
-        Values.transactions.forEach{ transaction ->
-            if (transaction.accountName == accountName) {
-                accountTotal += transaction.amount
-            }
-        }
-
-        return accountTotal
-    }
-
-    /**
-     * Populates Values.categories with the categories found in transactions
+     * Populates Values.categories with the categories found in the main transaction list
      */
     private fun readCategories() {
         Values.transactions.forEach{ transaction ->
@@ -64,6 +48,37 @@ object Utility {
 
         val duplicatesRemoved: HashSet<String> = HashSet(Values.categories)
         Values.categories = ArrayList(duplicatesRemoved)
+    }
+
+    /**
+     * Populates Values.assetNames with the asset names found in asset transactions
+     */
+    private fun readAssets() {
+        Values.assetNames = ArrayList()
+        var duplicate = false
+        Values.assetTransactions.forEach { transaction ->
+            Values.assetNames.forEach { assetName ->
+                if (assetName == transaction.accountName) {
+                    duplicate = true
+                }
+            }
+            if (duplicate) {
+                duplicate = false
+            }
+            else {
+                Values.assetNames.add(transaction.accountName)
+            }
+        }
+    }
+
+    /**
+     * Function to call list populating functions
+     */
+    fun readAll() {
+        readCategories()
+        readAccounts()
+        readAssets()
+        Values.total = calculateTotal(Values.transactions)
     }
 
     /**
@@ -111,6 +126,28 @@ object Utility {
     }
 
     /**
+     * Reads in saved asset data from private app storage
+     *
+     * @param context The main context for this application
+     *
+     * @return If reading the transaction list succeeded
+     */
+    fun readAssetSaveData(context: Context): Boolean {
+        return try {
+            val inputLedgerStream = context.openFileInput("assets")
+            val objectInputLedgerStream = ObjectInputStream(inputLedgerStream)
+            // Need to resolve
+            Values.assetTransactions = objectInputLedgerStream.readObject() as ArrayList<Transaction>
+            objectInputLedgerStream.close()
+            inputLedgerStream.close()
+
+            true
+        } catch (exception: Exception) {
+            false
+        }
+    }
+
+    /**
      * Writes the given data object to the given file name
      *
      * @param data The data object to write out
@@ -135,14 +172,25 @@ object Utility {
     }
 
     /**
+     * Writes account transactions to private app storage
+     *
+     * @param context The context for this application
+     *
+     * @return If writing the transaction list succeeded
+     */
+    private fun writeAccountData(context: Context): Boolean {
+        return (writeSaveData(Values.transactions, "ledger", context))
+    }
+
+    /**
      * Writes the ledger data to private app storage
      *
      * @param context The main context for this application
      *
-     * @return If writing the transaction list succeeded
+     * @return If writing the transaction lists succeeded
      */
     private fun writeLedgerData(context: Context): Boolean {
-        return (writeSaveData(Values.transactions, "ledger", context))
+        return (writeAccountData(context) && writeAssetData(context))
     }
 
     /**
@@ -157,25 +205,14 @@ object Utility {
     }
 
     /**
-     * Sorts the given transaction list in descending order (recent date first [0])
+     * Writes the asset data to private app storage
      *
-     * @param list The transaction list to sort
+     * @param context The context for this application
      *
-     * @return The sorted list
+     * @return If writing the asset transaction list succeeded
      */
-    fun sortTransactionListDescendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
-    }
-
-    /**
-     * Sorts the given transaction list in ascending order (recent date last [size - 1])
-     *
-     * @param list The transaction list to sort
-     *
-     * @return The sorted list
-     */
-    fun sortTransactionListAscendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
-        return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
+    fun writeAssetData(context: Context): Boolean {
+        return (writeSaveData(Values.assetTransactions, "assets", context))
     }
 
     /**
@@ -203,25 +240,21 @@ object Utility {
     }
 
     /**
-     * Function to call list populating functions
-     */
-    fun readAll() {
-        readCategories()
-        readAccounts()
-        Values.total = calculateTotal()
-    }
-
-    /**
-     * Adds the given transaction to the main transaction list.
+     * Adds the given transaction to the given transaction list
      *
      * @param transaction The transaction to add
+     * @param transactionList The transaction list to add to
      * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun newTransaction(transaction: Transaction, context: Context): Boolean {
-        Values.transactions.add(transaction)
-        Values.transactions = sortTransactionListDescendingOrder(Values.transactions)
+    fun newTransaction(transaction: Transaction, transactionList:ArrayList<Transaction>, context: Context): Boolean {
+        transactionList.add(transaction)
+        val sortedTransactionList = sortTransactionListDescendingOrder(transactionList)
+        transactionList.clear()
+        sortedTransactionList.forEach {
+            transactionList.add(it)
+        }
         readAll()
         return (writeLedgerData(context))
     }
@@ -232,28 +265,30 @@ object Utility {
      *
      * @param transaction The source transaction
      * @param destinationAccount The destination account to transfer to
+     * @param transactionList The transaction list to use
      * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun newTransfer(transaction: Transaction, destinationAccount: String, context: Context) : Boolean {
+    fun newTransfer(transaction: Transaction, destinationAccount: String, transactionList: ArrayList<Transaction>, context: Context) : Boolean {
         transaction.amount = (-1) * (kotlin.math.abs(transaction.amount))
         val destinationTransaction = newTransaction(Transaction(transaction.category,
             transaction.description, kotlin.math.abs(transaction.amount), transaction.utcDateTime,
-            destinationAccount), context)
-        return (destinationTransaction && newTransaction(transaction, context))
+            destinationAccount), transactionList, context)
+        return (destinationTransaction && newTransaction(transaction, transactionList, context))
     }
 
     /**
-     * Removes the given transaction from the main transaction list
+     * Removes the given transaction from the given transaction list
      *
      * @param transaction The transaction to remove
+     * @param transactionList The transaction list to use
      * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun removeTransaction(transaction: Transaction, context: Context): Boolean {
-        Values.transactions.remove(transaction)
+    fun removeTransaction(transaction: Transaction, transactionList: ArrayList<Transaction>, context: Context): Boolean {
+        transactionList.remove(transaction)
         readAll()
         return (writeLedgerData(context))
     }
@@ -305,12 +340,13 @@ object Utility {
      * Returns a transaction list containing all transaction associated with a given account
      *
      * @param accountName The account
+     * @param transactionList The transaction list to use
      *
      * @return A transaction list
      */
-    fun getAccountTransactions(accountName: String): ArrayList<Transaction> {
+    fun getAccountTransactions(accountName: String, transactionList: ArrayList<Transaction>): ArrayList<Transaction> {
         val accountTransactions = ArrayList<Transaction>()
-        Values.transactions.forEach{ transaction->
+        transactionList.forEach{ transaction->
             if (transaction.accountName == accountName) {
                 accountTransactions.add(transaction)
             }
@@ -321,14 +357,15 @@ object Utility {
     /**
      * Changes the account name on all transactions with oldAccountName to newAccountName
      *
-     * @param context The main context for this application
      * @param oldAccountName The old account name to change
      * @param newAccountName The new account name to use
+     * @param transactionList The transaction list to use
+     * @param context The main context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun changeAccountName(context: Context, oldAccountName: String, newAccountName: String): Boolean {
-        val accountTransactions = getAccountTransactions(oldAccountName)
+    fun changeAccountName(oldAccountName: String, newAccountName: String, transactionList: ArrayList<Transaction>, context: Context): Boolean {
+        val accountTransactions = getAccountTransactions(oldAccountName, transactionList)
         accountTransactions.forEach{ transaction ->
             transaction.editTransaction(transaction.category, transaction.description,
                 transaction.amount, transaction.utcDateTime, newAccountName)
@@ -340,16 +377,17 @@ object Utility {
     /**
      * Removes all transactions from the given account (effectively deleting the account)
      *
-     * @param context The main context for this account
      * @param accountName The account to be removed
+     * @param transactionList The transaction list to use
+     * @param context The context for this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun removeAccount(context: Context, accountName: String): Boolean {
+    fun removeAccount(accountName: String, transactionList: ArrayList<Transaction>, context: Context): Boolean {
         var writeSucceed = true
-        val accountTransactions = getAccountTransactions(accountName)
+        val accountTransactions = getAccountTransactions(accountName, transactionList)
         accountTransactions.forEach{ transaction ->
-            if (!(removeTransaction(transaction, context))) {
+            if (!(removeTransaction(transaction, transactionList, context))) {
                 writeSucceed = false
             }
         }
@@ -373,14 +411,15 @@ object Utility {
     }
 
     /**
-     * Removes all transactions from the main transaction list
+     * Removes all transactions from the given transaction list
      *
+     * @param transactionList The transaction list to clear
      * @param context The main context of this application
      *
      * @return If writing the transaction list succeeded
      */
-    fun clearTransactions(context: Context): Boolean {
-        Values.transactions.clear()
+    fun clearTransactions(transactionList: ArrayList<Transaction>, context: Context): Boolean {
+        transactionList.clear()
         return (writeLedgerData(context))
     }
 
@@ -390,7 +429,7 @@ object Utility {
      * @param outputStream An output stream to write to
      */
     fun writeCSV(outputStream: OutputStream) {
-        val header = "date,category,description,amount,account\n"
+        var header = "Accounts\ndate,category,description,amount,account\n"
         outputStream.write(header.toByteArray())
         sortTransactionListAscendingOrder(Values.transactions).forEach{ transaction ->
             val date = transaction.utcDateTime.toString()
@@ -400,6 +439,20 @@ object Utility {
             val account = transaction.accountName
 
             val line = "$date,$category,$description,$amount,$account\n"
+
+            outputStream.write(line.toByteArray())
+        }
+
+        // Write assets
+        header = "\nAssets\ndate,description,amount,asset\n"
+        outputStream.write(header.toByteArray())
+        sortTransactionListAscendingOrder(Values.assetTransactions).forEach { transaction ->
+            val date = transaction.utcDateTime.toString()
+            val description = transaction.description
+            val amount = transaction.amount.toString()
+            val asset = transaction.accountName
+
+            val line = "$date,$description,$amount,$asset\n"
 
             outputStream.write(line.toByteArray())
         }
@@ -415,108 +468,182 @@ object Utility {
      */
     fun readCSV(context: Context, inputStream: InputStream) {
         val scannerInput = Scanner(inputStream)
-        var line = scannerInput.nextLine().split(",")
-        val otherFormat = (line[0] == "id")     // Check for import format from another app
-        val backup = ArrayList<Transaction>()    // Make backup in case
-        Values.transactions.forEach {transaction ->
-            backup.add(transaction)
+        // Make backups in case
+        val accountsBackup = ArrayList<Transaction>()
+        val assetsBackup = ArrayList<Transaction>()
+
+        Values.transactions.forEach { transaction ->
+            accountsBackup.add(transaction)
+        }
+        Values.assetTransactions.forEach { transaction ->
+            assetsBackup.add(transaction)
         }
 
         if (scannerInput.hasNext()) {   // Clear transactions if the file checks out
-            clearTransactions(context)
-        }
-
-        val dateIndex: Int
-        val categoryIndex: Int
-        val descriptionIndex: Int
-        val amountIndex: Int
-        val accountIndex: Int
-
-        if (!otherFormat) {
-            dateIndex = 0
-            categoryIndex = 1
-            descriptionIndex = 2
-            amountIndex = 3
-            accountIndex = 4
-        }
-        else {  // Foreign CSV import
-            dateIndex = 8
-            categoryIndex = 3
-            descriptionIndex = 4
-            amountIndex = 5
-            accountIndex = 9
+            clearTransactions(Values.transactions, context)
+            clearTransactions(Values.assetTransactions, context)
         }
 
         // Handle initial amount field from other apps
-
         val initialTransactionList = ArrayList<Transaction>()
 
         try {
-            while (scannerInput.hasNext()) {
-                line = scannerInput.nextLine().split(",")
-                val category = line[categoryIndex]
-                val description = line[descriptionIndex]
-                val amount = line[amountIndex].toDouble()
-                val date = ZonedDateTime.parse(line[dateIndex])
-                val account = line[accountIndex]
-                val newTransaction = Transaction(category, description, amount, date, account)
-                var transactionFound = false
+            var line: List<String>
+            var otherFormat = false
+            var isAccounts = false
 
-                // Handle foreign import
-                if (otherFormat) {
-                    // Handle initial amount
-                    // If the account name is not in temp accounts
-                    initialTransactionList.forEach {
-                        if (account == it.accountName) {
-                            transactionFound = true
+            while (scannerInput.hasNext()) {
+                val dateIndex: Int
+                val categoryIndex: Int
+                val descriptionIndex: Int
+                val amountIndex: Int
+                val accountIndex: Int
+
+                val currentLine = scannerInput.nextLine()
+
+                if (currentLine == "Accounts") {
+                    isAccounts = true
+                    continue
+                }
+                if (currentLine == "Assets") {
+                    isAccounts = false
+                    // Move ahead one line since we found the label
+                    continue
+                }
+                if (currentLine.split(",")[0] == "id") {
+                    otherFormat = true
+                    isAccounts = true
+                    continue
+                }
+                // Skip this line if it is empty, or the asset header
+                if (currentLine.isEmpty()) {
+                    continue
+                }
+                // Skip this line if its a CSV header
+                line = currentLine.split(",")
+                if (line[0] == "date") {
+                    continue
+                }
+
+                if (isAccounts) {
+                    if (!otherFormat) {
+                        dateIndex = 0
+                        categoryIndex = 1
+                        descriptionIndex = 2
+                        amountIndex = 3
+                        accountIndex = 4
+                    } else {  // Foreign CSV import
+                        dateIndex = 8
+                        categoryIndex = 3
+                        descriptionIndex = 4
+                        amountIndex = 5
+                        accountIndex = 9
+                    }
+
+                    val category = line[categoryIndex]
+                    val description = line[descriptionIndex]
+                    val amount = line[amountIndex].toDouble()
+                    val date = ZonedDateTime.parse(line[dateIndex])
+                    val account = line[accountIndex]
+                    val newTransaction = Transaction(category, description, amount, date, account)
+                    var transactionFound = false
+
+                    // Handle foreign import
+                    if (otherFormat) {
+                        // Handle initial amount
+                        // If the account name is not in temp accounts
+                        initialTransactionList.forEach {
+                            if (account == it.accountName) {
+                                transactionFound = true
+                            }
+                        }
+                        if (!transactionFound) {
+                            // Mark that the initial amount for this account has been recorded
+                            initialTransactionList.add(
+                                Transaction(
+                                    "Opening Deposit", "", line[10].toDouble(),
+                                    ZonedDateTime.now(), account
+                                )
+                            )
+                        }
+
+                        // Handle transfers, line[11] equals destination account
+                        if (line[11] != "null") {
+                            // Use Utility.newTransfer to create a new transaction object
+                            newTransfer(newTransaction, line[11], Values.transactions, context)
+                        } else {
+                            newTransaction(newTransaction, Values.transactions, context)
                         }
                     }
-                    if (!transactionFound) {
-                        // Mark that the initial amount for this account has been recorded
-                        initialTransactionList.add(
-                            Transaction(
-                                "Opening Deposit", "", line[10].toDouble(),
-                                ZonedDateTime.now(), account
-                            )
-                        )
-                    }
-
-                    // Handle transfers, line[11] equals destination account
-                    if (line[11] != "null") {
-                        // Use Utility.newTransfer to create a new transaction object
-                        newTransfer(newTransaction, line[11], context)
-                    }
                     else {
-                        newTransaction(newTransaction, context)
+                        newTransaction(newTransaction, Values.transactions, context)
                     }
                 }
+                // Assets
                 else {
-                    newTransaction(newTransaction, context)
+                    dateIndex = 0
+                    descriptionIndex = 1
+                    amountIndex = 2
+                    accountIndex = 3
+
+                    line = currentLine.split(",")
+                    val category = ""
+                    val description = line[descriptionIndex]
+                    val amount = line[amountIndex].toDouble()
+                    val date = ZonedDateTime.parse(line[dateIndex])
+                    val account = line[accountIndex]
+                    val newTransaction = Transaction(category, description, amount, date, account)
+
+                    newTransaction(newTransaction, Values.assetTransactions, context)
                 }
             }
 
-            // Iterate through all accounts for initial transactions
-            initialTransactionList.forEach { transaction ->
-                // Oldest transaction of tempTransactionList is index 0
-                val tempTransactionList = sortTransactionListAscendingOrder(
-                    getAccountTransactions(transaction.accountName)
-                )
-                val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
-                    .minusMinutes(5)    // So running balance is correct
+        // Iterate through all accounts for initial transactions
+        initialTransactionList.forEach { transaction ->
+            // Oldest transaction of tempTransactionList is index 0
+            val tempTransactionList = sortTransactionListAscendingOrder(
+                getAccountTransactions(transaction.accountName, Values.transactions)
+            )
+            val openingDepositTransactionDate = (tempTransactionList[0].utcDateTime)
+                .minusMinutes(5)    // So running balance is correct
 
-                transaction.utcDateTime = openingDepositTransactionDate
+            transaction.utcDateTime = openingDepositTransactionDate
 
-                newTransaction(transaction, context)
-            }
+            newTransaction(transaction, Values.transactions, context)
+        }
 
-            showSnackbar("Ledger data successfully imported")
+        showSnackbar("Ledger data successfully imported")
+
         } catch (exception: Exception) {
-            Values.transactions = backup
+            Values.transactions = accountsBackup
+            Values.assetTransactions = assetsBackup
             showSnackbar("File corrupted, unable to import ledger data")
         }
 
         readAll()
         writeLedgerData(context)
+    }
+
+    /**
+     * Sorts the given transaction list in descending order (recent date first [0])
+     *
+     * @param list The transaction list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListDescendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
+        return (list.sortedByDescending { it.utcDateTime }.toCollection(ArrayList()))
+    }
+
+    /**
+     * Sorts the given transaction list in ascending order (recent date last [size - 1])
+     *
+     * @param list The transaction list to sort
+     *
+     * @return The sorted list
+     */
+    fun sortTransactionListAscendingOrder(list: ArrayList<Transaction>): ArrayList<Transaction> {
+        return (list.sortedBy { it.utcDateTime }.toCollection(ArrayList()))
     }
 
     /**
@@ -580,10 +707,10 @@ object Utility {
      */
     fun sortAccountListByAmount(list: ArrayList<String>, ascending: Boolean): ArrayList<String> {
         if (ascending) {
-            return (list.sortedBy { getAccountTotal(it) }.toCollection(ArrayList()))
+            return (list.sortedBy { getAccountTotal(it, Values.transactions) }.toCollection(ArrayList()))
         }
         else {
-            return (list.sortedByDescending { getAccountTotal(it) }.toCollection(ArrayList()))
+            return (list.sortedByDescending { getAccountTotal(it, Values.transactions) }.toCollection(ArrayList()))
         }
     }
 
@@ -682,6 +809,9 @@ object Utility {
         Values.transactions = sortTransactionListByPreference(Values.transactions,
             getPreference("transactionSortingPreference")
         )
+        Values.assetTransactions = sortTransactionListByPreference(Values.assetTransactions,
+            getPreference("transactionSortingPreference")
+        )
     }
 
     /**
@@ -700,13 +830,76 @@ object Utility {
     /**
      * Returns the net value of all transactions
      *
+     * @param transactionList The transaction list to use
+     *
      * @return Net value
      */
-    fun calculateTotal(): Double {
+    fun calculateTotal(transactionList: ArrayList<Transaction>): Double {
         var total: Double = 0.0
-        Values.transactions.forEach{ transaction ->
+        transactionList.forEach{ transaction ->
             total += transaction.amount
         }
         return total
+    }
+
+    /**
+     * Returns the balance of the given account
+     *
+     * @param accountName The account name
+     * @param transactionList The list of transactions to search through
+     *
+     * @return Balance of the account
+     */
+    fun getAccountTotal(accountName: String, transactionList: ArrayList<Transaction>): Double {
+        var accountTotal = 0.0
+        transactionList.forEach{ transaction ->
+            if (transaction.accountName == accountName) {
+                accountTotal += transaction.amount
+            }
+        }
+
+        return accountTotal
+    }
+
+    /**
+     * Returns the most recent transaction for the given account
+     *
+     * @param accountName The account name
+     * @param transactionList The list of transactions to search through
+     *
+     * @return The transaction
+     */
+    fun getMostRecentTransaction(accountName: String, transactionList: ArrayList<Transaction>): Transaction {
+        return sortTransactionListByDate(getAccountTransactions(accountName, transactionList), false)[0]
+    }
+
+    /**
+     * Returns the total value of assets
+     *
+     * @return The total
+     */
+    fun calculateAssetTotal(): Double {
+        var total = 0.0
+        Values.assetNames.forEach { assetName ->
+            total += getMostRecentTransaction(assetName, Values.assetTransactions).amount
+        }
+        return total
+    }
+
+    /**
+     * Returns the transaction specified by the given hash code, or null if none is found
+     *
+     * @param hashCode The hash code
+     * @param transactionList The transaction list to search through
+     *
+     * @return The transaction
+     */
+    fun getTransactionByHashCode(hashCode: Int, transactionList: ArrayList<Transaction>): Transaction? {
+        transactionList.forEach { transaction ->
+            if (transaction.hashCode() == hashCode) {
+                return transaction
+            }
+        }
+        return null
     }
 }

@@ -2,6 +2,8 @@ package net.araymond.eel
 
 import android.os.Build
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CoroutineScope
 import java.text.DecimalFormat
 import java.time.ZoneId
@@ -26,15 +28,20 @@ object Values {
         "currencyPreference" to 0,
         "accountSortingPreference" to 0,
         "transactionSortingPreference" to 1,
-        "themePreference" to 0
+        "themePreference" to 0,
+        "assetSortingPreference" to 0
     )
 
     val legacyThemes = arrayOf(
         "Nebula", "Bright"
     )
 
+    val tooltipStyle = TextStyle(
+        fontSize = 15.sp
+    )
+
     const val name = "eel"
-    const val version = "11 November 2023"
+    const val version = "11 February 2024 (pre-alpha)"
     const val sourceCodeLink = "https://www.nebulacentre.net/projects/eel.git"
 
     val themes =
@@ -63,12 +70,11 @@ object Values {
     var transactions = ArrayList<Transaction>()     // Main transaction list
     var categories = ArrayList<String>()
     var accountNames = ArrayList<String>()
+    var assetTransactions = ArrayList<Transaction>()
+    var assetNames = ArrayList<String>()
 
     // Net value
     var total: Double = 0.0
-
-    // Variables to hold data between navigation
-    lateinit var currentTransaction: Transaction
 
     // Global snackbar information
     lateinit var scope: CoroutineScope
