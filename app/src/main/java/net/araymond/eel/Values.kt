@@ -82,4 +82,7 @@ object Values {
 
     // Used to avoid repeating same snackbar message
     var lastSnackbarMessage = ""
+
+    // Holds last transaction ID
+    var lastTransactionID: Int = 0
 }

@@ -36,6 +36,7 @@ class Transaction(
         this.amount = amount
         this.accountName = account
         this.utcDateTime = utcDateTime
+        Values.lastTransactionID = this.hashCode()
     }
 
     /**
