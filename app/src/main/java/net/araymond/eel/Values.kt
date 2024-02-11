@@ -76,9 +76,6 @@ object Values {
     // Net value
     var total: Double = 0.0
 
-    // Variables to hold data between navigation
-    lateinit var currentTransaction: Transaction
-
     // Global snackbar information
     lateinit var scope: CoroutineScope
     lateinit var snackbarHostState: SnackbarHostState

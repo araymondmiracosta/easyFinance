@@ -409,15 +409,16 @@ object Views {
      *
      * @param navHostController The main navHostController for this application
      * @param context The main context for this application
-     * @param transaction If not null, then displays the information for this transaction and
-     *                      allows editing
+     * @param transactionID If viewing set to true, then specifies the transaction to view, as
+     *                      given by its id
+     * @param viewTransaction If this transaction should be opened in viewing mode
      */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
         "CoroutineCreationDuringComposition"
     )
     @Composable
-    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transaction: Transaction?) {
+    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transactionID: Int, viewTransaction: Boolean) {
         val scrollState = rememberScrollState()
 
         ApplicationTheme {
@@ -450,7 +451,14 @@ object Views {
                 transactionAccountLabel = "Transaction account"
             }
 
-            if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
+            val transaction: Transaction = if (viewTransaction) {
+                Utility.getTransactionByHashCode(transactionID, Values.transactions)!!
+            } else {
+                // Avoid null error, should not be used if initialized here
+                Transaction("", "", 0.0, ZonedDateTime.now(), "")
+            }
+
+            if (viewTransaction) {  // Actual transaction object given as parameter, need to fill in vars
                 if (transaction.amount > 0) {
                     isPositiveTransaction = true
                 }
@@ -524,7 +532,7 @@ object Views {
                             }
                         },
                         actions = {
-                            if (transaction != null) {
+                            if (viewTransaction) {
                                 if (fieldEnabled) {
                                     PlainTooltipBox(
                                         tooltip = {
@@ -591,7 +599,7 @@ object Views {
                                         }
                                     }
 //                                    Spacer(modifier = Modifier.padding(vertical = 3.dp))
-                                    if (transaction == null) {
+                                    if (!viewTransaction) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text("Transfer")
                                             Checkbox(
@@ -922,7 +930,7 @@ object Views {
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
-                                    if (transaction != null) {
+                                    if (viewTransaction) {
                                         writeSuccess = Utility.editTransaction(transaction, context, category, description,
                                             transactionAmount.toDouble(), localTimeCorrectedToUTCTime, accountName)
                                         snackbarMessage = "Transaction changes saved"
@@ -963,7 +971,6 @@ object Views {
      * @param navHostController The main navHostController for this application
      * @param context The main context for this application
      */
-
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
@@ -1770,16 +1777,16 @@ object Views {
      *
      * @param navHostController The main navHostController for this application
      * @param context The main context for this application
-     * @param transaction If not null, then displays the information for this asset change and
-     *                      allows editing
+     * @param transactionID The ID of the asset change point to view and/ or edit
      * @param assetName The name of the asset to add the change point to
+     * @param viewChangePoint If the selected change point should be opened in viewing mode
      */
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
         "CoroutineCreationDuringComposition"
     )
     @Composable
-    fun generateNewAssetChangePointView(navHostController: NavHostController, context: Context, transaction: Transaction?, assetName: String) {
+    fun generateNewAssetChangePointView(navHostController: NavHostController, context: Context, transactionID: Int, assetName: String, viewChangePoint: Boolean) {
         val scrollState = rememberScrollState()
 
         ApplicationTheme {
@@ -1797,7 +1804,14 @@ object Views {
             var deleteDialog by remember { mutableStateOf(false) }
             var delete by remember { mutableStateOf(false) }
 
-            if (transaction != null) {  // Actual transaction object given as parameter, need to fill in vars
+            val transaction: Transaction = if (viewChangePoint) {
+                Utility.getTransactionByHashCode(transactionID, Values.assetTransactions)!!
+            } else {
+                // Avoid null error, should not be used if initialized here
+                Transaction("", "", 0.0, ZonedDateTime.now(), "")
+            }
+
+            if (viewChangePoint) {  // Actual transaction object given as parameter, need to fill in vars
                 if (transaction.amount > 0) {
                     isPositiveTransaction = true
                 }
@@ -1869,7 +1883,7 @@ object Views {
                             }
                         },
                         actions = {
-                            if (transaction != null) {
+                            if (viewChangePoint) {
                                 if (fieldEnabled) {
                                     PlainTooltipBox(
                                         tooltip = {
@@ -2079,7 +2093,7 @@ object Views {
                                     if (!isPositiveTransaction) {
                                         transactionAmount = "-$transactionAmount"
                                     }
-                                    if (transaction != null) {
+                                    if (viewChangePoint) {
                                         writeSuccess = Utility.editTransaction(transaction, context, "", description,
                                             transactionAmount.toDouble(), localTimeCorrectedToUTCTime, assetName)
                                         snackbarMessage = "Change point modifications saved"

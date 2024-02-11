@@ -885,4 +885,21 @@ object Utility {
         }
         return total
     }
+
+    /**
+     * Returns the transaction specified by the given hash code, or null if none is found
+     *
+     * @param hashCode The hash code
+     * @param transactionList The transaction list to search through
+     *
+     * @return The transaction
+     */
+    fun getTransactionByHashCode(hashCode: Int, transactionList: ArrayList<Transaction>): Transaction? {
+        transactionList.forEach { transaction ->
+            if (transaction.hashCode() == hashCode) {
+                return transaction
+            }
+        }
+        return null
+    }
 }

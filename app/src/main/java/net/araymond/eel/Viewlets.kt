@@ -450,6 +450,7 @@ object Viewlets: ComponentActivity() {
         transactions.forEach { transaction ->
             val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
             val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+            val transactionID = transaction.hashCode()
             Row(
                 modifier = Modifier
                     .clip(shape = RoundedCornerShape(10.dp))
@@ -458,8 +459,7 @@ object Viewlets: ComponentActivity() {
                         shape = RoundedCornerShape(10.dp)
                     )
                     .clickable(enabled = true, onClick = {
-                        Values.currentTransaction = transaction
-                        navHostController.navigate("View Transaction Activity")
+                        navHostController.navigate("View Transaction Activity/$transactionID")
                     })
                     .padding(10.dp)
                     .fillMaxWidth()
@@ -791,8 +791,7 @@ object Viewlets: ComponentActivity() {
                         shape = RoundedCornerShape(10.dp)
                     )
                     .clickable(enabled = true, onClick = {
-                        Values.currentTransaction = transaction
-                        navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}")
+                        navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}/${transaction.hashCode()}")
                     })
                     .padding(10.dp)
                     .fillMaxWidth()
