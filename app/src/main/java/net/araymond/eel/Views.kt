@@ -418,7 +418,7 @@ object Views {
         "CoroutineCreationDuringComposition"
     )
     @Composable
-    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transactionID: Int, viewTransaction: Boolean) {
+    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transactionID: Int, givenAccountName: String?, viewTransaction: Boolean) {
         val scrollState = rememberScrollState()
 
         ApplicationTheme {
@@ -443,6 +443,10 @@ object Views {
             var fieldEnabled by remember { mutableStateOf(false) }
             var deleteDialog by remember { mutableStateOf(false) }
             var delete by remember { mutableStateOf(false) }
+
+            if (givenAccountName != null) {
+                accountName = givenAccountName
+            }
 
             if (isTransfer) {
                 transactionAccountLabel = "Transfer source account"
@@ -1242,6 +1246,7 @@ object Views {
     fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
             var showDialog by remember { mutableStateOf(false) }
+            val scrollState = rememberScrollState()
 
             if (showDialog) {
                 Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
@@ -1352,6 +1357,16 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
+                    }
+                },
+                floatingActionButton = {
+                    if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "New Transaction") },
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            icon = { Icon(Icons.Default.Add, "") },
+                            onClick = { navHostController.navigate("New Transaction Activity/$accountName") }
+                        )
                     }
                 }
             )
