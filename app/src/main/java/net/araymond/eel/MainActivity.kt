@@ -68,13 +68,18 @@ class MainActivity : ComponentActivity() {
                 Views.generateAccountCreationView(navHostController, context, "")
             }
             composable("New Transaction Activity") {
-                Views.generateNewTransactionView(navHostController, context, 0, false)
+                Views.generateNewTransactionView(navHostController, context, 0, null, false)
+            }
+            composable("New Transaction Activity/{accountName}") {
+                it.arguments?.getString("accountName")?.let { accountName ->
+                    Views.generateNewTransactionView(navHostController, context, 0, accountName, false)
+                }
             }
             composable("View Transaction Activity/{transactionID}", arguments = listOf(navArgument("transactionID") {
                 type = NavType.IntType
             })) {
                 it.arguments?.getInt("transactionID")?.let { transactionID ->
-                    Views.generateNewTransactionView(navHostController, context, transactionID, true)
+                    Views.generateNewTransactionView(navHostController, context, transactionID, null, true)
                 }
             }
             composable("Settings Activity") {

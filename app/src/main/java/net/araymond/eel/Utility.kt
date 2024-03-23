@@ -905,6 +905,11 @@ object Utility {
                 return transaction
             }
         }
-        return null
+        /*
+           Returning null results in NullPointerException when generateNewTransactionView tries
+           to read transaction information
+        */
+//        return null
+        return Transaction("", "", 0.0, ZonedDateTime.now(), "")
     }
 }

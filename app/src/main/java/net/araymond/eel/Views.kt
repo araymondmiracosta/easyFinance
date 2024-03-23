@@ -2,6 +2,7 @@ package net.araymond.eel
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +68,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavBackStackEntry
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -411,6 +413,7 @@ object Views {
      * @param context The main context for this application
      * @param transactionID If viewing set to true, then specifies the transaction to view, as
      *                      given by its id
+     * @param givenAccountName If not null, holds the account this transaction should be associated with
      * @param viewTransaction If this transaction should be opened in viewing mode
      */
     @OptIn(ExperimentalMaterial3Api::class)
@@ -418,7 +421,7 @@ object Views {
         "CoroutineCreationDuringComposition"
     )
     @Composable
-    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transactionID: Int, viewTransaction: Boolean) {
+    fun generateNewTransactionView(navHostController: NavHostController, context: Context, transactionID: Int, givenAccountName: String?, viewTransaction: Boolean) {
         val scrollState = rememberScrollState()
 
         ApplicationTheme {
@@ -443,6 +446,10 @@ object Views {
             var fieldEnabled by remember { mutableStateOf(false) }
             var deleteDialog by remember { mutableStateOf(false) }
             var delete by remember { mutableStateOf(false) }
+
+            if (givenAccountName != null) {
+                accountName = givenAccountName
+            }
 
             if (isTransfer) {
                 transactionAccountLabel = "Transfer source account"
@@ -1242,6 +1249,7 @@ object Views {
     fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
             var showDialog by remember { mutableStateOf(false) }
+            val scrollState = rememberScrollState()
 
             if (showDialog) {
                 Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
@@ -1352,6 +1360,16 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
+                    }
+                },
+                floatingActionButton = {
+                    if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
+                        ExtendedFloatingActionButton(
+                            text = { Text(text = "New Transaction") },
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            icon = { Icon(Icons.Default.Add, "") },
+                            onClick = { navHostController.navigate("New Transaction Activity/$accountName") }
+                        )
                     }
                 }
             )
