@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -621,11 +622,12 @@ object Viewlets: ComponentActivity() {
                 largestY = point[1]
             }
         }
+        val colorScheme = MaterialTheme.colorScheme
         val textMeasurer = rememberTextMeasurer()
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val trendLineColour = net.araymond.eel.ui.theme.lightBlue
-            val labelColour = net.araymond.eel.ui.theme.purple
-            val borderLines = net.araymond.eel.ui.theme.darkTan
+            val trendLineColour = colorScheme.primary
+            val labelColour = colorScheme.onSurface
+            val borderLines = colorScheme.outline
 
             val width: Double = (size.width - 55).toDouble()
             val height: Double = (width * 0.4)
