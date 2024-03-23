@@ -2,6 +2,7 @@ package net.araymond.eel
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -67,6 +68,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavBackStackEntry
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -411,6 +413,7 @@ object Views {
      * @param context The main context for this application
      * @param transactionID If viewing set to true, then specifies the transaction to view, as
      *                      given by its id
+     * @param givenAccountName If not null, holds the account this transaction should be associated with
      * @param viewTransaction If this transaction should be opened in viewing mode
      */
     @OptIn(ExperimentalMaterial3Api::class)
