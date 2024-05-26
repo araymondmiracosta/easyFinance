@@ -68,7 +68,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavBackStackEntry
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -1248,8 +1247,8 @@ object Views {
     @Composable
     fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
-            var showDialog by remember { mutableStateOf(false) }
             val scrollState = rememberScrollState()
+            var showDialog by remember { mutableStateOf(false) }
 
             if (showDialog) {
                 Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
@@ -1261,7 +1260,6 @@ object Views {
                     }
                 ), context)
             }
-
             Scaffold(
                 snackbarHost = {
                                SnackbarHost(hostState = Values.snackbarHostState)
@@ -1326,7 +1324,7 @@ object Views {
                         .fillMaxHeight()) {
                         Column(
                             modifier = Modifier
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(scrollState)
                                 .fillMaxHeight()
                         ) {
                             Row(
@@ -1363,7 +1361,8 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
+                    Log.d("", scrollState.isScrollInProgress.toString())
+                    if (!scrollState.isScrollInProgress) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
