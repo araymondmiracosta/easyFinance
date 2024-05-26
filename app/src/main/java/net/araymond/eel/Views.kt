@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -1249,6 +1250,7 @@ object Views {
         ApplicationTheme {
             val scrollState = rememberScrollState()
             var showDialog by remember { mutableStateOf(false) }
+            var showChart by remember { mutableStateOf(false) }
 
             if (showDialog) {
                 Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
@@ -1286,6 +1288,20 @@ object Views {
                             }
                         },
                         actions = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "View chart")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        showChart = !showChart
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ShowChart, "View chart")
+                                }
+                            }
                             PlainTooltipBox(
                                 tooltip = {
                                     Text(style = Values.tooltipStyle, text = "Sort transactions")
@@ -1356,6 +1372,10 @@ object Views {
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            if (showChart) {
+                                Viewlets.generateAccountGraph(accountName)
+                                Spacer(modifier = Modifier.padding(vertical = 110.dp))
+                            }
                             Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
                     }
