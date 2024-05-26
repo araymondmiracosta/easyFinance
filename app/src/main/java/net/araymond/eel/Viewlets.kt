@@ -628,6 +628,7 @@ object Viewlets: ComponentActivity() {
             val trendLineColour = colorScheme.primary
             val labelColour = colorScheme.onSurface
             val borderLines = colorScheme.outline
+            val pointColour = colorScheme.secondary
 
             val width: Double = (size.width - 55).toDouble()
             val height: Double = (width * 0.4)
@@ -735,7 +736,7 @@ object Viewlets: ComponentActivity() {
                         (height + (labelHeight / 3)) - (((point[1] - smallestY) / (largestY - smallestY)) * (height - (labelHeight / 3)))
                 }
                 drawCircle(
-                    color = net.araymond.eel.ui.theme.lightBlue,
+                    color = pointColour,
                     radius = 9f,
                     center = Offset(xPosition.toFloat(), yPosition.toFloat())
                 )
