@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -628,17 +627,22 @@ object Viewlets: ComponentActivity() {
             val trendLineColour = colorScheme.primary
             val labelColour = colorScheme.onSurface
             val borderLines = colorScheme.outline
+//            val pointColour = colorScheme.secondary
 
-            val width: Double = (size.width - 55).toDouble()
+            val width: Double = (size.width - 110).toDouble()
             val height: Double = (width * 0.4)
             val currency = Utility.getPreference("currencyPreference")
+
+            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = 12.sp)).size
+            val labelWidth = labelSize.width + 25
+            val labelHeight = labelSize.height
 
             // Draw y-axis labels
             // Middle number
             drawText(
                 textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format((smallestY + ((largestY - smallestY) / 2)))}", TextStyle(fontSize = 12.sp)),
                 labelColour,
-                Offset(0f, height.toFloat() / 2)
+                Offset(0f, (height.toFloat() / 2) + (labelHeight / 2))
             )
             // Do not draw top and bottom numbers if there is only one data point
             if (points.size > 1) {
@@ -652,7 +656,7 @@ object Viewlets: ComponentActivity() {
                         }", TextStyle(fontSize = 12.sp)
                     ),
                     labelColour,
-                    Offset(0f, 0f)
+                    Offset(0f, (labelHeight / 2).toFloat())
                 )
                 // Bottom number
                 drawText(
@@ -664,12 +668,10 @@ object Viewlets: ComponentActivity() {
                         }", TextStyle(fontSize = 12.sp)
                     ),
                     labelColour,
-                    Offset(0f, height.toFloat())
+                    Offset(0f, height.toFloat() + (labelHeight / 2))
                 )
             }
-            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = 12.sp)).size
-            val labelWidth = labelSize.width + 25
-            val labelHeight = labelSize.height
+
             val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
             val initialDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[0][0].toLong()), Values.UTCTimeZone))
             val middleDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size / 2][0].toLong()), Values.UTCTimeZone))
@@ -685,10 +687,10 @@ object Viewlets: ComponentActivity() {
                     TextStyle(fontSize = 12.sp)
                 ),
                 labelColour,
-                Offset((((width / 2)).toFloat()), xAxisLabelHeight)
+                Offset((((width / 2) + 10).toFloat()), xAxisLabelHeight)
             )
             if (points.size > 1) {
-                // Left number
+                // Left date
                 drawText(
                     textMeasurer.measure(
                         initialDate,
@@ -697,28 +699,56 @@ object Viewlets: ComponentActivity() {
                     labelColour,
                     Offset((((labelWidth + 10) - xAxisLabelLength).toFloat()), xAxisLabelHeight)
                 )
-                // Right number
+                // Right date
                 drawText(
                     textMeasurer.measure(
                         finalDate,
                         TextStyle(fontSize = 12.sp)
                     ),
                     labelColour,
-                    Offset(((width - xAxisLabelLength - (xAxisLabelLength / 2)).toFloat()), xAxisLabelHeight)
+                    Offset(((width - xAxisLabelLength).toFloat()), xAxisLabelHeight)
                 )
             }
-            // Draw vertical line
+            // Draw left-most vertical line
             drawLine(
                 color = borderLines,
-                start = Offset(labelWidth.toFloat(), 0f),
-                end = Offset(labelWidth.toFloat(), height.toFloat() + labelHeight),
+                start = Offset(labelWidth.toFloat(), (labelHeight).toFloat()),
+                end = Offset(labelWidth.toFloat(), (height.toFloat() + labelHeight)),
                 strokeWidth = 3f
             )
-            // Draw horizontal line
+            // Draw middle vertical line
+            drawLine(
+                color = borderLines,
+                start = Offset((((width / 2) + (labelWidth / 2)).toFloat()), (labelHeight).toFloat()),
+                end = Offset((((width / 2) + (labelWidth / 2)).toFloat()), (height.toFloat() + labelHeight)),
+                strokeWidth = 3f
+            )
+            // Draw right vertical line
+            drawLine(
+                color = borderLines,
+                start = Offset(((width).toFloat()), (labelHeight).toFloat()),
+                end = Offset(((width).toFloat()), (height.toFloat() + labelHeight)),
+                strokeWidth = 3f
+            )
+            // Draw bottom horizontal line
             drawLine(
                 color = borderLines,
                 start = Offset(labelWidth.toFloat(), (height).toFloat() + labelHeight),
-                end = Offset(width.toFloat() + labelWidth, (height).toFloat() + labelHeight),
+                end = Offset(width.toFloat(), (height).toFloat() + labelHeight),
+                strokeWidth = 3f
+            )
+            // Draw middle horizontal line
+            drawLine(
+                color = borderLines,
+                start = Offset(labelWidth.toFloat(), (height.toFloat() / 2) + labelHeight),
+                end = Offset(width.toFloat(), (height.toFloat() / 2) + labelHeight),
+                strokeWidth = 3f
+            )
+            // Draw top horizontal line
+            drawLine(
+                color = borderLines,
+                start = Offset(labelWidth.toFloat(), (labelHeight.toFloat())),
+                end = Offset(width.toFloat(), (labelHeight.toFloat())),
                 strokeWidth = 3f
             )
             var lastPoint = points[0]
@@ -730,15 +760,19 @@ object Viewlets: ComponentActivity() {
                     yPosition = (height / 2)
                 } else {
                     xPosition =
-                        (10 + labelWidth) + (((point[0] - points[0][0]) / (points[points.size - 1][0] - points[0][0])) * (width - labelWidth))
+                        (labelWidth) + (((point[0] - points[0][0]) / (points[points.size - 1][0] - points[0][0])) * (width - labelWidth))
                     yPosition =
-                        (height + (labelHeight / 3)) - (((point[1] - smallestY) / (largestY - smallestY)) * (height - (labelHeight / 3)))
+                        (height + (labelHeight)) - (((point[1] - smallestY) / (largestY - smallestY)) * (height))
                 }
-                drawCircle(
-                    color = net.araymond.eel.ui.theme.lightBlue,
-                    radius = 9f,
-                    center = Offset(xPosition.toFloat(), yPosition.toFloat())
-                )
+//                val date = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(point[0].toLong()), Values.UTCTimeZone))
+//                val setDate = dateFormatter.format(ZonedDateTime.of(LocalDateTime.of(2022, 10, 31, 0, 0), Values.localTimeZone))
+//                if (date == setDate) {
+//                    drawCircle(
+//                        color = pointColour,
+//                        radius = 9f,
+//                        center = Offset(xPosition.toFloat(), yPosition.toFloat())
+//                    )
+//                }
                 if (!lastPoint.contentEquals(point)) {
                     drawLine(
                         color = trendLineColour,

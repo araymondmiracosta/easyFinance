@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
@@ -68,7 +69,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavBackStackEntry
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -1248,8 +1248,9 @@ object Views {
     @Composable
     fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
-            var showDialog by remember { mutableStateOf(false) }
             val scrollState = rememberScrollState()
+            var showDialog by remember { mutableStateOf(false) }
+            var showChart by remember { mutableStateOf(false) }
 
             if (showDialog) {
                 Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
@@ -1261,7 +1262,6 @@ object Views {
                     }
                 ), context)
             }
-
             Scaffold(
                 snackbarHost = {
                                SnackbarHost(hostState = Values.snackbarHostState)
@@ -1288,6 +1288,20 @@ object Views {
                             }
                         },
                         actions = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "View chart")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        showChart = !showChart
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ShowChart, "View chart")
+                                }
+                            }
                             PlainTooltipBox(
                                 tooltip = {
                                     Text(style = Values.tooltipStyle, text = "Sort transactions")
@@ -1326,7 +1340,7 @@ object Views {
                         .fillMaxHeight()) {
                         Column(
                             modifier = Modifier
-                                .verticalScroll(rememberScrollState())
+                                .verticalScroll(scrollState)
                                 .fillMaxHeight()
                         ) {
                             Row(
@@ -1358,12 +1372,17 @@ object Views {
                                 }
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            if (showChart) {
+                                Viewlets.generateAccountGraph(accountName)
+                                Spacer(modifier = Modifier.padding(vertical = 110.dp))
+                            }
                             Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
                     }
                 },
                 floatingActionButton = {
-                    if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
+                    Log.d("", scrollState.isScrollInProgress.toString())
+                    if (!scrollState.isScrollInProgress) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
