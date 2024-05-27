@@ -2,7 +2,6 @@ package net.araymond.eel
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -1374,14 +1373,12 @@ object Views {
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             if (showChart) {
                                 Viewlets.generateAccountGraph(accountName)
-                                Spacer(modifier = Modifier.padding(vertical = 110.dp))
                             }
                             Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
                     }
                 },
                 floatingActionButton = {
-                    Log.d("", scrollState.isScrollInProgress.toString())
                     if (!scrollState.isScrollInProgress) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
@@ -1714,7 +1711,6 @@ object Views {
                             }
                             Spacer(modifier = Modifier.padding(vertical = 15.dp))
                             Viewlets.generateAssetGraph(assetName)
-                            Spacer(modifier = Modifier.padding(vertical = 110.dp))
                             Viewlets.generateAssetChangePointList(navHostController, Values.assetTransactions, assetName)
                         }
                     }

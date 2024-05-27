@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -623,24 +624,27 @@ object Viewlets: ComponentActivity() {
         }
         val colorScheme = MaterialTheme.colorScheme
         val textMeasurer = rememberTextMeasurer()
+        var componentHeight by remember { mutableIntStateOf(0) }
         Canvas(modifier = Modifier.fillMaxSize()) {
             val trendLineColour = colorScheme.primary
             val labelColour = colorScheme.onSurface
             val borderLines = colorScheme.outline
+            val chartLabelSize = 14.sp
 //            val pointColour = colorScheme.secondary
 
             val width: Double = (size.width - 110).toDouble()
-            val height: Double = (width * 0.4)
+            val height: Double = (width * 0.6) / 2
+            componentHeight = height.toInt()
             val currency = Utility.getPreference("currencyPreference")
 
-            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = 12.sp)).size
+            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = chartLabelSize)).size
             val labelWidth = labelSize.width + 25
             val labelHeight = labelSize.height
 
             // Draw y-axis labels
             // Middle number
             drawText(
-                textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format((smallestY + ((largestY - smallestY) / 2)))}", TextStyle(fontSize = 12.sp)),
+                textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format((smallestY + ((largestY - smallestY) / 2)))}", TextStyle(fontSize = chartLabelSize)),
                 labelColour,
                 Offset(0f, (height.toFloat() / 2) + (labelHeight / 2))
             )
@@ -653,7 +657,7 @@ object Viewlets: ComponentActivity() {
                             Values.balanceFormat.format(
                                 largestY
                             )
-                        }", TextStyle(fontSize = 12.sp)
+                        }", TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset(0f, (labelHeight / 2).toFloat())
@@ -665,7 +669,7 @@ object Viewlets: ComponentActivity() {
                             Values.balanceFormat.format(
                                 smallestY
                             )
-                        }", TextStyle(fontSize = 12.sp)
+                        }", TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset(0f, height.toFloat() + (labelHeight / 2))
@@ -678,13 +682,13 @@ object Viewlets: ComponentActivity() {
             val finalDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size - 1][0].toLong()), Values.UTCTimeZone))
 
             val xAxisLabelHeight = height.toFloat() + labelHeight + 27
-            val xAxisLabelLength = (10 + (textMeasurer.measure(middleDate, TextStyle(fontSize = 12.sp)).size.width / 2.5))
+            val xAxisLabelLength = (10 + (textMeasurer.measure(middleDate, TextStyle(fontSize = chartLabelSize)).size.width / 2.5))
             // Draw x-axis labels
             // Middle number
             drawText(
                 textMeasurer.measure(
                     middleDate,
-                    TextStyle(fontSize = 12.sp)
+                    TextStyle(fontSize = chartLabelSize)
                 ),
                 labelColour,
                 Offset((((width / 2) + 10).toFloat()), xAxisLabelHeight)
@@ -694,7 +698,7 @@ object Viewlets: ComponentActivity() {
                 drawText(
                     textMeasurer.measure(
                         initialDate,
-                        TextStyle(fontSize = 12.sp)
+                        TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset((((labelWidth + 10) - xAxisLabelLength).toFloat()), xAxisLabelHeight)
@@ -703,7 +707,7 @@ object Viewlets: ComponentActivity() {
                 drawText(
                     textMeasurer.measure(
                         finalDate,
-                        TextStyle(fontSize = 12.sp)
+                        TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset(((width - xAxisLabelLength).toFloat()), xAxisLabelHeight)
@@ -784,6 +788,7 @@ object Viewlets: ComponentActivity() {
                 lastPoint = arrayOf(xPosition, yPosition)
             }
         }
+        Spacer(modifier = Modifier.padding(vertical = (componentHeight * 0.35).dp))
     }
 
     @Composable
