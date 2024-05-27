@@ -36,7 +36,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
@@ -611,7 +615,38 @@ object Viewlets: ComponentActivity() {
     // TODO: Fix colours so they reflect theme changes; centering axis labels over respective points
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun drawGraph(points: ArrayList<Array<Double>>) {
+    fun drawGraph(pointsInput: ArrayList<Array<Double>>) {
+        val points = ArrayList<Array<Double>>()
+        var beginningDate by remember { mutableStateOf(ZonedDateTime.ofInstant(Instant.ofEpochSecond(0), Values.UTCTimeZone)) }
+        var sliderValue by remember { mutableFloatStateOf(100f) }
+        val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+
+        when (sliderValue.toInt()) {
+            // ALL
+            100 -> {
+                beginningDate = ZonedDateTime.ofInstant(Instant.ofEpochSecond(0), Values.UTCTimeZone)
+            }
+            // 3 years
+            66 -> {
+                beginningDate = ZonedDateTime.ofInstant(Instant.ofEpochSecond(ZonedDateTime.now().toEpochSecond() - (31557600 * 3)), Values.UTCTimeZone)
+            }
+            // 1 year
+            33 -> {
+                beginningDate = ZonedDateTime.ofInstant(Instant.ofEpochSecond(ZonedDateTime.now().toEpochSecond() - 31557600), Values.UTCTimeZone)
+            }
+            // YTD
+            0 -> {
+                val year = ZonedDateTime.now().year
+                beginningDate = ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, Values.UTCTimeZone)
+            }
+        }
+        pointsInput.forEach { point ->
+            val pointDate = point[0].toLong()
+            if (pointDate >= beginningDate.toEpochSecond()) {
+                points.add(point)
+            }
+        }
+
         var smallestY: Double = points[0][1]
         var largestY: Double = points[0][1]
         points.forEach { point ->
@@ -676,7 +711,6 @@ object Viewlets: ComponentActivity() {
                 )
             }
 
-            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
             val initialDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[0][0].toLong()), Values.UTCTimeZone))
             val middleDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size / 2][0].toLong()), Values.UTCTimeZone))
             val finalDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size - 1][0].toLong()), Values.UTCTimeZone))
@@ -788,7 +822,80 @@ object Viewlets: ComponentActivity() {
                 lastPoint = arrayOf(xPosition, yPosition)
             }
         }
-        Spacer(modifier = Modifier.padding(vertical = (componentHeight * 0.35).dp))
+        Spacer(modifier = Modifier.padding(vertical = (componentHeight * 0.33).dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it},
+                steps = 2,
+                modifier = Modifier.widthIn(0.dp, 400.dp).padding(horizontal = 16.dp),
+                valueRange = 0f..100f
+            )
+            Row(
+                modifier = Modifier.widthIn(0.dp, 400.dp).padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Text(
+                    text = "YTD",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 0) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "1Y",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 33) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "3Y",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 66) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "ALL",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 100) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+            }
+        }
+        Spacer(modifier = Modifier.padding(vertical = 15.dp))
     }
 
     @Composable
