@@ -7,7 +7,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Divider
 import androidx.compose.material3.LocalTextStyle
@@ -39,6 +37,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.material3.Slider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -398,12 +397,12 @@ object Viewlets: ComponentActivity() {
      */
     @Composable
     fun generateAccountScroller(navHostController: NavHostController) {
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState())
-        ) {
+        LazyRow {
             val preference = Utility.getPreference("accountSortingPreference")
             val currency = Utility.getPreference("currencyPreference")
-            Utility.sortAccountListByPreference(Values.accountNames, preference).forEach{ accountName ->
+            val accounts = Utility.sortAccountListByPreference(Values.accountNames, preference)
+            items(accounts.size) { index ->
+                val accountName = accounts[index]
                 val accountTotal = Utility.getAccountTotal(accountName, Values.transactions)
                 Row {
                     Column(
@@ -440,107 +439,117 @@ object Viewlets: ComponentActivity() {
     }
 
     /**
-     * Creates a scrollable list of the transactions in the given transaction list
+     * Works within a LazyColumn to provide a scrollable list of transactions for the given
+     * transaction list. Given an index, will provide a specific row for the transaction located
+     * in the given index in the given list.
      *
      * @param navHostController The main navHostController for this application
      * @param transactions The transaction list to iterate through
      * @param showRunningBalance If the running balance should be displayed for each transaction
+     * @param index The index of the transaction
      */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean) {
+    fun generateTransactionScroller(navHostController: NavHostController, transactions: ArrayList<Transaction>, showRunningBalance: Boolean, index: Int) {
         val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
         val currency = Utility.getPreference("currencyPreference")
-        transactions.forEach { transaction ->
-            val localDate = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-            val localTime = Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
-            val transactionID = transaction.hashCode()
-            Row(
-                modifier = Modifier
-                    .clip(shape = RoundedCornerShape(10.dp))
-                    .background(
-                        MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(10.dp)
+        val transaction = transactions[index]
+        val localDate =
+            Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+        val localTime =
+            Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+        val transactionID = transaction.hashCode()
+        Row(
+            modifier = Modifier
+                .clip(shape = RoundedCornerShape(10.dp))
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(10.dp)
+                )
+                .clickable(enabled = true, onClick = {
+                    navHostController.navigate("View Transaction Activity/$transactionID")
+                })
+                .padding(10.dp)
+                .fillMaxWidth()
+        ) {
+            Column {
+                Text(
+                    text = transaction.category,  // category
+                    style = TextStyle(
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.tertiary
                     )
-                    .clickable(enabled = true, onClick = {
-                        navHostController.navigate("View Transaction Activity/$transactionID")
-                    })
-                    .padding(10.dp)
+                )
+                Spacer(modifier = Modifier.padding(2.dp))
+                Text(
+                    text = transaction.accountName,     // account
+                    style = TextStyle(
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.inverseSurface
+                    )
+                )
+                Spacer(modifier = Modifier.padding(2.dp))
+                Text(
+                    text = localDate.format(dateFormatter) + " @ " + localTime.format(
+                        timeFormatter
+                    ),     // date and time
+                    style = TextStyle(
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.surfaceTint
+                    )
+                )
+            }
+            Spacer(
+                Modifier
+                    .weight(1f)
                     .fillMaxWidth()
+            )
+            Column(
+                horizontalAlignment = Alignment.End
             ) {
-                Column {
+                if (transaction.amount < 0) {   // If amount is negative
                     Text(
-                        text = transaction.category,  // category
-                        style = TextStyle(
-                            fontSize = 20.sp,
-                            color = MaterialTheme.colorScheme.tertiary
-                        )
-                    )
-                    Spacer(modifier = Modifier.padding(2.dp))
-                    Text(
-                        text = transaction.accountName,     // account
+                        text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
+                            transaction.amount.absoluteValue
+                        ) + ")",
                         style = TextStyle(
                             fontSize = 18.sp,
-                            color = MaterialTheme.colorScheme.inverseSurface
+                            fontWeight = FontWeight.Bold,
+                            color = Red
                         )
                     )
-                    Spacer(modifier = Modifier.padding(2.dp))
+                } else {
                     Text(
-                        text = localDate.format(dateFormatter) + " @ " + localTime.format(timeFormatter),     // date and time
+                        text = Values.currencies[currency] + Values.balanceFormat.format(
+                            transaction.amount
+                        ),
                         style = TextStyle(
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.surfaceTint
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Green
                         )
                     )
                 }
-                Spacer(
-                    Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                )
-                Column(
-                    horizontalAlignment = Alignment.End
-                ) {
-                    if (transaction.amount < 0) {   // If amount is negative
-                        Text(
-                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(transaction.amount.absoluteValue) + ")",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Red
+                if (showRunningBalance) {
+                    Spacer(modifier = Modifier.padding(15.dp))
+                    Text(
+                        text = Values.currencies[currency] + Values.balanceFormat.format(
+                            Utility.calculateTransactionRunningBalance(
+                                transaction,
+                                Values.transactions
                             )
+                        ),
+                        style = TextStyle(
+                            fontSize = 18.sp
                         )
-                    }
-                    else {
-                        Text(
-                            text = Values.currencies[currency] + Values.balanceFormat.format(transaction.amount),
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Green
-                            )
-                        )
-                    }
-                    if (showRunningBalance) {
-                        Spacer(modifier = Modifier.padding(15.dp))
-                        Text(
-                            text = Values.currencies[currency] + Values.balanceFormat.format(
-                                Utility.calculateTransactionRunningBalance(
-                                    transaction,
-                                    Values.transactions
-                                )
-                            ),
-                            style = TextStyle(
-                                fontSize = 18.sp
-                            )
-                        )
-                    }
+                    )
                 }
             }
-            Spacer(modifier = Modifier.padding(10.dp))
         }
-   }
+        Spacer(modifier = Modifier.padding(10.dp))
+    }
+
     /**
      * Creates a scrollable list of held assets
      *
@@ -548,62 +557,63 @@ object Viewlets: ComponentActivity() {
      */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateAssetScroller(navHostController: NavHostController) {
+    fun generateAssetScroller(navHostController: NavHostController, index: Int) {
         val preference = Utility.getPreference("assetSortingPreference")
         val currency = Utility.getPreference("currencyPreference")
-        Utility.sortAccountListByPreference(Values.assetNames, preference).forEach { assetName ->
-            val assetValue = Utility.getMostRecentTransaction(assetName, Values.assetTransactions).amount
-            Row {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .clip(shape = RoundedCornerShape(10.dp))
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clickable(enabled = true, onClick = {
-                            navHostController.navigate("Asset Specific Activity/$assetName")
-                        })
-                        .padding(10.dp)
-                        .fillMaxWidth()
-                ) {
+        val assetNames = Utility.sortAccountListByPreference(Values.assetNames, preference)
+        val assetName = assetNames[index]
+        val assetValue =
+            Utility.getMostRecentTransaction(assetName, Values.assetTransactions).amount
+        Row {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(10.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(10.dp)
+                    )
+                    .clickable(enabled = true, onClick = {
+                        navHostController.navigate("Asset Specific Activity/$assetName")
+                    })
+                    .padding(10.dp)
+                    .fillMaxWidth()
+            ) {
+                Text(
+                    text = assetName,  // asset name
+                    style = TextStyle(
+                        fontSize = 20.sp,
+                        color = MaterialTheme.colorScheme.inverseSurface
+                    )
+                )
+                Spacer(modifier = Modifier.padding(2.dp))
+                if (assetValue < 0) {   // If amount is negative
                     Text(
-                        text = assetName,  // asset name
+                        text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
+                            assetValue.absoluteValue
+                        ) + ")",
                         style = TextStyle(
-                            fontSize = 20.sp,
-                            color = MaterialTheme.colorScheme.inverseSurface
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Red
                         )
                     )
-                    Spacer(modifier = Modifier.padding(2.dp))
-                    if (assetValue < 0) {   // If amount is negative
-                        Text(
-                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
-                                assetValue.absoluteValue
-                            ) + ")",
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Red
-                            )
+                } else {
+                    Text(
+                        text = Values.currencies[currency] + Values.balanceFormat.format(
+                            assetValue
+                        ),
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Green
                         )
-                    } else {
-                        Text(
-                            text = Values.currencies[currency] + Values.balanceFormat.format(
-                                assetValue
-                            ),
-                            style = TextStyle(
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Green
-                            )
-                        )
-                    }
-                    Spacer(modifier = Modifier.padding(2.dp))
+                    )
                 }
+                Spacer(modifier = Modifier.padding(2.dp))
             }
-            Spacer(modifier = Modifier.padding(10.dp))
         }
+        Spacer(modifier = Modifier.padding(10.dp))
     }
 
     /**
@@ -831,11 +841,15 @@ object Viewlets: ComponentActivity() {
                 value = sliderValue,
                 onValueChange = { sliderValue = it},
                 steps = 2,
-                modifier = Modifier.widthIn(0.dp, 400.dp).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .widthIn(0.dp, 400.dp)
+                    .padding(horizontal = 16.dp),
                 valueRange = 0f..100f
             )
             Row(
-                modifier = Modifier.widthIn(0.dp, 400.dp).padding(horizontal = 16.dp),
+                modifier = Modifier
+                    .widthIn(0.dp, 400.dp)
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Text(
@@ -917,85 +931,86 @@ object Viewlets: ComponentActivity() {
     }
 
     /**
-     * Creates a list of the transactions in the given transaction list
+     * Returns a row with information of the change point in the given change point list at the
+     * given index
      *
      * @param navHostController The main navHostController for this application
      * @param transactions The transaction list to iterate through
      * @param assetName The asset to show the change points for
+     * @param index The index of the change point
      */
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun generateAssetChangePointList(navHostController: NavHostController, transactions: ArrayList<Transaction>, assetName: String) {
+    fun generateAssetChangePointList(navHostController: NavHostController, transactions: ArrayList<Transaction>, assetName: String, index: Int) {
         val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
         val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
         val currency = Utility.getPreference("currencyPreference")
-        transactions.forEach { transaction ->
-            if (transaction.accountName.compareTo(assetName) == 0) {
-                val localDate =
-                    Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
-                val localTime =
-                    Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
-                Row(
-                    modifier = Modifier
-                        .clip(shape = RoundedCornerShape(10.dp))
-                        .background(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clickable(enabled = true, onClick = {
-                            navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}/${transaction.hashCode()}")
-                        })
-                        .padding(10.dp)
-                        .fillMaxWidth()
-                ) {
-                    Column {
-                        Spacer(modifier = Modifier.padding(2.dp))
-                        Text(
-                            text = localDate.format(dateFormatter) + " @ " + localTime.format(
-                                timeFormatter
-                            ),     // date and time
-                            style = TextStyle(
-                                fontSize = 16.sp,
-                                color = MaterialTheme.colorScheme.surfaceTint
-                            )
-                        )
-                        Spacer(modifier = Modifier.padding(2.dp))
-                    }
-                    Spacer(
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
+        val transaction = transactions[index]
+        if (transaction.accountName.compareTo(assetName) == 0) {
+            val localDate =
+                Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalDate()
+            val localTime =
+                Utility.convertUtcTimeToLocalDateTime(transaction.utcDateTime).toLocalTime()
+            Row(
+                modifier = Modifier
+                    .clip(shape = RoundedCornerShape(10.dp))
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(10.dp)
                     )
-                    Column(
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        if (transaction.amount < 0) {   // If amount is negative
-                            Text(
-                                text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
-                                    transaction.amount.absoluteValue
-                                ) + ")",
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Red
-                                )
+                    .clickable(enabled = true, onClick = {
+                        navHostController.navigate("View Asset Change Point Activity/${transaction.accountName}/${transaction.hashCode()}")
+                    })
+                    .padding(10.dp)
+                    .fillMaxWidth()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.padding(2.dp))
+                    Text(
+                        text = localDate.format(dateFormatter) + " @ " + localTime.format(
+                            timeFormatter
+                        ),     // date and time
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.surfaceTint
+                        )
+                    )
+                    Spacer(modifier = Modifier.padding(2.dp))
+                }
+                Spacer(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                )
+                Column(
+                    horizontalAlignment = Alignment.End
+                ) {
+                    if (transaction.amount < 0) {   // If amount is negative
+                        Text(
+                            text = "(" + Values.currencies[currency] + Values.balanceFormat.format(
+                                transaction.amount.absoluteValue
+                            ) + ")",
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Red
                             )
-                        } else {
-                            Text(
-                                text = Values.currencies[currency] + Values.balanceFormat.format(
-                                    transaction.amount
-                                ),
-                                style = TextStyle(
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Green
-                                )
+                        )
+                    } else {
+                        Text(
+                            text = Values.currencies[currency] + Values.balanceFormat.format(
+                                transaction.amount
+                            ),
+                            style = TextStyle(
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Green
                             )
-                        }
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.padding(10.dp))
             }
+            Spacer(modifier = Modifier.padding(10.dp))
         }
     }
 }
