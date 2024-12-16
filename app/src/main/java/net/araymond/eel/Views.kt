@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -91,7 +93,7 @@ object Views {
     @Composable
     fun mainDraw(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
-            val scrollState = rememberScrollState()
+            val scrollState = rememberLazyListState()
             var showDialog by remember { mutableStateOf(false) }
 
             if (showDialog) {
@@ -221,42 +223,56 @@ object Views {
                     Surface(modifier = Modifier
                         .fillMaxSize()
                         .padding(top = 65.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
-                        Column(
-                            modifier = Modifier.verticalScroll(scrollState),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        LazyColumn(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            state = scrollState
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .clip(shape = RoundedCornerShape(10.dp))
-                                    .background(
-                                        MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(10.dp)
+                            item {
+                                Row(
+                                    modifier = Modifier
+                                        .clip(shape = RoundedCornerShape(10.dp))
+                                        .background(
+                                            MaterialTheme.colorScheme.surfaceVariant,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        .padding(10.dp)
+                                        .fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Text(
+                                        text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${
+                                            Values.balanceFormat.format(
+                                                Values.total
+                                            )
+                                        }"),
+                                        style = TextStyle(
+                                            fontSize = 22.sp,
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
                                     )
-                                    .padding(10.dp)
-                                    .fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Values.total)}"),
-                                    style = TextStyle(
-                                        fontSize = 22.sp,
-                                        textAlign = TextAlign.Center,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 12.dp))
+                            }
+                            item {
+                                Viewlets.generateAccountScroller(navHostController)
+                            }
+                            item {
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            }
+                            items(Values.transactions.size) { index ->
+                                Viewlets.generateTransactionScroller(
+                                    navHostController,
+                                    Values.transactions, false,
+                                    index
                                 )
                             }
-                            Spacer(modifier = Modifier.padding(vertical = 12.dp))
-                            Viewlets.generateAccountScroller(navHostController)
-                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateTransactionScroller(
-                                navHostController,
-                                Values.transactions, false
-                            )
                         }
                     }
                 },
                 floatingActionButton = {
-                    if (!scrollState.isScrollInProgress && Values.transactions.isNotEmpty()) {
+                    if (!scrollState.isScrollInProgress &&
+                        Values.transactions.isNotEmpty()) {
                         ExtendedFloatingActionButton(
                             text = { Text(text = "New Transaction") },
                             contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -1306,9 +1322,14 @@ object Views {
     @Composable
     fun generateAccountSpecificView(navHostController: NavHostController, accountName: String, context: Context) {
         ApplicationTheme {
-            val scrollState = rememberScrollState()
+            val scrollState = rememberLazyListState()
             var showDialog by remember { mutableStateOf(false) }
             var showChart by remember { mutableStateOf(false) }
+            val transactions = Utility.sortTransactionListByPreference(
+                Utility.getAccountTransactions(
+                    accountName,
+                    Values.transactions
+                ), Utility.getPreference("transactionSortingPreference"))
 
             if (showDialog) {
                 Utility.setTransactionSortingPreference(Viewlets.dropdownDialog(
@@ -1396,44 +1417,57 @@ object Views {
                         .fillMaxSize()
                         .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
                         .fillMaxHeight()) {
-                        Column(
-                            modifier = Modifier
-                                .verticalScroll(scrollState)
-                                .fillMaxHeight()
+                        LazyColumn(
+                            state = scrollState,
+                            modifier = Modifier.fillMaxHeight()
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceVariant,
-                                            shape = RoundedCornerShape(10.dp)
-                                        )
-                                        .clip(shape = RoundedCornerShape(10.dp))
-                                        .padding(15.dp)
-                                        .fillMaxWidth(),
+                            item {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = accountName,
-                                        style = TextStyle(
-                                            fontSize = 22.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .background(
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                            .clip(shape = RoundedCornerShape(10.dp))
+                                            .padding(15.dp)
+                                            .fillMaxWidth(),
+                                    ) {
+                                        Text(
+                                            text = accountName,
+                                            style = TextStyle(
+                                                fontSize = 22.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
                                         )
-                                    )
-                                    Spacer(modifier = Modifier.padding(5.dp))
-                                    Text(
-                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getAccountTotal(accountName, Values.transactions)),
-                                        style = TextStyle(fontSize = 19.sp)
-                                    )
+                                        Spacer(modifier = Modifier.padding(5.dp))
+                                        Text(
+                                            text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(
+                                                Utility.getAccountTotal(
+                                                    accountName,
+                                                    Values.transactions
+                                                )
+                                            ),
+                                            style = TextStyle(fontSize = 19.sp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                if (showChart) {
+                                    Column {
+                                        Viewlets.generateAccountGraph(accountName)
+                                    }
                                 }
                             }
-                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            if (showChart) {
-                                Viewlets.generateAccountGraph(accountName)
+                            items(transactions.size) { index ->
+                                Viewlets.generateTransactionScroller(
+                                    navHostController,
+                                    transactions, true, index
+                                )
                             }
-                            Viewlets.generateTransactionScroller(navHostController, Utility.sortTransactionListByPreference(Utility.getAccountTransactions(accountName, Values.transactions), Utility.getPreference("transactionSortingPreference")), true)
                         }
                     }
                 },
@@ -1657,7 +1691,7 @@ object Views {
     @Composable
     fun generateAssetSpecificView(navHostController: NavHostController, context: Context, assetName: String) {
         ApplicationTheme {
-            val scrollState = rememberScrollState()
+            val scrollState = rememberLazyListState()
             // Sort transactions
             var showDialog by remember { mutableStateOf(false) }
 
@@ -1735,42 +1769,57 @@ object Views {
                         .fillMaxSize()
                         .padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
                         .fillMaxHeight()) {
-                        Column(
+                        LazyColumn(
                             modifier = Modifier
-                                .verticalScroll(scrollState)
-                                .fillMaxHeight()
+                                .fillMaxHeight(),
+                            state = scrollState
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .background(
-                                            MaterialTheme.colorScheme.surfaceVariant,
-                                            shape = RoundedCornerShape(10.dp)
-                                        )
-                                        .clip(shape = RoundedCornerShape(10.dp))
-                                        .padding(15.dp)
-                                        .fillMaxWidth(),
+                            item {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = assetName,
-                                        style = TextStyle(
-                                            fontSize = 22.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier
+                                            .background(
+                                                MaterialTheme.colorScheme.surfaceVariant,
+                                                shape = RoundedCornerShape(10.dp)
+                                            )
+                                            .clip(shape = RoundedCornerShape(10.dp))
+                                            .padding(15.dp)
+                                            .fillMaxWidth(),
+                                    ) {
+                                        Text(
+                                            text = assetName,
+                                            style = TextStyle(
+                                                fontSize = 22.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
                                         )
-                                    )
-                                    Spacer(modifier = Modifier.padding(5.dp))
-                                    Text(
-                                        text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(Utility.getMostRecentTransaction(assetName, Values.assetTransactions).amount),
-                                        style = TextStyle(fontSize = 19.sp)
-                                    )
+                                        Spacer(modifier = Modifier.padding(5.dp))
+                                        Text(
+                                            text = Values.currencies[Utility.getPreference("currencyPreference")] + Values.balanceFormat.format(
+                                                Utility.getMostRecentTransaction(
+                                                    assetName,
+                                                    Values.assetTransactions
+                                                ).amount
+                                            ),
+                                            style = TextStyle(fontSize = 19.sp)
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                            }
+                            item {
+                                Column {
+                                    Viewlets.generateAssetGraph(assetName)
                                 }
                             }
-                            Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                            Viewlets.generateAssetGraph(assetName)
-                            Viewlets.generateAssetChangePointList(navHostController, Values.assetTransactions, assetName)
+                            items(Values.assetTransactions.size) { index ->
+                                Viewlets.generateAssetChangePointList(
+                                    navHostController, Values.assetTransactions, assetName, index
+                                )
+                            }
                         }
                     }
                 },
@@ -1799,7 +1848,6 @@ object Views {
     @Composable
     fun generateAssetView(navHostController: NavHostController, context: Context) {
         ApplicationTheme {
-            val scrollState = rememberScrollState()
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -1832,32 +1880,41 @@ object Views {
                         .fillMaxSize()
                         .padding(top = 65.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.verticalScroll(scrollState),
+                    LazyColumn(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .clip(shape = RoundedCornerShape(10.dp))
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = RoundedCornerShape(10.dp)
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .clip(shape = RoundedCornerShape(10.dp))
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(10.dp)
+                                    )
+                                    .padding(10.dp)
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${
+                                        Values.balanceFormat.format(
+                                            Utility.calculateAssetTotal()
+                                        )
+                                    }"),
+                                    style = TextStyle(
+                                        fontSize = 22.sp,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
                                 )
-                                .padding(10.dp)
-                                .fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = ("${Values.currencies[Utility.getPreference("currencyPreference")]}${Values.balanceFormat.format(Utility.calculateAssetTotal())}"),
-                                style = TextStyle(
-                                    fontSize = 22.sp,
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            )
+                            }
                         }
-                        Spacer(modifier = Modifier.padding(vertical = 12.dp))
-                        Viewlets.generateAssetScroller(navHostController)
+                        item {
+                            Spacer(modifier = Modifier.padding(vertical = 12.dp))
+                        }
+                        items(Values.assetNames.size) { index ->
+                            Viewlets.generateAssetScroller(navHostController, index)
+                        }
                     }
                 }
             }
@@ -2304,18 +2361,20 @@ object Views {
                 content = {
                     Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
                         if (listTransactions) {
-                            foundTransactions = Utility.sortTransactionListByPreference(
-                                foundTransactions,
-                                Utility.getPreference("transactionSortingPreference"))
                             Column(
                                 modifier = Modifier.verticalScroll(scrollState),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ){
-                                Text("Found " + foundTransactions.size + " transactions")
+                                Text("Found " + foundTransactions.size + " transaction(s)")
                                 Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                Viewlets.generateTransactionScroller(
-                                    navHostController, foundTransactions, false
-                                )
+                                LazyColumn {
+                                    items(foundTransactions.size) { index ->
+                                        Viewlets.generateTransactionScroller(
+                                            navHostController, foundTransactions,
+                                            false, index
+                                        )
+                                    }
+                                }
                             }
                         }
                         else {
@@ -2855,8 +2914,8 @@ object Views {
                                             transactionMaxAmount = transactionMaxAmount.substring(1)
                                         }
                                         listTransactions = true
-                                        Utility.showSnackbar("Found " + foundTransactions.size +
-                                        " transaction(s)")
+//                                        Utility.showSnackbar("Found " + foundTransactions.size +
+//                                        " transaction(s)")
                                     }
                                 }
                             )
