@@ -2279,6 +2279,7 @@ object Views {
     @Composable
     fun generateSearchTransactionsView(navHostController: NavHostController, context: Context) {
         val scrollState = rememberScrollState()
+        val lazyScrollState = rememberLazyListState()
 
         ApplicationTheme {
             var isPositiveMinTransaction by remember { mutableStateOf(false) }
@@ -2361,19 +2362,19 @@ object Views {
                 content = {
                     Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
                         if (listTransactions) {
-                            Column(
-                                modifier = Modifier.verticalScroll(scrollState),
+                            LazyColumn(
+                                state = lazyScrollState,
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ){
-                                Text("Found " + foundTransactions.size + " transaction(s)")
-                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
-                                LazyColumn {
-                                    items(foundTransactions.size) { index ->
-                                        Viewlets.generateTransactionScroller(
-                                            navHostController, foundTransactions,
-                                            false, index
-                                        )
-                                    }
+                                item {
+                                    Text("Found " + foundTransactions.size + " transaction(s)")
+                                    Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                }
+                                items(foundTransactions.size) { index ->
+                                    Viewlets.generateTransactionScroller(
+                                        navHostController, foundTransactions,
+                                        false, index
+                                    )
                                 }
                             }
                         }
@@ -2841,7 +2842,7 @@ object Views {
                     }
                 },
                 floatingActionButton = {
-                    if (!scrollState.isScrollInProgress) {
+                    if (!scrollState.isScrollInProgress && !lazyScrollState.isScrollInProgress) {
                         val snackbarMessage = "Searching"
                         if (listTransactions) {
                             ExtendedFloatingActionButton(
