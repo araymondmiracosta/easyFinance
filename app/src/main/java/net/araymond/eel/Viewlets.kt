@@ -36,7 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -610,7 +615,38 @@ object Viewlets: ComponentActivity() {
     // TODO: Fix colours so they reflect theme changes; centering axis labels over respective points
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Composable
-    fun drawGraph(points: ArrayList<Array<Double>>) {
+    fun drawGraph(pointsInput: ArrayList<Array<Double>>) {
+        val points = ArrayList<Array<Double>>()
+        var beginningDate by remember { mutableStateOf(ZonedDateTime.ofInstant(Instant.ofEpochSecond(0), Values.UTCTimeZone)) }
+        var sliderValue by remember { mutableFloatStateOf(100f) }
+        val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+
+        when (sliderValue.toInt()) {
+            // ALL
+            100 -> {
+                beginningDate = ZonedDateTime.ofInstant(Instant.ofEpochSecond(0), Values.UTCTimeZone)
+            }
+            // 3 years
+            66 -> {
+                beginningDate = ZonedDateTime.ofInstant(Instant.ofEpochSecond(ZonedDateTime.now().toEpochSecond() - (31557600 * 3)), Values.UTCTimeZone)
+            }
+            // 1 year
+            33 -> {
+                beginningDate = ZonedDateTime.ofInstant(Instant.ofEpochSecond(ZonedDateTime.now().toEpochSecond() - 31557600), Values.UTCTimeZone)
+            }
+            // YTD
+            0 -> {
+                val year = ZonedDateTime.now().year
+                beginningDate = ZonedDateTime.of(year, 1, 1, 0, 0, 0, 0, Values.UTCTimeZone)
+            }
+        }
+        pointsInput.forEach { point ->
+            val pointDate = point[0].toLong()
+            if (pointDate >= beginningDate.toEpochSecond()) {
+                points.add(point)
+            }
+        }
+
         var smallestY: Double = points[0][1]
         var largestY: Double = points[0][1]
         points.forEach { point ->
@@ -623,24 +659,27 @@ object Viewlets: ComponentActivity() {
         }
         val colorScheme = MaterialTheme.colorScheme
         val textMeasurer = rememberTextMeasurer()
+        var componentHeight by remember { mutableIntStateOf(0) }
         Canvas(modifier = Modifier.fillMaxSize()) {
             val trendLineColour = colorScheme.primary
             val labelColour = colorScheme.onSurface
             val borderLines = colorScheme.outline
+            val chartLabelSize = 14.sp
 //            val pointColour = colorScheme.secondary
 
             val width: Double = (size.width - 110).toDouble()
-            val height: Double = (width * 0.4)
+            val height: Double = (width * 0.6) / 2
+            componentHeight = height.toInt()
             val currency = Utility.getPreference("currencyPreference")
 
-            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = 12.sp)).size
+            val labelSize = textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format(largestY)}", TextStyle(fontSize = chartLabelSize)).size
             val labelWidth = labelSize.width + 25
             val labelHeight = labelSize.height
 
             // Draw y-axis labels
             // Middle number
             drawText(
-                textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format((smallestY + ((largestY - smallestY) / 2)))}", TextStyle(fontSize = 12.sp)),
+                textMeasurer.measure("${Values.currencies[currency]} ${Values.balanceFormat.format((smallestY + ((largestY - smallestY) / 2)))}", TextStyle(fontSize = chartLabelSize)),
                 labelColour,
                 Offset(0f, (height.toFloat() / 2) + (labelHeight / 2))
             )
@@ -653,7 +692,7 @@ object Viewlets: ComponentActivity() {
                             Values.balanceFormat.format(
                                 largestY
                             )
-                        }", TextStyle(fontSize = 12.sp)
+                        }", TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset(0f, (labelHeight / 2).toFloat())
@@ -665,26 +704,25 @@ object Viewlets: ComponentActivity() {
                             Values.balanceFormat.format(
                                 smallestY
                             )
-                        }", TextStyle(fontSize = 12.sp)
+                        }", TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset(0f, height.toFloat() + (labelHeight / 2))
                 )
             }
 
-            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
             val initialDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[0][0].toLong()), Values.UTCTimeZone))
             val middleDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size / 2][0].toLong()), Values.UTCTimeZone))
             val finalDate = dateFormatter.format(ZonedDateTime.ofInstant(Instant.ofEpochSecond(points[points.size - 1][0].toLong()), Values.UTCTimeZone))
 
             val xAxisLabelHeight = height.toFloat() + labelHeight + 27
-            val xAxisLabelLength = (10 + (textMeasurer.measure(middleDate, TextStyle(fontSize = 12.sp)).size.width / 2.5))
+            val xAxisLabelLength = (10 + (textMeasurer.measure(middleDate, TextStyle(fontSize = chartLabelSize)).size.width / 2.5))
             // Draw x-axis labels
             // Middle number
             drawText(
                 textMeasurer.measure(
                     middleDate,
-                    TextStyle(fontSize = 12.sp)
+                    TextStyle(fontSize = chartLabelSize)
                 ),
                 labelColour,
                 Offset((((width / 2) + 10).toFloat()), xAxisLabelHeight)
@@ -694,7 +732,7 @@ object Viewlets: ComponentActivity() {
                 drawText(
                     textMeasurer.measure(
                         initialDate,
-                        TextStyle(fontSize = 12.sp)
+                        TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset((((labelWidth + 10) - xAxisLabelLength).toFloat()), xAxisLabelHeight)
@@ -703,7 +741,7 @@ object Viewlets: ComponentActivity() {
                 drawText(
                     textMeasurer.measure(
                         finalDate,
-                        TextStyle(fontSize = 12.sp)
+                        TextStyle(fontSize = chartLabelSize)
                     ),
                     labelColour,
                     Offset(((width - xAxisLabelLength).toFloat()), xAxisLabelHeight)
@@ -784,6 +822,80 @@ object Viewlets: ComponentActivity() {
                 lastPoint = arrayOf(xPosition, yPosition)
             }
         }
+        Spacer(modifier = Modifier.padding(vertical = (componentHeight * 0.33).dp))
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it},
+                steps = 2,
+                modifier = Modifier.widthIn(0.dp, 400.dp).padding(horizontal = 16.dp),
+                valueRange = 0f..100f
+            )
+            Row(
+                modifier = Modifier.widthIn(0.dp, 400.dp).padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Text(
+                    text = "YTD",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 0) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "1Y",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 33) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "3Y",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 66) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "ALL",
+                    style = TextStyle(
+                        fontSize = 14.sp,
+                        color =
+                        if (sliderValue.toInt() == 100) {
+                            MaterialTheme.colorScheme.primary
+                        }
+                        else {
+                            MaterialTheme.colorScheme.inverseSurface
+                        }
+                    )
+                )
+            }
+        }
+        Spacer(modifier = Modifier.padding(vertical = 15.dp))
     }
 
     @Composable

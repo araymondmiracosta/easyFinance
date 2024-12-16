@@ -15,8 +15,8 @@ android {
         applicationId "net.araymond.eel"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "2024.05.25"
+        versionCode 2
+        versionName "2024.12.15"
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

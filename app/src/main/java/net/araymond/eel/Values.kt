@@ -41,7 +41,7 @@ object Values {
     )
 
     const val name = "eel"
-    const val version = "2024.05.25 (pre-alpha)"
+    const val version = "2024.12.15 (alpha)"
     const val sourceCodeLink = "https://www.nebulacentre.net/projects/eel.git"
 
     val themes =

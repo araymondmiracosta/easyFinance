@@ -912,4 +912,59 @@ object Utility {
 //        return null
         return Transaction("", "", 0.0, ZonedDateTime.now(), "")
     }
+
+    /**
+     * Returns a transaction list only including transactions specified by given filters
+     *
+     * @param filterAmount If the amount should be checked
+     * @param filterAccountName If the account name should be checked
+     * @param filterCategory If the category should be checked
+     * @param filterDate If the date should be checked
+     * @param minAmount The minimum amount needed for a transaction to be included
+     * @param maxAmount The maximum amount needed for a transaction to be included
+     * @param accountName Only include transactions which have this account name
+     * @param category Only include transactions of this category
+     * @param minDate Only include transactions occurring on or after this date
+     * @param maxDate Only include transactions occurring on or before this date
+     * @param transactionList The transaction list to filter
+     *
+     * @return The filtered transaction list
+     */
+    fun filterTransactions(filterAmount: Boolean, filterAccountName: Boolean,
+                           filterCategory: Boolean, filterDate: Boolean, minAmount: Double,
+                           maxAmount: Double, accountName: String, category: String,
+                           minDate: ZonedDateTime, maxDate: ZonedDateTime,
+                           transactionList: ArrayList<Transaction>): ArrayList<Transaction> {
+        val filteredTransactions = ArrayList<Transaction>()
+        var addTransaction: Boolean
+        transactionList.forEach { transaction ->
+            addTransaction = true
+            if (filterDate) {
+                // If transaction date is NOT <= minDate && transaction date NOT <= maxDate
+                if (transaction.utcDateTime !in minDate..maxDate) {
+                    addTransaction = false
+                }
+            }
+            if (filterAccountName) {
+                // If the account name on this transaction does not match the searching account name
+                if (transaction.accountName.compareTo(accountName) != 0) {
+                    addTransaction = false
+                }
+            }
+            if (filterAmount) {
+                if (transaction.amount !in minAmount..maxAmount) {
+                    addTransaction = false
+                }
+            }
+            if (filterCategory) {
+                if (transaction.category.compareTo(category) != 0) {
+                    addTransaction = false
+                }
+            }
+            if (addTransaction) {
+                filteredTransactions.add(transaction)
+            }
+        }
+        return filteredTransactions
+    }
 }
