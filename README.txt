@@ -12,7 +12,7 @@ TODO
 - [X] Remove and edit transactions
 - [X] Remove and edit assets
 - [X] About screen
-- [ ] Search functionality (scope?)
+- [X] Search functionality
 - [X] Improved name
 - [X] Improved icon
 - [ ] Rewrite README
