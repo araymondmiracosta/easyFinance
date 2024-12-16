@@ -23,12 +23,13 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShowChart
-import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -103,6 +104,8 @@ object Views {
                     }
                 ), context)
             }
+            var showMenu by remember { mutableStateOf(false) }
+
             Scaffold(
                 snackbarHost = {
                     SnackbarHost(hostState = Values.snackbarHostState)
@@ -115,46 +118,102 @@ object Views {
                         actions = {
                             PlainTooltipBox(
                                 tooltip = {
-                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
+                                    Text(style = Values.tooltipStyle, text = "Menu")
                                 }
                             ) {
                                 IconButton(
                                     onClick = {
-                                        showDialog = true
+                                              showMenu = true
                                     },
                                     modifier = Modifier.tooltipAnchor()
                                 ) {
-                                    Icon(Icons.Filled.List, "Sort transactions")
+                                    Icon(Icons.Filled.MoreVert, "Menu")
                                 }
-                            }
-                            PlainTooltipBox(
-                                tooltip = {
-                                    Text(style = Values.tooltipStyle, text = "View asset ledger")
-                                }
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        navHostController.navigate("Asset Activity")
-                                    },
-                                    modifier = Modifier.tooltipAnchor()
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false }
                                 ) {
-                                    Icon(Icons.Filled.SwapHoriz, "View asset ledger")
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("Sort transactions")
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            showDialog = true
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("Search transactions")
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            navHostController.navigate(
+                                                "Search Transactions Activity")
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("View assets")
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            navHostController.navigate("Asset Activity")
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("Settings")
+                                        },
+                                        onClick = {
+                                            showMenu = false
+                                            navHostController.navigate("Settings Activity")
+                                        }
+                                    )
                                 }
                             }
-                            PlainTooltipBox(
-                                tooltip = {
-                                    Text(style = Values.tooltipStyle, text = "Settings")
-                                }
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        navHostController.navigate("Settings Activity")
-                                    },
-                                    modifier = Modifier.tooltipAnchor()
-                                ) {
-                                    Icon(Icons.Filled.Settings, "Settings")
-                                }
-                            }
+//                            PlainTooltipBox(
+//                                tooltip = {
+//                                    Text(style = Values.tooltipStyle, text = "Sort transactions")
+//                                }
+//                            ) {
+//                                IconButton(
+//                                    onClick = {
+//                                        showDialog = true
+//                                    },
+//                                    modifier = Modifier.tooltipAnchor()
+//                                ) {
+//                                    Icon(Icons.Filled.List, "Sort transactions")
+//                                }
+//                            }
+//                            PlainTooltipBox(
+//                                tooltip = {
+//                                    Text(style = Values.tooltipStyle, text = "View asset ledger")
+//                                }
+//                            ) {
+//                                IconButton(
+//                                    onClick = {
+//                                        navHostController.navigate("Asset Activity")
+//                                    },
+//                                    modifier = Modifier.tooltipAnchor()
+//                                ) {
+//                                    Icon(Icons.Filled.SwapHoriz, "View asset ledger")
+//                                }
+//                            }
+//                            PlainTooltipBox(
+//                                tooltip = {
+//                                    Text(style = Values.tooltipStyle, text = "Settings")
+//                                }
+//                            ) {
+//                                IconButton(
+//                                    onClick = {
+//                                        navHostController.navigate("Settings Activity")
+//                                    },
+//                                    modifier = Modifier.tooltipAnchor()
+//                                ) {
+//                                    Icon(Icons.Filled.Settings, "Settings")
+//                                }
+//                            }
                         }
                     )
                 },
@@ -2144,6 +2203,664 @@ object Views {
                                 }
                             }
                         )
+                    }
+                }
+            )
+        }
+    }
+
+    /**
+     * Draws the transaction search screen
+     *
+     * @param navHostController The main navHostController for this application
+     * @param context The main context for this application
+     */
+    @OptIn(ExperimentalMaterial3Api::class)
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter", "UnrememberedMutableState",
+        "CoroutineCreationDuringComposition", "MutableCollectionMutableState"
+    )
+    @Composable
+    fun generateSearchTransactionsView(navHostController: NavHostController, context: Context) {
+        val scrollState = rememberScrollState()
+
+        ApplicationTheme {
+            var isPositiveMinTransaction by remember { mutableStateOf(false) }
+            var isPositiveMaxTransaction by remember { mutableStateOf(false) }
+            var transactionMinAmount by remember { mutableStateOf("0") }
+            var transactionMaxAmount by remember { mutableStateOf("0") }
+            var transactionMinAmountIsNotNumber by remember { mutableStateOf(true) }
+            var transactionMaxAmountIsNotNumber by remember { mutableStateOf(true) }
+            val transactionMinAmountLabel by remember { mutableStateOf("Minimum transaction amount") }
+            val transactionMaxAmountLabel by remember { mutableStateOf("Maximum transaction amount") }
+            val transactionAccountLabel by remember { mutableStateOf("Transaction account") }
+            var accountNameListIsExpanded by remember { mutableStateOf(false) }
+            var accountName by remember { mutableStateOf("") }
+            var categoryListIsExpanded by remember { mutableStateOf(false) }
+            var category by remember { mutableStateOf("") }
+//            var description by remember { mutableStateOf("") }
+            val title by remember { mutableStateOf("Search Transactions") }
+
+            var localMinDate = LocalDate.now() // Must initialize
+            var localMaxDate = LocalDate.now() // Must initialize
+            var localMinTime = LocalTime.now() // Must initialize
+            var localMaxTime = LocalTime.now() // Must initialize
+
+            var amountFieldEnabled by remember { mutableStateOf(true) }
+            var accountFieldEnabled by remember { mutableStateOf(true) }
+            var categoryFieldEnabled by remember { mutableStateOf(true) }
+            var dateFieldEnabled by remember { mutableStateOf(true) }
+
+            var listTransactions by remember { mutableStateOf (false) }
+            var foundTransactions by remember { mutableStateOf (ArrayList<Transaction>()) }
+
+            val dateFormatter = DateTimeFormatter.ofPattern(Values.dateFormat)
+            val timeFormatter = DateTimeFormatter.ofPattern(Values.timeFormat)
+
+            var stringMinDate by remember {
+                mutableStateOf(localMinDate.minusDays(1).format(dateFormatter)) }
+            var stringMaxDate by remember { mutableStateOf(localMaxDate.format(dateFormatter)) }
+            var openMinDatePickerDialog by remember { mutableStateOf(false) }
+            var openMaxDatePickerDialog by remember { mutableStateOf(false) }
+
+            var openMinTimePickerDialog by remember { mutableStateOf(false) }
+            var openMaxTimePickerDialog by remember { mutableStateOf(false) }
+            var minHour : Int
+            var maxHour : Int
+            var minMinute : Int
+            var maxMinute : Int
+            var stringMinTime = localMinTime.minusHours(24).format(timeFormatter)
+            var stringMaxTime = localMaxTime.format(timeFormatter)
+
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = Values.snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        title = {
+                            Text(title)
+                        },
+                        navigationIcon = {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    Text(style = Values.tooltipStyle, text = "Navigate up")
+                                }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        navHostController.navigateUp()
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                ) {
+                                    Icon(Icons.Filled.ArrowBack, "")
+                                }
+                            }
+                        },
+                        actions = {
+
+                        }
+                    )
+                },
+                content = {
+                    Surface(modifier = Modifier.padding(top = 75.dp, bottom = 0.dp, start = 16.dp, end = 16.dp)) {
+                        if (listTransactions) {
+                            foundTransactions = Utility.sortTransactionListByPreference(
+                                foundTransactions,
+                                Utility.getPreference("transactionSortingPreference"))
+                            Column(
+                                modifier = Modifier.verticalScroll(scrollState),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ){
+                                Text("Found " + foundTransactions.size + " transactions")
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                Viewlets.generateTransactionScroller(
+                                    navHostController, foundTransactions, false
+                                )
+                            }
+                        }
+                        else {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(scrollState)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Amount ")
+                                            Checkbox(
+                                                checked = amountFieldEnabled,
+                                                onCheckedChange = {
+                                                    amountFieldEnabled = it
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                                if (amountFieldEnabled) {
+                                    Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                    // Min amount
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                // Deposit or withdrawal
+                                                Text("Deposit ")
+                                                Checkbox(
+                                                    checked = isPositiveMinTransaction,
+                                                    onCheckedChange = {
+                                                        isPositiveMinTransaction = it
+                                                    },
+                                                    enabled = amountFieldEnabled
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                        // amount
+                                        OutlinedTextField(
+                                            readOnly = !amountFieldEnabled,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            value = transactionMinAmount,
+                                            prefix = {
+                                                if (!isPositiveMinTransaction) {
+                                                    Text("-", color = Color.Red)
+                                                } else {
+                                                    Text("+", color = Color.Green)
+                                                }
+                                            },
+                                            suffix = {
+                                                Text(Values.currencies[Utility.getPreference("currencyPreference")])
+                                            },
+                                            singleLine = true,
+                                            onValueChange = {
+                                                transactionMinAmount = it
+                                                transactionMinAmountIsNotNumber =
+                                                    !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                            },
+                                            label = {
+                                                Text(transactionMinAmountLabel)
+                                            },
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                    // Max amount
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Column {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                // Deposit or withdrawal
+                                                Text("Deposit ")
+                                                Checkbox(
+                                                    checked = isPositiveMaxTransaction,
+                                                    onCheckedChange = {
+                                                        isPositiveMaxTransaction = it
+                                                    },
+                                                    enabled = amountFieldEnabled
+                                                )
+                                            }
+                                        }
+                                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                        // amount
+                                        OutlinedTextField(
+                                            readOnly = !amountFieldEnabled,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            value = transactionMaxAmount,
+                                            prefix = {
+                                                if (!isPositiveMaxTransaction) {
+                                                    Text("-", color = Color.Red)
+                                                } else {
+                                                    Text("+", color = Color.Green)
+                                                }
+                                            },
+                                            suffix = {
+                                                Text(Values.currencies[Utility.getPreference("currencyPreference")])
+                                            },
+                                            singleLine = true,
+                                            onValueChange = {
+                                                transactionMaxAmount = it
+                                                transactionMaxAmountIsNotNumber =
+                                                    !(it.toDoubleOrNull() != null && it.isNotEmpty())
+                                            },
+                                            label = {
+                                                Text(transactionMaxAmountLabel)
+                                            },
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                // Account name
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Account ")
+                                            Checkbox(
+                                                checked = accountFieldEnabled,
+                                                onCheckedChange = {
+                                                    accountFieldEnabled = it
+                                                }
+                                            )
+                                        }
+                                    }
+                                    if (accountFieldEnabled) {
+                                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                        ExposedDropdownMenuBox(
+                                            expanded = accountNameListIsExpanded,
+                                            onExpandedChange = {
+                                                accountNameListIsExpanded =
+                                                    !accountNameListIsExpanded
+                                            }
+                                        ) {
+                                            OutlinedTextField(
+                                                value = accountName,
+                                                readOnly = !accountFieldEnabled,
+                                                onValueChange = {
+                                                    accountName = it
+                                                },
+                                                modifier = Modifier
+                                                    .menuAnchor()
+                                                    .fillMaxWidth(),
+                                                label = {
+                                                    Text(transactionAccountLabel)
+                                                },
+                                                trailingIcon = {
+                                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                                        expanded = accountNameListIsExpanded
+                                                    )
+                                                },
+                                                isError = accountName.isEmpty(),
+                                            )
+                                            ExposedDropdownMenu(
+                                                expanded = accountNameListIsExpanded,
+                                                onDismissRequest = {
+                                                    accountNameListIsExpanded = false
+                                                }
+                                            ) {
+                                                Values.accountNames.forEach { selectedOption ->    // Issue: only most recent account name shown
+                                                    DropdownMenuItem(onClick = {
+                                                        accountName = selectedOption
+                                                        accountNameListIsExpanded = false
+                                                    },
+                                                        text = {
+                                                            Text(selectedOption)
+                                                        }
+                                                    )
+                                                }
+                                            }
+
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                // Category
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Category ")
+                                            Checkbox(
+                                                checked = categoryFieldEnabled,
+                                                onCheckedChange = {
+                                                    categoryFieldEnabled = it
+                                                }
+                                            )
+                                        }
+                                    }
+                                    if (categoryFieldEnabled) {
+                                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                        ExposedDropdownMenuBox(
+                                            expanded = categoryListIsExpanded,
+                                            onExpandedChange = {
+                                                categoryListIsExpanded = !categoryListIsExpanded
+                                            }
+                                        ) {
+                                            OutlinedTextField(
+                                                readOnly = !categoryFieldEnabled,
+                                                value = category,
+                                                onValueChange = {
+                                                    category = it
+                                                },
+                                                modifier = Modifier
+                                                    .menuAnchor()
+                                                    .fillMaxWidth(),
+                                                label = {
+                                                    Text("Transaction category")
+                                                },
+                                                trailingIcon = {
+                                                    if (Values.categories.isNotEmpty()) {
+                                                        ExposedDropdownMenuDefaults.TrailingIcon(
+                                                            expanded = categoryListIsExpanded
+                                                        )
+                                                    }
+                                                },
+                                                isError = category.isEmpty()
+                                            )
+                                            ExposedDropdownMenu(
+                                                expanded = categoryListIsExpanded,
+                                                onDismissRequest = {
+                                                    categoryListIsExpanded = false
+                                                }
+                                            ) {
+                                                Values.categories.forEach { selectedOption ->
+                                                    DropdownMenuItem(onClick = {
+                                                        category = selectedOption
+                                                        categoryListIsExpanded = false
+                                                    },
+                                                        text = {
+                                                            Text(selectedOption)
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+//                                // Description
+//                                OutlinedTextField(
+//                                    readOnly = (!fieldEnabled),
+//                                    modifier = Modifier.fillMaxWidth(),
+//                                    value = description,
+//                                    label = {
+//                                        Text("Transaction description")
+//                                    },
+//                                    onValueChange = {
+//                                        description = it
+//                                    }
+//                                )
+//                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                // Date
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("Date ")
+                                        Checkbox(
+                                            checked = dateFieldEnabled,
+                                            onCheckedChange = {
+                                                dateFieldEnabled = it
+                                            }
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                if (dateFieldEnabled) {
+                                    // Min date/ time
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        OutlinedTextField(
+                                            readOnly = true,
+                                            value = stringMinDate,
+                                            onValueChange = {
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.5F)
+                                                .onFocusChanged {
+                                                    if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                                        openMinDatePickerDialog = true
+                                                    }
+                                                },
+                                            label = {
+                                                Text("Minimum transaction date")
+                                            },
+                                            isError = stringMinDate.isEmpty(),
+                                            singleLine = true
+                                        )
+                                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                        // Time
+                                        OutlinedTextField(
+                                            readOnly = true,
+                                            value = stringMinTime,
+                                            onValueChange = {
+                                            },
+                                            modifier = Modifier
+                                                .onFocusChanged {
+                                                    if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                                        openMinTimePickerDialog = true
+                                                    }
+                                                },
+                                            label = {
+                                                Text("Minimum transaction time")
+                                            },
+                                            isError = stringMinTime.isEmpty(),
+                                            singleLine = true
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.padding(vertical = 15.dp))
+                                    // Max date/ time
+                                    Row {
+                                        OutlinedTextField(
+                                            readOnly = true,
+                                            value = stringMaxDate,
+                                            onValueChange = {
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth(0.5F)
+                                                .onFocusChanged {
+                                                    if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                                        openMaxDatePickerDialog = true
+                                                    }
+                                                },
+                                            label = {
+                                                Text("Maximum transaction date")
+                                            },
+                                            isError = stringMaxDate.isEmpty(),
+                                        )
+                                        Spacer(modifier = Modifier.padding(horizontal = 5.dp))
+                                        // Time
+                                        OutlinedTextField(
+                                            readOnly = true,
+                                            value = stringMaxTime,
+                                            onValueChange = {
+                                            },
+                                            modifier = Modifier
+                                                .onFocusChanged {
+                                                    if (it.isFocused) {             // onClick does not work, jerryrigged solution
+                                                        openMaxTimePickerDialog = true
+                                                    }
+                                                },
+                                            label = {
+                                                Text("Maximum transaction time")
+                                            },
+                                            isError = stringMaxTime.isEmpty(),
+                                        )
+                                    }
+                                }
+                                if (openMinDatePickerDialog) {
+                                    val datePickerState = rememberDatePickerState()
+                                    val confirmEnabled =
+                                        derivedStateOf { datePickerState.selectedDateMillis != null }
+                                    DatePickerDialog(
+                                        onDismissRequest = {
+                                            openMinDatePickerDialog = false
+                                        },
+                                        confirmButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    openMinDatePickerDialog = false
+                                                    val milliseconds =
+                                                        datePickerState.selectedDateMillis as Long
+                                                    localMinDate = Instant.ofEpochMilli(milliseconds)
+                                                        .atZone(ZoneId.systemDefault())
+                                                        .toLocalDate()
+                                                        .plusDays(1) // Add one day to fix android bug
+                                                    stringMinDate = localMinDate.format(dateFormatter)
+                                                },
+                                                content = {
+                                                    Text("OK")
+                                                },
+                                                enabled = confirmEnabled.value
+                                            )
+                                        },
+                                        dismissButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    openMinDatePickerDialog = false
+                                                }
+                                            ) {
+                                                Text("Cancel")
+                                            }
+                                        }
+                                    ) {
+                                        DatePicker(state = datePickerState)
+                                    }
+                                }
+                                if (openMinTimePickerDialog) {
+                                    val timePickerState = rememberTimePickerState(
+                                        localMinTime.hour,
+                                        localMinTime.minute
+                                    )     // Need to set initial params here for hour of day in locale non-specific form
+                                    Viewlets.TimePickerDialog(
+                                        onDismissRequest = {
+                                            openMinTimePickerDialog = false
+                                        },
+                                        onConfirm = {
+                                            openMinTimePickerDialog = false
+                                            minHour = timePickerState.hour
+                                            minMinute = timePickerState.minute
+                                            localMinTime = LocalTime.of(minHour, minMinute)
+                                            stringMinTime = localMinTime.format(timeFormatter)
+                                        },
+                                    ) {
+                                        TimePicker(state = timePickerState)
+                                    }
+                                }
+                                if (openMaxDatePickerDialog) {
+                                    val datePickerState = rememberDatePickerState()
+                                    val confirmEnabled =
+                                        derivedStateOf { datePickerState.selectedDateMillis != null }
+                                    DatePickerDialog(
+                                        onDismissRequest = {
+                                            openMaxDatePickerDialog = false
+                                        },
+                                        confirmButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    openMaxDatePickerDialog = false
+                                                    val milliseconds =
+                                                        datePickerState.selectedDateMillis as Long
+                                                    localMaxDate = Instant.ofEpochMilli(milliseconds)
+                                                        .atZone(ZoneId.systemDefault())
+                                                        .toLocalDate()
+                                                        .plusDays(1) // Add one day to fix android bug
+                                                    stringMaxDate = localMaxDate.format(dateFormatter)
+                                                },
+                                                content = {
+                                                    Text("OK")
+                                                },
+                                                enabled = confirmEnabled.value
+                                            )
+                                        },
+                                        dismissButton = {
+                                            TextButton(
+                                                onClick = {
+                                                    openMaxDatePickerDialog = false
+                                                }
+                                            ) {
+                                                Text("Cancel")
+                                            }
+                                        }
+                                    ) {
+                                        DatePicker(state = datePickerState)
+                                    }
+                                }
+                                if (openMaxTimePickerDialog) {
+                                    val timePickerState = rememberTimePickerState(
+                                        localMaxTime.hour,
+                                        localMaxTime.minute
+                                    )     // Need to set initial params here for hour of day in locale non-specific form
+                                    Viewlets.TimePickerDialog(
+                                        onDismissRequest = {
+                                            openMaxTimePickerDialog = false
+                                        },
+                                        onConfirm = {
+                                            openMaxTimePickerDialog = false
+                                            maxHour = timePickerState.hour
+                                            maxMinute = timePickerState.minute
+                                            localMaxTime = LocalTime.of(maxHour, maxMinute)
+                                            stringMaxTime = localMaxTime.format(timeFormatter)
+                                        },
+                                    ) {
+                                        TimePicker(state = timePickerState)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                floatingActionButton = {
+                    if (!scrollState.isScrollInProgress) {
+                        val snackbarMessage = "Searching"
+                        if (listTransactions) {
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = "Revise search") },
+                                icon = { Icon(Icons.Default.ArrowBack, "") },
+                                onClick = {
+                                    listTransactions = false
+                                }
+                            )
+                        }
+                        else {
+                            ExtendedFloatingActionButton(
+                                text = { Text(text = "Search") },
+                                icon = { Icon(Icons.Default.Search, "") },
+                                onClick = {
+                                    // Check that input fields are valid
+                                    var valid = true
+                                    if (amountFieldEnabled && (transactionMaxAmountIsNotNumber
+                                                || transactionMinAmountIsNotNumber)) {
+                                        valid = false
+                                    }
+                                    if (accountFieldEnabled && accountName.isEmpty()) {
+                                        valid = false
+                                    }
+                                    if (categoryFieldEnabled && category.isEmpty()) {
+                                        valid = false
+                                    }
+                                    if (valid) {
+                                        // Transactions store date and time in UTC
+                                        val localMinTimeCorrectedToUTCTime =
+                                            Utility.convertLocalDateTimeToUTC(
+                                                ZonedDateTime.of(
+                                                    localMinDate, localMinTime,
+                                                    Values.localTimeZone
+                                                )
+                                            )
+                                        val localMaxTimeCorrectedToUTCTime =
+                                            Utility.convertLocalDateTimeToUTC(
+                                                ZonedDateTime.of(
+                                                    localMaxDate, localMaxTime,
+                                                    Values.localTimeZone
+                                                )
+                                            )
+
+                                        if (!isPositiveMinTransaction) {
+                                            transactionMinAmount = "-$transactionMinAmount"
+                                        }
+                                        if (!isPositiveMaxTransaction) {
+                                            transactionMaxAmount = "-$transactionMaxAmount"
+                                        }
+//                                        Utility.showSnackbar(snackbarMessage)
+                                        foundTransactions = Utility.filterTransactions(
+                                            filterAmount = amountFieldEnabled,
+                                            filterAccountName = accountFieldEnabled,
+                                            filterCategory = categoryFieldEnabled,
+                                            filterDate = dateFieldEnabled,
+                                            minAmount = transactionMinAmount.toDouble(),
+                                            maxAmount = transactionMaxAmount.toDouble(),
+                                            accountName = accountName,
+                                            category = category,
+                                            minDate = localMinTimeCorrectedToUTCTime,
+                                            maxDate = localMaxTimeCorrectedToUTCTime,
+                                            transactionList = Values.transactions
+                                        )
+                                        // Remove leading '-' after search
+                                        if (transactionMinAmount[0] == '-') {
+                                            transactionMinAmount = transactionMinAmount.substring(1)
+                                        }
+                                        if (transactionMaxAmount[0] == '-') {
+                                            transactionMaxAmount = transactionMaxAmount.substring(1)
+                                        }
+                                        listTransactions = true
+                                        Utility.showSnackbar("Found " + foundTransactions.size +
+                                        " transaction(s)")
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             )

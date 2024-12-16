@@ -64,6 +64,9 @@ class MainActivity : ComponentActivity() {
                     Views.generateAccountCreationView(navHostController, context, it1)
                 }
             }
+            composable("Search Transactions Activity") {
+                Views.generateSearchTransactionsView(navHostController, context)
+            }
             composable("New Account Activity") {
                 Views.generateAccountCreationView(navHostController, context, "")
             }
